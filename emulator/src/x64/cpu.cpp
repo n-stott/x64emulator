@@ -559,6 +559,10 @@ namespace x64 {
     DEFINE_STANDALONE(REP_MOVS_M32_M32, execRepMovsM32M32)
     DEFINE_STANDALONE(REP_MOVS_M64_M64, execRepMovsM64M64)
     DEFINE_STANDALONE(REP_CMPS_M8_M8, execRepCmpsM8M8)
+    DEFINE_STANDALONE(STOS_M8_R8, execStosM8R8)
+    DEFINE_STANDALONE(STOS_M16_R16, execStosM16R16)
+    DEFINE_STANDALONE(STOS_M32_R32, execStosM32R32)
+    DEFINE_STANDALONE(STOS_M64_R64, execStosM64R64)
     DEFINE_STANDALONE(REP_STOS_M8_R8, execRepStosM8R8)
     DEFINE_STANDALONE(REP_STOS_M16_R16, execRepStosM16R16)
     DEFINE_STANDALONE(REP_STOS_M32_R32, execRepStosM32R32)
@@ -1343,6 +1347,10 @@ namespace x64 {
         STANDALONE_NAME(REP_MOVS_M32_M32),
         STANDALONE_NAME(REP_MOVS_M64_M64),
         STANDALONE_NAME(REP_CMPS_M8_M8),
+        STANDALONE_NAME(STOS_M8_R8),
+        STANDALONE_NAME(STOS_M16_R16),
+        STANDALONE_NAME(STOS_M32_R32),
+        STANDALONE_NAME(STOS_M64_R64),
         STANDALONE_NAME(REP_STOS_M8_R8),
         STANDALONE_NAME(REP_STOS_M16_R16),
         STANDALONE_NAME(REP_STOS_M32_R32),
@@ -4087,7 +4095,51 @@ namespace x64 {
         verify(src2.encoding.base == R64::RDI);
         set(R64::RDI, s2ptr.address());
     }
-    
+
+    void Cpu::execStosM8R8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M8>();
+        const auto& src = ins.op1<R8>();
+        Ptr8 dptr = resolve(dst);
+        u8 val = get(src);
+        verify(flags_.direction == 0);
+        mmu_->write8(dptr, val);
+        ++dptr;
+        set(R64::RDI, dptr.address());
+    }
+
+    void Cpu::execStosM16R16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M16>();
+        const auto& src = ins.op1<R16>();
+        Ptr16 dptr = resolve(dst);
+        u16 val = get(src);
+        verify(flags_.direction == 0);
+        mmu_->write16(dptr, val);
+        ++dptr;
+        set(R64::RDI, dptr.address());
+    }
+
+    void Cpu::execStosM32R32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M32>();
+        const auto& src = ins.op1<R32>();
+        Ptr32 dptr = resolve(dst);
+        u32 val = get(src);
+        verify(flags_.direction == 0);
+        mmu_->write32(dptr, val);
+        ++dptr;
+        set(R64::RDI, dptr.address());
+    }
+
+    void Cpu::execStosM64R64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M64>();
+        const auto& src = ins.op1<R64>();
+        Ptr64 dptr = resolve(dst);
+        u64 val = get(src);
+        verify(flags_.direction == 0);
+        mmu_->write64(dptr, val);
+        ++dptr;
+        set(R64::RDI, dptr.address());
+    }
+
     void Cpu::execRepStosM8R8(const X64Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();

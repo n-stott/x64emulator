@@ -1814,6 +1814,27 @@ namespace x64 {
                 auto r64src = R64::RAX;
                 return X64Instruction::make<Insn::REP_STOS_M64_R64>(insn.runtime_address, insn.info.length, m64dst, r64src);
             }
+        } else {
+            if(insn.info.operand_width == 8) {
+                auto m8dst = M8{Segment::ES, Encoding64{R64::RDI, R64::ZERO, 0, 0}};
+                auto r8src = R8::AL;
+                return X64Instruction::make<Insn::STOS_M8_R8>(insn.runtime_address, insn.info.length, m8dst, r8src);
+            }
+            if(insn.info.operand_width == 16) {
+                auto m16dst = M16{Segment::ES, Encoding64{R64::RDI, R64::ZERO, 0, 0}};
+                auto r16src = R16::AX;
+                return X64Instruction::make<Insn::STOS_M16_R16>(insn.runtime_address, insn.info.length, m16dst, r16src);
+            }
+            if(insn.info.operand_width == 32) {
+                auto m32dst = M32{Segment::ES, Encoding64{R64::RDI, R64::ZERO, 0, 0}};
+                auto r32src = R32::EAX;
+                return X64Instruction::make<Insn::STOS_M32_R32>(insn.runtime_address, insn.info.length, m32dst, r32src);
+            }
+            if(insn.info.operand_width == 64) {
+                auto m64dst = M64{Segment::ES, Encoding64{R64::RDI, R64::ZERO, 0, 0}};
+                auto r64src = R64::RAX;
+                return X64Instruction::make<Insn::STOS_M64_R64>(insn.runtime_address, insn.info.length, m64dst, r64src);
+            }
         }
         return make_failed(insn);
     }

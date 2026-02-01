@@ -633,9 +633,13 @@ namespace x64 {
         void execRepMovsM16M16(const X64Instruction&);
         void execRepMovsM32M32(const X64Instruction&);
         void execRepMovsM64M64(const X64Instruction&);
-        
+
         void execRepCmpsM8M8(const X64Instruction&);
-        
+
+        void execStosM8R8(const X64Instruction&);
+        void execStosM16R16(const X64Instruction&);
+        void execStosM32R32(const X64Instruction&);
+        void execStosM64R64(const X64Instruction&);
         void execRepStosM8R8(const X64Instruction&);
         void execRepStosM16R16(const X64Instruction&);
         void execRepStosM32R32(const X64Instruction&);

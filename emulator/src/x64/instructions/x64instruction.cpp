@@ -390,6 +390,10 @@ namespace x64 {
             case Insn::REP_MOVS_M32_M32: return toString<M32, M32>("rep movs");
             case Insn::REP_MOVS_M64_M64: return toString<M64, M64>("rep movs");
             case Insn::REP_CMPS_M8_M8: return toString<M8, M8>("rep cmps");
+            case Insn::STOS_M8_R8: return toString<M8, R8>("stos");
+            case Insn::STOS_M16_R16: return toString<M16, R16>("stos");
+            case Insn::STOS_M32_R32: return toString<M32, R32>("stos");
+            case Insn::STOS_M64_R64: return toString<M64, R64>("stos");
             case Insn::REP_STOS_M8_R8: return toString<M8, R8>("rep stos");
             case Insn::REP_STOS_M16_R16: return toString<M16, R16>("rep stos");
             case Insn::REP_STOS_M32_R32: return toString<M32, R32>("rep stos");
