@@ -43,6 +43,14 @@ namespace kernel::gnulinux {
         }
     }
 
+    void FileDescriptors::closeAll() {
+        for(int fd = 0; fd < (int)fileDescriptors_.size(); ++fd) {
+            if(fileDescriptors_[fd]) {
+                close(FD{fd});
+            }
+        }
+    }
+
     FD FileDescriptors::open(const Path& path,
             BitFlags<AccessMode> accessMode,
             BitFlags<CreationFlags> creationFlags,

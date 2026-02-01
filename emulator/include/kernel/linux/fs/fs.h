@@ -74,6 +74,7 @@ namespace kernel::gnulinux {
                 Permissions permissions);
 
         int close(FD);
+        void closeAll();
 
         int fcntl(FD fd, int cmd, int arg);
 

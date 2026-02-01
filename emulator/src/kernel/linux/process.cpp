@@ -197,6 +197,7 @@ namespace kernel::gnulinux {
     }
 
     void Process::notifyExit() {
+        fds_->closeAll();
         if(!!parent_) parent_->notifyChildExited(this);
     }
 
