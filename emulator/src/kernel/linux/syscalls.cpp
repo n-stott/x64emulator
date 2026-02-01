@@ -237,6 +237,10 @@ namespace kernel::gnulinux {
 
         if(readResult.isBlocking()) {
             kernel_.scheduler().blockingRead(currentThread_, fd, buf, count);
+            if(kernel_.logSyscalls()) {
+                print("Sys::read(fd={}, buf={:#x}, count={}) = blocked",
+                        fd, buf.address(), count);
+            }
             return 0;
         }
 

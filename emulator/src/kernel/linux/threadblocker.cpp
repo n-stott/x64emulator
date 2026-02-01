@@ -313,7 +313,9 @@ namespace kernel::gnulinux {
 
     bool ReadBlocker::tryUnblock(FS& fs) {
         auto readResult = fs.read(thread_->process()->fds()[fd_], count_);
-        if(readResult.isBlocking()) return false;
+        if(readResult.isBlocking()) {
+            return false;
+        }
         ssize_t ret = readResult.value().errorOrWith<ssize_t>([&](const auto& buffer) {
             x64::Mmu mmu(thread_->process()->addressSpace());
             mmu.copyToMmu(buf_, buffer.data(), buffer.size());
