@@ -1068,19 +1068,13 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fork() {
-        if(kernel_.logSyscalls()) {
-            print("Sys::fork() = {}", -ENOTSUP);
-        }
-        warn("fork not implemented");
-        return -ENOTSUP;
+        print("Sys::fork => Sys::clone");
+        return (int)clone(CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID, x64::Ptr::null(), x64::Ptr32::null(), x64::Ptr32::null(), 0);
     }
 
     int Sys::vfork() {
-        if(kernel_.logSyscalls()) {
-            print("Sys::vfork() = {}", -ENOTSUP);
-        }
-        warn("vfork not implemented");
-        return -ENOTSUP;
+        print("Sys::vfork => Sys::fork");
+        return fork();
     }
 
     int Sys::execve(x64::Ptr pathname, x64::Ptr64 argv, x64::Ptr64 envp) {
