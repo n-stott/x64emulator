@@ -115,7 +115,6 @@ namespace emulator {
             return iterations;
         }
 
-    private:
         std::vector<u64> stack_;
         std::vector<u64> callpoint_;
         std::vector<u64> callstack_;
@@ -228,6 +227,8 @@ namespace emulator {
 
         void dumpRegisters() const;
         void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
+
+        void reportInfoFrom(const VMThread& other);
 
     protected:
         SavedCpuState savedCpuState_;

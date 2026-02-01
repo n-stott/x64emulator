@@ -245,7 +245,7 @@ namespace kernel::gnulinux {
         symbolProvider_ = {};
         functionNameCache_ = {};
         symbolRetriever_ = SymbolRetriever(&disassemblyCache_, &symbolProvider_);
-        jit_ = x64::Jit::tryCreate();
+        if(!!jit_) jit_ = x64::Jit::tryCreate();
         children_ = {};
         exitedChildren_ = {};
     }

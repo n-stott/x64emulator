@@ -52,4 +52,12 @@ namespace emulator {
             ++frameId;
         }
     }
+
+    void VMThread::reportInfoFrom(const VMThread& other) {
+        stack_ = other.stack_;
+        callpoint_ = other.callpoint_;
+        callstack_ = other.callstack_;
+        time_.tick(other.time_.ns());
+        savedCpuState_ = other.savedCpuState_;
+    }
 }

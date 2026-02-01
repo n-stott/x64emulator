@@ -1012,6 +1012,8 @@ namespace kernel::gnulinux {
                 verify(!!process, "Unable to create new process");
                 return kernel_.processTable().addProcess(std::move(process));
             }();
+            newProcess->setEnableJit(currentProcess_->jitEnabled());
+            newProcess->setEnableJitChaining(currentProcess_->jitChainingEnabled());
             bool flagsOk = checkCloneFlagsFork(cloneFlags);
             if(!flagsOk) {
                 if(kernel_.logSyscalls()) {
@@ -1027,7 +1029,7 @@ namespace kernel::gnulinux {
         x64::Mmu childMmu(newThread->process()->addressSpace());
         const Thread::SavedCpuState& oldCpuState = currentThread_->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
-        newCpuState.regs = oldCpuState.regs;
+        newThread->reportInfoFrom(*currentThread_);
         newCpuState.regs.set(x64::R64::RAX, 0);
         newCpuState.regs.rip() = oldCpuState.regs.rip();
         if(stack.address() != 0) { // using nullptr for stack means keeping the same stack
@@ -1109,7 +1111,6 @@ namespace kernel::gnulinux {
             ExecVE execve(mmu, kernel_.processTable(), *currentProcess_, kernel_.scheduler(), kernel_.fs());
             Thread* thread = execve.exec(path, args, envs);
             verify(!!thread, "execve failed");
-            kernel_.scheduler().addThread(thread);
             currentThread_ = thread;
         }
 
