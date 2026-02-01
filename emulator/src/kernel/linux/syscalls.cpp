@@ -1090,7 +1090,6 @@ namespace kernel::gnulinux {
             ++argv;
         }
         verify(!args.empty(), "unexpected empty argv list in exec");
-        verify(args.front() == path, "argv[0] does not match pathname");
         args.erase(args.begin()); // args[0] is dropped
         std::vector<std::string> envs;
         while(true) {
