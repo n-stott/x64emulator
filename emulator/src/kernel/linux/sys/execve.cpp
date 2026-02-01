@@ -278,12 +278,53 @@ namespace kernel::gnulinux {
         push64(arguments.size()+1);
     }
 
+    template<typename Func>
+    void forEachSplit(const std::string& s, char delimiter, Func&& func) {
+        auto left = s.begin();
+        for(auto it = left; it != s.end(); ++it) {
+            if(*it == delimiter) {
+                std::string_view substring(&*left, it-left);
+                func(substring);
+                left = it + 1;
+            }
+        }
+        if(left != s.end()) {
+            std::string_view substring(&*left, s.end()-left);
+            func(substring);
+        }
+    }
+
+    static std::optional<std::string> resolveProgramPath(const std::string& programPath, const std::vector<std::string>& envp) {
+        if(programPath.empty()) return {};
+        if(programPath[0] == '/') return programPath;
+        if(programPath[0] == '.') return programPath;
+        auto pathsit = std::find_if(envp.begin(), envp.end(), [](const std::string& env) {
+            return env.size() >= 5 && env.substr(0, 5) == "PATH=";
+        });
+        if(pathsit == envp.end()) return {};
+        std::string paths = pathsit->substr(5);
+        std::optional<std::string> result;
+        auto tryLoadProgram = [&](std::string_view path) {
+            if(!!result) return;
+            std::string absolutePath = path.empty() ? programPath : (std::string(path) + "/" + programPath);
+            std::ifstream file(absolutePath);
+            if(!file.good()) return;
+            result = absolutePath;
+        };
+        tryLoadProgram("");
+        forEachSplit(paths, ':', tryLoadProgram);
+        return result;
+    }
+
     Thread* ExecVE::exec(const std::string& programFilePath,
                          const std::vector<std::string>& arguments,
                          const std::vector<std::string>& environmentVariables) {
+        auto programPath = resolveProgramPath(programFilePath, environmentVariables);
+        if(!programPath) return nullptr;
+
         Auxiliary aux;
 
-        auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programFilePath, true);
+        auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programPath.value(), true);
         u64 entrypoint = std::visit([&](auto&& arg) -> u64
         {
             using T = std::decay_t<decltype(arg)>;
@@ -303,12 +344,12 @@ namespace kernel::gnulinux {
         cpuState.regs.rip() = entrypoint;
         cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
         
-        pushProgramArguments(&mmu_, &cpuState.regs, programFilePath, arguments, environmentVariables, aux);
+        pushProgramArguments(&mmu_, &cpuState.regs, programPath.value(), arguments, environmentVariables, aux);
 
         scheduler_.addThread(mainThread);
 
         // Setup procFS for this process
-        auto absolutePath = fs_.resolvePath(process_.cwd(), programFilePath);
+        auto absolutePath = fs_.resolvePath(process_.cwd(), programPath.value());
         verify(!!absolutePath, "Unable to resolve program path");
         fs_.resetProcFS(Host::getpid(), *absolutePath);
 

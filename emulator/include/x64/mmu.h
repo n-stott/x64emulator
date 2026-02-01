@@ -118,6 +118,8 @@ namespace x64 {
         int mprotect(u64 address, u64 length, BitFlags<PROT> prot);
         u64 brk(u64 address);
 
+        void clearAllRegions();
+
         void setRegionName(u64 address, std::string name);
 
         u8* base() { return base_; }

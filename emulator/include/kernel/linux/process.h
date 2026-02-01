@@ -30,6 +30,7 @@ namespace kernel::gnulinux {
         ~Process();
 
         std::unique_ptr<Process> clone(ProcessTable&);
+        void prepareExec();
 
         int pid() const {
             return pid_;
@@ -104,6 +105,7 @@ namespace kernel::gnulinux {
 
         // Tasks
         std::vector<std::unique_ptr<Thread>> threads_;
+        std::vector<std::unique_ptr<Thread>> deletedThreads_;
 
         // Filesystem
         FS& fs_;

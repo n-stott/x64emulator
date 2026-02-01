@@ -522,6 +522,13 @@ namespace x64 {
         }
     }
 
+    void Mmu::clearAllRegions() {
+        for(size_t i = addressSpace_.regions.size(); i --> 0;) {
+            MmuRegion* region = addressSpace_.regions[i].get();
+            takeRegion(region->base(), region->size());
+        }
+    }
+
     u8* Mmu::getPointerToRegion(MmuRegion* region) {
         return base_ + region->base();
     }

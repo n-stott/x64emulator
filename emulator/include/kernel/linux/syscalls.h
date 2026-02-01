@@ -224,7 +224,7 @@ namespace kernel::gnulinux {
         // 0x3a
         int vfork();
         // 0x3b
-        int execve(x64::Ptr pathname, x64::Ptr argv, x64::Ptr envp);
+        int execve(x64::Ptr pathname, x64::Ptr64 argv, x64::Ptr64 envp);
         // 0x3c
         int exit(int status);
         // 0x3d

@@ -231,4 +231,23 @@ namespace kernel::gnulinux {
         }
     }
 
+    void Process::prepareExec() {
+        {
+            x64::Mmu mmu(addressSpace());
+            mmu.clearAllRegions();
+        }
+        deletedThreads_.insert(deletedThreads_.end(), std::make_move_iterator(threads_.begin()), std::make_move_iterator(threads_.end()));
+        threads_.clear();
+        // fds_->something();
+        disassemblyCache_ = {};
+        codeSegments_ = {};
+        codeSegmentsByAddress_ = {};
+        symbolProvider_ = {};
+        functionNameCache_ = {};
+        symbolRetriever_ = SymbolRetriever(&disassemblyCache_, &symbolProvider_);
+        jit_ = x64::Jit::tryCreate();
+        children_ = {};
+        exitedChildren_ = {};
+    }
+
 }

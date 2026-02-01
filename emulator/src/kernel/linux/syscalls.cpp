@@ -47,12 +47,13 @@ namespace kernel::gnulinux {
         currentThread_ = thread;
         mmu_ = &mmu;
         mmu.addCallback(process);
-        mmu.addCallback(thread->process()->disassemblyCache());
+        auto* disassemblyCache = thread->process()->disassemblyCache();
+        mmu.addCallback(disassemblyCache);
         ScopeGuard scopeGuard([&]() {
             currentProcess_ = nullptr;
             currentThread_ = nullptr;
             mmu_ = nullptr;
-            mmu.removeCallback(thread->process()->disassemblyCache());
+            mmu.removeCallback(disassemblyCache);
             mmu.removeCallback(process);
         });
         x64::Registers& threadRegs = currentThread_->savedCpuState().regs;
@@ -1067,13 +1068,49 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::execve(x64::Ptr pathname, x64::Ptr argv, x64::Ptr envp) {
-        if(kernel_.logSyscalls()) {
-            print("Sys::exec(pathname={:#x}, argv={:#x}, envp={:#x}) = {}",
-                        pathname.address(), argv.address(), envp.address(), -ENOTSUP);
+    int Sys::execve(x64::Ptr pathname, x64::Ptr64 argv, x64::Ptr64 envp) {
+        verify(!!pathname, "cannot exec with null pathname");
+        verify(!!argv, "cannot exec with null argv");
+        verify(!!envp, "cannot exec with null envp");
+        std::string path = mmu_->readString(pathname);
+        std::vector<std::string> args;
+        while(true) {
+            u64 arg = mmu_->read64(argv);
+            if(arg == 0) break;
+            args.push_back(mmu_->readString(x64::Ptr{arg}));
+            ++argv;
         }
-        warn("exec not implemented");
-        return -ENOTSUP;
+        verify(!args.empty(), "unexpected empty argv list in exec");
+        verify(args.front() == path, "argv[0] does not match pathname");
+        args.erase(args.begin()); // args[0] is dropped
+        std::vector<std::string> envs;
+        while(true) {
+            u64 env = mmu_->read64(envp);
+            if(env == 0) break;
+            envs.push_back(mmu_->readString(x64::Ptr{env}));
+            ++envp;
+        }
+        kernel_.scheduler().terminateGroup(currentThread_, 0);
+        currentProcess_->prepareExec();
+
+        {
+            x64::Mmu mmu(currentProcess_->addressSpace());
+            mmu.addCallback(currentProcess_);
+            mmu.addCallback(currentProcess_->disassemblyCache());
+            ExecVE execve(mmu, kernel_.processTable(), *currentProcess_, kernel_.scheduler(), kernel_.fs());
+            Thread* thread = execve.exec(path, args, envs);
+            verify(!!thread, "execve failed");
+            kernel_.scheduler().addThread(thread);
+            currentThread_ = thread;
+        }
+
+        if(kernel_.logSyscalls()) {
+            auto argvstring = fmt::format("{}", fmt::join(args, ", "));
+            auto envpstring = fmt::format("{}", fmt::join(envs, ", "));
+            print("Sys::exec(pathname={}, argv={}, envp={}) = {}",
+                        path, argvstring, envpstring, 0);
+        }
+        return 0;
     }
 
     int Sys::exit(int status) {

@@ -569,6 +569,7 @@ namespace kernel::gnulinux {
         }), runningJobs_.end());
         runnableThreads_.erase(std::remove(runnableThreads_.begin(), runnableThreads_.end(), thread), runnableThreads_.end());
         blockedThreads_.erase(std::remove(blockedThreads_.begin(), blockedThreads_.end(), thread), blockedThreads_.end());
+        threads_.erase(std::remove(threads_.begin(), threads_.end(), thread), threads_.end());
     }
 
     void Scheduler::kill(int pid, int tid, [[maybe_unused]] int signal) {

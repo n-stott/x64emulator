@@ -66,50 +66,10 @@ namespace kernel::gnulinux {
         processTable_->setProcessVirtualMemory(virtualMemoryInMB);
     }
 
-    template<typename Func>
-    void forEachSplit(const std::string& s, char delimiter, Func&& func) {
-        auto left = s.begin();
-        for(auto it = left; it != s.end(); ++it) {
-            if(*it == delimiter) {
-                std::string_view substring(&*left, it-left);
-                func(substring);
-                left = it + 1;
-            }
-        }
-        if(left != s.end()) {
-            std::string_view substring(&*left, s.end()-left);
-            func(substring);
-        }
-    }
-
-    static std::optional<std::string> resolveProgramPath(const std::string& programPath, const std::vector<std::string>& envp) {
-        if(programPath.empty()) return {};
-        if(programPath[0] == '/') return programPath;
-        if(programPath[0] == '.') return programPath;
-        auto pathsit = std::find_if(envp.begin(), envp.end(), [](const std::string& env) {
-            return env.size() >= 5 && env.substr(0, 5) == "PATH=";
-        });
-        if(pathsit == envp.end()) return {};
-        std::string paths = pathsit->substr(5);
-        std::optional<std::string> result;
-        auto tryLoadProgram = [&](std::string_view path) {
-            if(!!result) return;
-            std::string absolutePath = path.empty() ? programPath : (std::string(path) + "/" + programPath);
-            std::ifstream file(absolutePath);
-            if(!file.good()) return;
-            result = absolutePath;
-        };
-        tryLoadProgram("");
-        forEachSplit(paths, ':', tryLoadProgram);
-        return result;
-    }
-
     int Kernel::run(const std::string& programFilePath,
                 const std::vector<std::string>& arguments,
                 const std::vector<std::string>& environmentVariables) {
         int exitCode = 0;
-        auto programPath = resolveProgramPath(programFilePath, environmentVariables);
-        if(!programPath) return 1;
         VerificationScope::run([&]() {
             Process* mainProcess = processTable_->createMainProcess();
             verify(!!mainProcess, "Unable to create main process");
@@ -124,8 +84,9 @@ namespace kernel::gnulinux {
                     mmu.removeCallback(mainProcess);
                 });
                 ExecVE execve(mmu, processTable(), *mainProcess, scheduler(), fs());
-                return execve.exec(programPath.value(), arguments, environmentVariables);
+                return execve.exec(programFilePath, arguments, environmentVariables);
             }();
+            verify(mainThread, fmt::format("Unable to exec \"{}\"", programFilePath));
             scheduler().run();
             exitCode = mainThread->exitStatus();
             if(hasPanicked()) {
