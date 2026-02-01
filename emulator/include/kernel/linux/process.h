@@ -81,10 +81,16 @@ namespace kernel::gnulinux {
             if(!!jit_) jit_->setOptimizationLevel(level);
         }
 
-        void notifyExit();
+        void notifyExit(int status, std::optional<int> signal);
         size_t nbChildren() const { return children_.size(); }
-        std::optional<int> tryRetrieveExitedChild(int pid);
-        std::optional<int> tryRetrieveExitedChild();
+
+        struct ExitedChild {
+            int pid;
+            int status;
+            std::optional<int> signal;
+        };
+        std::optional<ExitedChild> tryRetrieveExitedChild(int pid);
+        std::optional<ExitedChild> tryRetrieveExitedChild();
 
     protected:
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
@@ -95,7 +101,7 @@ namespace kernel::gnulinux {
         Process(int pid, x64::AddressSpace addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
 
         void notifyChildCreated(Process* process);
-        void notifyChildExited(Process* process);
+        void notifyChildExited(Process* process, int status, std::optional<int> signal);
         
         // Information
         int pid_;
@@ -146,7 +152,7 @@ namespace kernel::gnulinux {
         // Hierarchy
         Process* parent_ { nullptr };
         std::set<int> children_;
-        std::set<int> exitedChildren_;
+        std::vector<ExitedChild> exitedChildren_;
     };
 
 }

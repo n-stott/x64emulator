@@ -127,8 +127,8 @@ namespace kernel::gnulinux {
 
     class WaitBlocker {
     public:
-        WaitBlocker(Thread* thread, int pid)
-            : thread_(thread), pid_(pid) { }
+        WaitBlocker(Thread* thread, int pid, x64::Ptr32 wstatus)
+            : thread_(thread), pid_(pid), wstatus_(wstatus) { }
 
         [[nodiscard]] bool tryUnblock();
 
@@ -139,6 +139,7 @@ namespace kernel::gnulinux {
     private:
         Thread* thread_;
         int pid_;
+        x64::Ptr32 wstatus_;
     };
 
     class ReadBlocker {

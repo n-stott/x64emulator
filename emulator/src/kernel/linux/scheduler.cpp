@@ -743,9 +743,9 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
-    void Scheduler::wait4(Thread* thread, int pid) {
+    void Scheduler::wait4(Thread* thread, int pid, x64::Ptr32 wstatus) {
         verifyInKernel();
-        waitBlockers_.push_back(WaitBlocker(thread, pid));
+        waitBlockers_.push_back(WaitBlocker(thread, pid, wstatus));
         block(thread);
         thread->yield();
     }

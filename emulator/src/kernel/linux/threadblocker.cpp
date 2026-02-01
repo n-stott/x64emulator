@@ -285,17 +285,27 @@ namespace kernel::gnulinux {
 
     bool WaitBlocker::tryUnblock() {
         if(pid_ > 0) {
-            if(auto pid = thread_->process()->tryRetrieveExitedChild(pid_)) {
-                verify(pid == pid_);
+            if(auto ec = thread_->process()->tryRetrieveExitedChild(pid_)) {
+                verify(ec->pid == pid_);
                 thread_->savedCpuState().regs.set(x64::R64::RAX, pid_);
+                if(wstatus_) {
+                    x64::Mmu mmu(thread_->process()->addressSpace());
+                    int status = (ec->status << 8) | ec->signal.value_or(0);
+                    mmu.write32(wstatus_, status);
+                }
                 return true;
             } else {
                 return false;
             }
         }
         if(pid_ == -1) {
-            if(auto pid = thread_->process()->tryRetrieveExitedChild()) {
-                thread_->savedCpuState().regs.set(x64::R64::RAX, pid.value());
+            if(auto ec = thread_->process()->tryRetrieveExitedChild()) {
+                thread_->savedCpuState().regs.set(x64::R64::RAX, ec->pid);
+                if(wstatus_) {
+                    x64::Mmu mmu(thread_->process()->addressSpace());
+                    int status = (ec->status << 8) | ec->signal.value_or(0);
+                    mmu.write32(wstatus_, status);
+                }
                 return true;
             } else {
                 return false;

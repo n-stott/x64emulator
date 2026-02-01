@@ -196,37 +196,45 @@ namespace kernel::gnulinux {
         symbolProvider_->tryRetrieveSymbolsFromExecutable(filename, base);
     }
 
-    void Process::notifyExit() {
+    void Process::notifyExit(int status, std::optional<int> signal) {
         fds_->closeAll();
-        if(!!parent_) parent_->notifyChildExited(this);
+        if(!!parent_) parent_->notifyChildExited(this, status, signal);
     }
 
     void Process::notifyChildCreated(Process* process) {
         children_.insert(process->pid());
     }
 
-    void Process::notifyChildExited(Process* process) {
+    void Process::notifyChildExited(Process* process, int status, std::optional<int> signal) {
         verify(children_.find(process->pid()) != children_.end(), "Cannot find child process");
-        exitedChildren_.insert(process->pid());
+        exitedChildren_.push_back(ExitedChild {
+            process->pid(),
+            status,
+            signal
+        });
     }
 
-    std::optional<int> Process::tryRetrieveExitedChild(int pid) {
+    std::optional<Process::ExitedChild> Process::tryRetrieveExitedChild(int pid) {
         verify(children_.find(pid) != children_.end(), "Cannot find child process");
-        if(exitedChildren_.count(pid) > 0) {
+        auto it = std::find_if(exitedChildren_.begin(), exitedChildren_.end(), [&](const auto& ec) {
+            return ec.pid == pid;
+        });
+        if(it != exitedChildren_.end()) {
             children_.erase(pid);
-            exitedChildren_.erase(pid);
-            return pid;
+            auto ec = *it;
+            exitedChildren_.erase(it);
+            return ec;
         } else {
             return {};
         }
     }
 
-    std::optional<int> Process::tryRetrieveExitedChild() {
+    std::optional<Process::ExitedChild> Process::tryRetrieveExitedChild() {
         if(!exitedChildren_.empty()) {
-            int pid = *exitedChildren_.begin();
-            children_.erase(pid);
-            exitedChildren_.erase(pid);
-            return pid;
+            auto ec = exitedChildren_.front();
+            children_.erase(ec.pid);
+            exitedChildren_.erase(exitedChildren_.begin());
+            return ec;
         } else {
             return {};
         }

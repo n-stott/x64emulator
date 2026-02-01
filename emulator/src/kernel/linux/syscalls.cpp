@@ -1129,7 +1129,6 @@ namespace kernel::gnulinux {
     }
 
     int Sys::wait4(pid_t pid, x64::Ptr32 wstatus, int options, x64::Ptr rusage) {
-        verify(!wstatus, "non-null wstatus unsupported in wait4");
         verify(options == 0, "non-zero options unsupported in wait4");
         verify(!rusage, "non-null rusage unsupported in wait4");
         if(kernel_.logSyscalls()) {
@@ -1138,7 +1137,7 @@ namespace kernel::gnulinux {
         if(currentProcess_->nbChildren() == 0) {
             return -ECHILD;
         } else {
-            kernel_.scheduler().wait4(currentThread_, (int)pid);
+            kernel_.scheduler().wait4(currentThread_, (int)pid, wstatus);
             return 0;
         }
     }
@@ -1556,7 +1555,7 @@ namespace kernel::gnulinux {
     u64 Sys::exit_group(int status) {
         if(kernel_.logSyscalls()) print("Sys::exit_group(status={})", status);
         kernel_.scheduler().terminateGroup(currentThread_, status);
-        currentProcess_->notifyExit();
+        currentProcess_->notifyExit(status, {});
         return (u64)status;
     }
 

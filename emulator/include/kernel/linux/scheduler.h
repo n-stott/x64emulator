@@ -57,7 +57,7 @@ namespace kernel::gnulinux {
         void select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
         void epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout);
 
-        void wait4(Thread* thread, int pid);
+        void wait4(Thread* thread, int pid, x64::Ptr32 wstatus);
 
         void blockingRead(Thread* thread, int fd, x64::Ptr buf, size_t count);
 
