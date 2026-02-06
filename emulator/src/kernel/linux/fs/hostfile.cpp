@@ -105,8 +105,15 @@ namespace kernel::gnulinux {
         });
     }
 
-    off_t HostFile::lseek(OpenFileDescription&, off_t offset, int whence) {
-        off_t ret = ::lseek(hostFd_, offset, whence);
+    off_t HostFile::lseek(OpenFileDescription& ofd, off_t offset, int whence) {
+        off_t ret = [&]() {
+            if(whence == SEEK_CUR) {
+                return ::lseek(hostFd_, ofd.offset() + offset, SEEK_SET);
+            } else {
+                // SEEK_SET or SEEK_END
+                return ::lseek(hostFd_, offset, whence);
+            }
+        }();
         if(ret < 0) return -errno;
         return ret;
     }

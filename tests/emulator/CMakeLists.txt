@@ -107,6 +107,9 @@ create_simple_test(exec)
 create_simple_test(forkpipe)
 create_simple_test(failexec)
 
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/opentwice_testfile.txt ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
+create_simple_test(opentwice)
+
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})
 target_link_libraries(test_abort PUBLIC pthread)
