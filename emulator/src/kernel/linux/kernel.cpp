@@ -73,10 +73,6 @@ namespace kernel::gnulinux {
         VerificationScope::run([&]() {
             Process* mainProcess = processTable_->createMainProcess();
             verify(!!mainProcess, "Unable to create main process");
-            mainProcess->setEnableJit(isJitEnabled());
-            mainProcess->setEnableJitChaining(isJitChainingEnabled());
-            mainProcess->setOptimizationLevel(optimizationLevel());
-            mainProcess->setJitStatsLevel(jitStatsLevel());
             Thread* mainThread = [&]() -> Thread* {
                 x64::Mmu mmu(mainProcess->addressSpace());
                 mmu.addCallback(mainProcess);
@@ -84,9 +80,16 @@ namespace kernel::gnulinux {
                     mmu.removeCallback(mainProcess);
                 });
                 ExecVE execve(mmu, processTable(), *mainProcess, scheduler(), fs());
-                return execve.exec(programFilePath, arguments, environmentVariables);
+                auto errnoOrThread = scheduler().runInKernelScope([&]() {
+                    return execve.exec(programFilePath, arguments, environmentVariables);
+                });
+                return errnoOrThread.value_or(nullptr);
             }();
             verify(mainThread, fmt::format("Unable to exec \"{}\"", programFilePath));
+            mainProcess->setEnableJit(isJitEnabled());
+            mainProcess->setEnableJitChaining(isJitChainingEnabled());
+            mainProcess->setOptimizationLevel(optimizationLevel());
+            mainProcess->setJitStatsLevel(jitStatsLevel());
             scheduler().run();
             exitCode = mainThread->exitStatus();
             if(hasPanicked()) {

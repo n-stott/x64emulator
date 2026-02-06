@@ -540,11 +540,11 @@ namespace kernel::gnulinux {
         runnableThreads_.push_back(thread);
     }
 
-    void Scheduler::terminateGroup(Thread* thread, int status) {
+    void Scheduler::terminateGroup(const Process* process, int status) {
         verifyInKernel();
         std::vector<Thread*> allThreads;
         forEachThread([&](Thread& t) {
-            if(t.process() != thread->process()) return;
+            if(t.process() != process) return;
             allThreads.push_back(&t);
         });
         for(Thread* t : allThreads) terminate(t, status);

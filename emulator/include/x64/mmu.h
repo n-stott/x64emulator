@@ -119,6 +119,7 @@ namespace x64 {
         u64 brk(u64 address);
 
         void clearAllRegions();
+        void ensureNullPage();
 
         void setRegionName(u64 address, std::string name);
 
@@ -292,7 +293,6 @@ namespace x64 {
         }
 
     private:
-        void ensureNullPage();
 
         template<typename T, Size s>
         T read(SPtr<s> ptr) const {

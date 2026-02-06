@@ -39,7 +39,7 @@ namespace kernel {
         }
 
         template<typename T, typename Func>
-        ErrnoOr<T> transform(Func&& func) {
+        ErrnoOr<T> transform(Func&& func) const {
             if(isError()) {
                 return ErrnoOr<T>(std::get<0>(data_));
             } else {
@@ -53,6 +53,15 @@ namespace kernel {
             if(isError()) return;
             const Value& value = std::get<Value>(data_);
             func(value);
+        }
+
+        Value value_or(Value def) const {
+            if(isError()) {
+                return def;
+            } else {
+                const Value& value = std::get<Value>(data_);
+                return value;
+            }
         }
 
     private:

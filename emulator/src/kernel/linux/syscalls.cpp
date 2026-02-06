@@ -1098,26 +1098,29 @@ namespace kernel::gnulinux {
             envs.push_back(mmu_->readString(x64::Ptr{env}));
             ++envp;
         }
-        kernel_.scheduler().terminateGroup(currentThread_, 0);
-        currentProcess_->prepareExec();
+
+        int ret = 0;
 
         {
             x64::Mmu mmu(currentProcess_->addressSpace());
             mmu.addCallback(currentProcess_);
             mmu.addCallback(currentProcess_->disassemblyCache());
             ExecVE execve(mmu, kernel_.processTable(), *currentProcess_, kernel_.scheduler(), kernel_.fs());
-            Thread* thread = execve.exec(path, args, envs);
-            verify(!!thread, "execve failed");
-            currentThread_ = thread;
+            ErrnoOr<Thread*> errnoOrThread = execve.exec(path, args, envs);
+            ret = errnoOrThread.errorOr(0);
+            errnoOrThread.with([&](Thread* newThread) {
+                verify(!!newThread, "execve failed");
+                currentThread_ = newThread;
+            });
         }
 
         if(kernel_.logSyscalls()) {
             auto argvstring = fmt::format("{}", fmt::join(args, ", "));
             auto envpstring = fmt::format("{}", fmt::join(envs, ", "));
             print("Sys::exec(pathname={}, argv={}, envp={}) = {}",
-                        path, argvstring, envpstring, 0);
+                        path, argvstring, envpstring, ret);
         }
-        return 0;
+        return ret;
     }
 
     int Sys::exit(int status) {
@@ -1554,7 +1557,7 @@ namespace kernel::gnulinux {
 
     u64 Sys::exit_group(int status) {
         if(kernel_.logSyscalls()) print("Sys::exit_group(status={})", status);
-        kernel_.scheduler().terminateGroup(currentThread_, status);
+        kernel_.scheduler().terminateGroup(currentProcess_, status);
         currentProcess_->notifyExit(status, {});
         return (u64)status;
     }

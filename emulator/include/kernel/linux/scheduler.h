@@ -4,6 +4,7 @@
 #include "kernel/linux/threadblocker.h"
 #include "kernel/timers.h"
 #include "x64/types.h"
+#include "scopeguard.h"
 #include "utils.h"
 #include <atomic>
 #include <condition_variable>
@@ -41,7 +42,7 @@ namespace kernel::gnulinux {
 
         void addThread(Thread* thread);
 
-        void terminateGroup(Thread* thread, int status);
+        void terminateGroup(const Process* process, int status);
         void terminate(Thread* thread, int status);
 
         void kill(int pid, int tid, int signal);
@@ -69,6 +70,15 @@ namespace kernel::gnulinux {
         PreciseTime kernelTime() const { return currentTime_; }
 
         void panic();
+
+        template<typename Func>
+        auto runInKernelScope(Func&& func) {
+            inKernel_ = true;
+            ScopeGuard guard([&]() {
+                inKernel_ = false;
+            });
+            return func();
+        }
 
     private:
 

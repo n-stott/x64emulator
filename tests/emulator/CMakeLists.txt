@@ -105,6 +105,7 @@ create_simple_test(fork)
 create_simple_test(fork_twice)
 create_simple_test(exec)
 create_simple_test(forkpipe)
+create_simple_test(failexec)
 
 add_executable(test_abort src/test_abort.cpp)
 target_compile_options(test_abort PUBLIC ${CC_OPTIONS})

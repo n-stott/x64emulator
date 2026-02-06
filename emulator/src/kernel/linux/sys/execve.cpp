@@ -36,17 +36,59 @@ namespace kernel::gnulinux {
         u64 platformStringAddress;
     };
 
-    struct InterpreterPath {
-        std::string path;
+    struct ObjectsToLoad {
+        std::unique_ptr<elf::Elf64> program;
+        std::string programPath;
+        std::unique_ptr<elf::Elf64> elfInterpreter;
+        std::string interpreterPath;
     };
 
-    static std::variant<u64, InterpreterPath> loadElf(x64::Mmu* mmu, Auxiliary* auxiliary, const std::string& filepath, bool mainProgram) {
-        auto elf = elf::ElfReader::tryCreate(filepath);
-        verify(!!elf, [&]() { fmt::print("Failed to load elf {}\n", filepath); });
-        verify(elf->archClass() == elf::Class::B64, "elf must be 64-bit");
-        std::unique_ptr<elf::Elf64> elf64;
-        elf64.reset(static_cast<elf::Elf64*>(elf.release()));
+    static ErrnoOr<ObjectsToLoad> gatherObjectsToLoad(const std::string& filepath) {
+        auto program = elf::ElfReader::tryCreate(filepath);
+        if(!program) {
+            return ErrnoOr<ObjectsToLoad>(-ENOENT);
+        }
+        verify(program->archClass() == elf::Class::B64, "elf must be 64-bit");
+        std::unique_ptr<elf::Elf64> program64;
+        program64.reset(static_cast<elf::Elf64*>(program.release()));
 
+        std::optional<std::string> interpreterPath;
+        program64->forAllProgramHeaders([&](const elf::ProgramHeader64& header) {
+            if(header.type() != elf::ProgramHeaderType::PT_INTERP) return;
+            const u8* data = program64->dataAtOffset(header.offset(), header.sizeInFile());
+            std::vector<char> interpreterPathData;
+            interpreterPathData.resize(header.sizeInFile()+1, 0x0);
+            if(header.sizeInFile() > 0)
+                memcpy(interpreterPathData.data(), data, header.sizeInFile());
+            interpreterPath = std::string(interpreterPathData.data());
+        });
+
+        if(interpreterPath) {
+            auto interpreter = elf::ElfReader::tryCreate(interpreterPath.value());
+            if(!interpreter) {
+                return ErrnoOr<ObjectsToLoad>(-ENOENT);
+            } else {
+                std::unique_ptr<elf::Elf64> interpreter64;
+                verify(interpreter->archClass() == elf::Class::B64, "elf must be 64-bit");
+                interpreter64.reset(static_cast<elf::Elf64*>(interpreter.release()));
+                return ErrnoOr<ObjectsToLoad>(ObjectsToLoad {
+                    std::move(program64),
+                    filepath,
+                    std::move(interpreter64),
+                    interpreterPath.value()
+                });
+            }
+        } else {
+            return ErrnoOr<ObjectsToLoad>(ObjectsToLoad {
+                std::move(program64),
+                filepath,
+                nullptr,
+                ""
+            });
+        }
+    }
+
+    static u64 loadElf(const elf::Elf64* elf64, x64::Mmu* mmu, Auxiliary* auxiliary, const std::string& filepath, bool mainProgram) {
         u64 elfOffset = [&]() -> u64 {
             verify(elf64->type() == elf::Type::ET_DYN || elf64->type() == elf::Type::ET_EXEC, "elf must be ET_DYN or ET_EXEC");
 
@@ -136,11 +178,7 @@ namespace kernel::gnulinux {
             interpreterPath = std::string(interpreterPathData.data());
         });
 
-        if(interpreterPath) {
-            return InterpreterPath{interpreterPath.value()};
-        } else {
-            return elfOffset + elf64->entrypoint();
-        }
+        return elfOffset + elf64->entrypoint();
     }
 
     static u64 setupMemory(x64::Mmu* mmu, Auxiliary* auxiliary) {
@@ -316,44 +354,46 @@ namespace kernel::gnulinux {
         return result;
     }
 
-    Thread* ExecVE::exec(const std::string& programFilePath,
+    ErrnoOr<Thread*> ExecVE::exec(const std::string& programFilePath,
                          const std::vector<std::string>& arguments,
                          const std::vector<std::string>& environmentVariables) {
         auto programPath = resolveProgramPath(programFilePath, environmentVariables);
-        if(!programPath) return nullptr;
+        if(!programPath) return ErrnoOr<Thread*>(-ENOENT);
 
-        Auxiliary aux;
+        auto errnoOrObjects = gatherObjectsToLoad(programPath.value());
 
-        auto entrypointOrInterpreterPath = loadElf(&mmu_, &aux, programPath.value(), true);
-        u64 entrypoint = std::visit([&](auto&& arg) -> u64
-        {
-            using T = std::decay_t<decltype(arg)>;
-            if constexpr (std::is_same_v<T, u64>) {
-                return arg;
-            } else {
-                auto interpreterEntrypoint = loadElf(&mmu_, nullptr, arg.path, false);
-                verify(std::holds_alternative<u64>(interpreterEntrypoint));
-                return std::get<u64>(interpreterEntrypoint);
+        auto errnoOrThread = errnoOrObjects.transform<Thread*>([&](const ObjectsToLoad& objects) -> ErrnoOr<Thread*> {
+            // If we land here, we are committed to exec
+
+            scheduler_.terminateGroup(&process_, 0);
+            process_.prepareExec();
+
+            Auxiliary aux;
+    
+            u64 entrypoint = loadElf(objects.program.get(), &mmu_, &aux, objects.programPath, true);
+            if(objects.elfInterpreter) {
+                entrypoint = loadElf(objects.elfInterpreter.get(), &mmu_, nullptr, objects.interpreterPath, false);
             }
-        }, entrypointOrInterpreterPath);
-
-        u64 stackTop = setupMemory(&mmu_, &aux);
-
-        Thread* mainThread = process_.addThread(processTable_);
-        Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
-        cpuState.regs.rip() = entrypoint;
-        cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
-        
-        pushProgramArguments(&mmu_, &cpuState.regs, programPath.value(), arguments, environmentVariables, aux);
-
-        scheduler_.addThread(mainThread);
-
-        // Setup procFS for this process
-        auto absolutePath = fs_.resolvePath(process_.cwd(), programPath.value());
-        verify(!!absolutePath, "Unable to resolve program path");
-        fs_.resetProcFS(Host::getpid(), *absolutePath);
-
-        return mainThread;
+    
+            u64 stackTop = setupMemory(&mmu_, &aux);
+    
+            Thread* mainThread = process_.addThread(processTable_);
+            Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
+            cpuState.regs.rip() = entrypoint;
+            cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
+            
+            pushProgramArguments(&mmu_, &cpuState.regs, programPath.value(), arguments, environmentVariables, aux);
+    
+            scheduler_.addThread(mainThread);
+    
+            // Setup procFS for this process
+            auto absolutePath = fs_.resolvePath(process_.cwd(), programPath.value());
+            verify(!!absolutePath, "Unable to resolve program path");
+            fs_.resetProcFS(Host::getpid(), *absolutePath);
+    
+            return ErrnoOr<Thread*>(mainThread);
+        });
+        return errnoOrThread;
     }
 
 }

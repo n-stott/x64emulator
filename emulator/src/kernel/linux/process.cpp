@@ -244,6 +244,7 @@ namespace kernel::gnulinux {
         {
             x64::Mmu mmu(addressSpace());
             mmu.clearAllRegions();
+            mmu.ensureNullPage();
         }
         deletedThreads_.insert(deletedThreads_.end(), std::make_move_iterator(threads_.begin()), std::make_move_iterator(threads_.end()));
         threads_.clear();

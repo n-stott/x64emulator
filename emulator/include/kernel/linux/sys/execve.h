@@ -1,6 +1,7 @@
 #ifndef EXECVE_H
 #define EXECVE_H
 
+#include "kernel/utils/erroror.h"
 #include <string>
 #include <vector>
 
@@ -21,7 +22,7 @@ namespace kernel::gnulinux {
     public:
         ExecVE(x64::Mmu&, ProcessTable&, Process&, Scheduler&, FS&);
 
-        Thread* exec(const std::string& programFilePath,
+        ErrnoOr<Thread*> exec(const std::string& programFilePath,
                      const std::vector<std::string>& arguments,
                      const std::vector<std::string>& environmentVariables);
     private:
