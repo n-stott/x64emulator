@@ -255,7 +255,11 @@ namespace kernel::gnulinux {
         symbolProvider_ = {};
         functionNameCache_ = {};
         symbolRetriever_ = SymbolRetriever(&disassemblyCache_, &symbolProvider_);
-        if(!!jit_) jit_ = x64::Jit::tryCreate();
+        if(!!jit_) {
+            bool jitChainingEnabled = jit_->jitChainingEnabled();
+            jit_ = x64::Jit::tryCreate();
+            jit_->setEnableJitChaining(jitChainingEnabled);
+        }
         children_ = {};
         exitedChildren_ = {};
     }
