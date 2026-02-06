@@ -18,7 +18,7 @@ namespace kernel::gnulinux {
         struct statx stx;
     };
 
-    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(const Path& path, bool create) {
+    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(const Path& path, bool create, Inode node) {
         std::string pathname = path.absolute();
         int fd = ::openat(AT_FDCWD, pathname.c_str(), O_RDONLY | O_CLOEXEC);
         
@@ -29,7 +29,7 @@ namespace kernel::gnulinux {
         if(fd < 0) {
             if(!create) return {};
             std::vector<u8> data;
-            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(path.last(), std::move(data)));
+            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(path.last(), std::move(data), node));
             return shadowFile;
         } else {
             // figure out size
@@ -57,19 +57,19 @@ namespace kernel::gnulinux {
             hostData->st = st;
             hostData->stx = stx;
 
-            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(path.last(), std::move(data)));
+            auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(path.last(), std::move(data), node));
             shadowFile->hostData_ = std::move(hostData);
             return shadowFile;
         }
     }
 
-    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(const std::string& name) {
+    std::unique_ptr<ShadowFile> ShadowFile::tryCreate(const std::string& name, Inode node) {
         std::vector<u8> data;
-        auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(name, std::move(data)));
+        auto shadowFile = std::unique_ptr<ShadowFile>(new ShadowFile(name, std::move(data), node));
         return shadowFile;
     }
 
-    ShadowFile::ShadowFile(std::string name, std::vector<u8> data) : RegularFile(std::move(name)), data_(std::move(data)) { }
+    ShadowFile::ShadowFile(std::string name, std::vector<u8> data, Inode node) : RegularFile(std::move(name)), data_(std::move(data)), node_(node) { }
 
     ShadowFile::~ShadowFile() = default;
 
@@ -114,7 +114,7 @@ namespace kernel::gnulinux {
         } else {
             struct stat st;
             st.st_dev = 0xcafe; // dummy value
-            st.st_ino = 0xbabe; // dummy value
+            st.st_ino = 0xbabe + node_.node; // dummy value
             st.st_mode = (u32)File::Type::IFREG
                     | (u32)File::Mode::IRWXU
                     | (u32)File::Mode::IRWXG

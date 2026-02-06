@@ -11,10 +11,14 @@ namespace kernel::gnulinux {
     // pimpl
     struct ShadowFileHostData;
 
+    struct Inode {
+        u64 node { 0 };
+    };
+
     class ShadowFile : public RegularFile {
     public:
-        static std::unique_ptr<ShadowFile> tryCreate(const Path& path, bool create);
-        static std::unique_ptr<ShadowFile> tryCreate(const std::string& name);
+        static std::unique_ptr<ShadowFile> tryCreate(const Path& path, bool create, Inode node);
+        static std::unique_ptr<ShadowFile> tryCreate(const std::string& name, Inode node);
         ~ShadowFile();
 
         bool isShadow() const override { return true; }
@@ -55,11 +59,12 @@ namespace kernel::gnulinux {
         }
 
     private:
-        ShadowFile(std::string name, std::vector<u8> data);
+        ShadowFile(std::string name, std::vector<u8> data, Inode node);
 
         std::unique_ptr<ShadowFileHostData> hostData_;
         std::vector<u8> data_;
         bool writable_ { false };
+        Inode node_;
     };
 
 }

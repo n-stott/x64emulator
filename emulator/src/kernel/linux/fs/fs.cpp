@@ -589,7 +589,7 @@ namespace kernel::gnulinux {
         } else {
             // open the file
             bool createIfNotFound = creationFlags.test(CreationFlags::CREAT);
-            auto shadowFile = ShadowFile::tryCreate(path, createIfNotFound);
+            auto shadowFile = ShadowFile::tryCreate(path, createIfNotFound, Inode{nbShadowFilesCreated_++});
             if(!!shadowFile) {
                 if(creationFlags.test(CreationFlags::TRUNC)) shadowFile->truncate(0);
                 shadowFile->setWritable(accessMode.test(AccessMode::WRITE));
@@ -668,7 +668,7 @@ namespace kernel::gnulinux {
 
     ErrnoOr<FileDescriptor> FS::memfd_create(const std::string& name, unsigned int flags) {
         verify(!Host::MemfdFlags::isOther(flags), "Allow (and ignore) cloexec and allow_sealing");
-        auto shadowFile = ShadowFile::tryCreate(name);
+        auto shadowFile = ShadowFile::tryCreate(name, Inode{nbShadowFilesCreated_++});
         if(!shadowFile) return ErrnoOr<FileDescriptor>{-ENOMEM};
         shadowFile->setDeleteAfterClose();
         BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };

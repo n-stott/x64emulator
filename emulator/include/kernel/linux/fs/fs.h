@@ -262,6 +262,7 @@ namespace kernel::gnulinux {
         ProcFS* procfs_ { nullptr };
         std::vector<std::unique_ptr<File>> orphanFiles_;
         std::vector<std::unique_ptr<Pipe>> pipes_;
+        u64 nbShadowFilesCreated_ { 0 };
     };
 
 }
