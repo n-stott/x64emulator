@@ -891,7 +891,7 @@ namespace kernel::gnulinux {
             fileRet = file->fcntl(cmd, arg);
         }
         if(!!emulatedRet) {
-            if(!!fileRet && emulatedRet != fileRet) {
+            if(!!fileRet && emulatedRet != fileRet && openFileDescription->file()->refCount() == 1) {
                 warn(fmt::format("Emulation of fcntl failed : emulated = {}  file = {}\n"
                                  "    Note: this may be due to O_LARGEFILE (32768)",
                     emulatedRet.value(), fileRet.value()));
