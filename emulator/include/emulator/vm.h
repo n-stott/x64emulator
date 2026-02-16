@@ -58,7 +58,6 @@ namespace emulator {
         void enterSyscall();
 
         void updateJitStats(const x64::CodeSegment&);
-        void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks, int statsLevel) const;
 
         x64::Cpu cpu_;
         x64::Mmu& mmu_;

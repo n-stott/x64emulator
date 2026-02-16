@@ -2,6 +2,8 @@
 #include "kernel/linux/processtable.h"
 #include "kernel/linux/fs/fs.h"
 #include "x64/cpu.h"
+#include "x64/mmu.h"
+#include "x64/compiler/compiler.h"
 #include "host/host.h"
 #include "fmt/format.h"
 
@@ -49,7 +51,17 @@ namespace kernel::gnulinux {
         jit_ = x64::Jit::tryCreate();
     }
 
-    Process::~Process() = default;
+    Process::~Process() {
+        jitStats_.dump(jitStatsLevel());
+        if(jitStatsLevel() > 0) {
+            std::vector<const x64::CodeSegment*> segments;
+            segments.reserve(codeSegments_.size());
+            codeSegments_.forEach([&](const x64::CodeSegment& seg) {
+                segments.push_back(&seg);
+            });
+            dumpJitTelemetry(segments);
+        }
+    }
 
     Thread* Process::addThread(ProcessTable& processTable) {
         int tid = threads_.empty() ? pid_ : processTable.allocatedTid();
@@ -114,13 +126,13 @@ namespace kernel::gnulinux {
 
         if(!protAfter.test(x64::PROT::EXEC)) {
             // if we become non-executable, purge the basic blocks
-            // if(jitStatsLevel() >= 2) {
-            //     std::vector<const x64::CodeSegment*> segments;
-            //     codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
-            //         segments.push_back(&seg);
-            //     });
-            //     dumpJitTelemetry(segments);
-            // }
+            if(jitStatsLevel() >= 2) {
+                std::vector<const x64::CodeSegment*> segments;
+                codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
+                    segments.push_back(&seg);
+                });
+                dumpJitTelemetry(segments);
+            }
             codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
                 codeSegmentsByAddress_.erase(seg.start());
                 seg.removeFromCaches();
@@ -135,13 +147,13 @@ namespace kernel::gnulinux {
     void Process::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
         if(!prot.test(x64::PROT::EXEC)) return;
 
-        // if(jitStatsLevel() >= 2) {
-        //     std::vector<const x64::CodeSegment*> segments;
-        //     codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
-        //         segments.push_back(&seg);
-        //     });
-        //     dumpJitTelemetry(segments);
-        // }
+        if(jitStatsLevel() >= 2) {
+            std::vector<const x64::CodeSegment*> segments;
+            codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
+                segments.push_back(&seg);
+            });
+            dumpJitTelemetry(segments);
+        }
         codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
             codeSegmentsByAddress_.erase(seg.start());
             seg.removeFromCaches();
@@ -262,6 +274,86 @@ namespace kernel::gnulinux {
         }
         children_ = {};
         exitedChildren_ = {};
+    }
+
+#define JIT_THRESHOLD 1024
+
+    void Process::dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) {
+        if(blocks.empty()) return;
+        std::vector<const x64::CodeSegment*> jittedBlocks;
+        std::vector<const x64::CodeSegment*> nonjittedBlocks;
+        size_t jitted = 0;
+        u64 emulatedInstructions = 0;
+        u64 jittedInstructions = 0;
+        u64 jitCandidateInstructions = 0;
+        for(const x64::CodeSegment* bb : blocks) {
+            if(bb->jitBasicBlock() != nullptr) {
+                jitted += 1;
+                jittedBlocks.push_back(bb);
+                jittedInstructions += bb->basicBlock().instructions().size() * bb->calls();
+            } else {
+                emulatedInstructions += bb->basicBlock().instructions().size() * bb->calls();
+                if(bb->calls() < JIT_THRESHOLD) continue;
+                nonjittedBlocks.push_back(bb);
+                jitCandidateInstructions += bb->basicBlock().instructions().size() * bb->calls();
+                
+            }
+        }
+        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({:.4f}% of all, {:.4f}% of candidates)\n",
+                jitted, nonjittedBlocks.size()+jitted,
+                blocks.size(),
+                jittedInstructions, emulatedInstructions+jittedInstructions,
+                100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
+                100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
+        const size_t topCount = 50;
+        const x64::Mmu mmu(addressSpace_);
+        if(jitStatsLevel() >= 5) {
+            std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
+                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
+            });
+            if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
+            for(const auto* bb : jittedBlocks) {
+                const auto* region = mmu.findAddress(bb->start());
+                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), !!region ? region->name() : "unknonwn region");
+                for(const auto& ins : bb->basicBlock().instructions()) {
+                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+                }
+                x64::Compiler compiler;
+                {
+                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 0, nullptr, nullptr, false);
+                    assert(!!ir);
+                    fmt::print("    unoptimized IR: {} instructions\n", ir->instructions.size());
+                    for(const auto& ins : ir->instructions) {
+                        fmt::print("      {}\n", ins.toString());
+                    }
+                }
+                {
+                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
+                    assert(!!ir);
+                    fmt::print("    optimized IR: {} instructions\n", ir->instructions.size());
+                    for(const auto& ins : ir->instructions) {
+                        fmt::print("      {}\n", ins.toString());
+                    }
+                }
+            }
+        }
+        if(jitStatsLevel() >= 4) {
+            std::sort(nonjittedBlocks.begin(), nonjittedBlocks.end(), [](const auto* a, const auto* b) {
+                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
+            });
+            if(nonjittedBlocks.size() >= topCount) nonjittedBlocks.resize(topCount);
+            for(auto* bb : nonjittedBlocks) {
+                const auto* region = mmu.findAddress(bb->start());
+                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
+                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), !!region ? region->name() : "unknown region");
+                for(const auto& ins : bb->basicBlock().instructions()) {
+                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
+                }
+                x64::Compiler compiler;
+                [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), 1, {}, {}, true);
+            }
+        }
     }
 
 }

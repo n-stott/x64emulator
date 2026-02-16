@@ -102,6 +102,8 @@ namespace kernel::gnulinux {
 
         void notifyChildCreated(Process* process);
         void notifyChildExited(Process* process, int status, std::optional<int> signal);
+
+        void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks);
         
         // Information
         int pid_;
