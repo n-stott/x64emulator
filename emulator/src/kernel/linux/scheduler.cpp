@@ -132,6 +132,7 @@ namespace kernel::gnulinux {
 
         x64::Mmu mmu(thread->process()->addressSpace());
         emulator::VM vm(mmu, thread->process()->jitStats());
+        Process::SymbolRetriever retriever(thread->process());
         while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, nullptr);
             vm.execute(thread);
@@ -155,6 +156,7 @@ namespace kernel::gnulinux {
 
         x64::Mmu mmu(thread->process()->addressSpace());
         emulator::VM vm(mmu, thread->process()->jitStats());
+        Process::SymbolRetriever retriever(thread->process());
         while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, &lock);
             vm.execute(thread);

@@ -92,6 +92,18 @@ namespace kernel::gnulinux {
         std::optional<ExitedChild> tryRetrieveExitedChild(int pid);
         std::optional<ExitedChild> tryRetrieveExitedChild();
 
+        class SymbolRetriever : public x64::DisassemblyCacheCallback {
+        public:
+            explicit SymbolRetriever(Process*);
+            ~SymbolRetriever();
+            void onNewDisassembly(const std::string& filename, u64 base) override;
+            
+        private:
+            SymbolRetriever(const SymbolRetriever&) = delete;
+            x64::DisassemblyCache* disassemblyCache_ { nullptr };
+            SymbolProvider* symbolProvider_ { nullptr };
+        };
+
     protected:
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
@@ -133,17 +145,6 @@ namespace kernel::gnulinux {
 
         SymbolProvider symbolProvider_;
         std::unordered_map<u64, std::string> functionNameCache_;
-
-        class SymbolRetriever : public x64::DisassemblyCacheCallback {
-        public:
-            SymbolRetriever(x64::DisassemblyCache* disassemblyCache, SymbolProvider* symbolProvider);
-            ~SymbolRetriever();
-            void onNewDisassembly(const std::string& filename, u64 base) override;
-
-        private:
-            x64::DisassemblyCache* disassemblyCache_ { nullptr };
-            SymbolProvider* symbolProvider_ { nullptr };
-        } symbolRetriever_;
 
         // Jit
         std::unique_ptr<x64::Jit> jit_;

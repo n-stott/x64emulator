@@ -92,6 +92,7 @@ namespace x64 {
         executableSectionsByEnd_.emplace(sectionPtr->end, sectionPtr);
 
         // Retrieve symbols from that section
+        assert(!callbacks_.empty());
         for(auto* callback : callbacks_) callback->onNewDisassembly(name_, regionBase);
 
         return InstructionPosition { sectionPtr, 0 };

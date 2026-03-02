@@ -46,8 +46,7 @@ namespace kernel::gnulinux {
             addressSpace_(std::move(addressSpace)),
             fs_(fs),
             fds_(fds),
-            currentWorkDirectory_(cwd),
-            symbolRetriever_(&disassemblyCache_, &symbolProvider_) {
+            currentWorkDirectory_(cwd) {
         jit_ = x64::Jit::tryCreate();
     }
 
@@ -194,9 +193,9 @@ namespace kernel::gnulinux {
         stream << '}';
     }
 
-    Process::SymbolRetriever::SymbolRetriever(x64::DisassemblyCache* disassemblyCache, SymbolProvider* symbolProvider) :
-            disassemblyCache_(disassemblyCache),
-            symbolProvider_(symbolProvider) {
+    Process::SymbolRetriever::SymbolRetriever(Process* process) :
+            disassemblyCache_(&process->disassemblyCache_),
+            symbolProvider_(&process->symbolProvider_) {
         disassemblyCache_->addCallback(this);
     }
 
@@ -266,7 +265,6 @@ namespace kernel::gnulinux {
         codeSegmentsByAddress_ = {};
         symbolProvider_ = {};
         functionNameCache_ = {};
-        symbolRetriever_ = SymbolRetriever(&disassemblyCache_, &symbolProvider_);
         if(!!jit_) {
             bool jitChainingEnabled = jit_->jitChainingEnabled();
             jit_ = x64::Jit::tryCreate();
