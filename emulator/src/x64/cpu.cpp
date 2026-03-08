@@ -6398,7 +6398,6 @@ namespace x64 {
     }
 
     void Cpu::execPcmpistriXMMXMMM128Imm(const X64Instruction& ins) {
-        verify(false, "Pcmpistri not implemented");
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& control = ins.op2<Imm>();

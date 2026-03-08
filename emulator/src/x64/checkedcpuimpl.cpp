@@ -42,7 +42,7 @@ namespace x64 {
         assert(a.parity() == b.parity());
     }
 
-    static void noComparison([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b) { }
+    [[maybe_unused]] static void noComparison([[maybe_unused]] const Flags& a, [[maybe_unused]] const Flags& b) { }
 
     static void noFpuComparison([[maybe_unused]] const X87Fpu& a, [[maybe_unused]] const X87Fpu& b) { }
 
@@ -1329,7 +1329,7 @@ namespace x64 {
     }
 
     u32 CheckedCpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
-        return checkCallWithFlags<u32>(&CpuImpl::pcmpistri, &NativeCpuImpl::pcmpistri, &noComparison, flags, dst, src, control);
+        return checkCallWithFlags<u32>(&CpuImpl::pcmpistri, &NativeCpuImpl::pcmpistri, &sameFlags, flags, dst, src, control);
     }
 
     u64 CheckedCpuImpl::packuswb64(u64 dst, u64 src) {

@@ -2984,8 +2984,41 @@ namespace x64 {
         return nativeRes;
     }
 
-    u32 NativeCpuImpl::pcmpistri([[maybe_unused]] u128 dst, [[maybe_unused]] u128 src, [[maybe_unused]] u8 control, [[maybe_unused]] Flags* flags) {
-        throw 1;
+
+    u32 NativeCpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
+#ifdef SSE42
+        __m128i mdst;
+        __m128i msrc;
+        ::memcpy(&mdst, &dst, sizeof(dst));
+        ::memcpy(&msrc, &src, sizeof(src));
+        u32 res = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_cmpistri, mdst, msrc);
+        }(control);
+
+        flags->carry = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_cmpistrc, mdst, msrc);
+        }(control);
+        flags->overflow = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_cmpistro, mdst, msrc);
+        }(control);
+        flags->sign = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_cmpistrs, mdst, msrc);
+        }(control);
+        flags->zero = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_2_WITH_IMM8(_mm_cmpistrz, mdst, msrc);
+        }(control);
+        flags->setParity(false);
+        
+        return res;
+#else
+        assert(!"pcmpistri not defined");
+        return 0; // dummy value
+#endif
     }
 
     u64 NativeCpuImpl::packuswb64(u64 dst, u64 src) {

@@ -2,6 +2,7 @@
 #ifdef MSVC_COMPILER
 #include "boost/int128.hpp"
 #endif
+#include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -2565,52 +2566,288 @@ namespace x64 {
         return dst;
     }
 
-    u32 CpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
-        enum DATA_FORMAT : u8 {
-            UNSIGNED_BYTE,
-            UNSIGNED_WORD,
-            SIGNED_BYTE,
-            SIGNED_WORD,
-        };
+    enum DATA_FORMAT : u8 {
+        UNSIGNED_BYTE,
+        UNSIGNED_WORD,
+        SIGNED_BYTE,
+        SIGNED_WORD,
+    };
 
-        enum AGGREGATION_OPERATION : u8 {
-            EQUAL_ANY,
-            RANGES,
-            EQUAL_EACH,
-            EQUAL_ORDERED,
-        };
+    enum AGGREGATION_OPERATION : u8 {
+        EQUAL_ANY,
+        RANGES,
+        EQUAL_EACH,
+        EQUAL_ORDERED,
+    };
 
-        enum POLARITY : u8 {
-            POSITIVE_POLARITY,
-            NEGATIVE_POLARITY,
-            MASKED_POSITIVE,
-            MASKED_NEGATIVE,
-        };
+    enum POLARITY : u8 {
+        POSITIVE_POLARITY,
+        NEGATIVE_POLARITY,
+        MASKED_POSITIVE,
+        MASKED_NEGATIVE,
+    };
 
-        enum OUTPUT_SELECTION : u8 {
-            LEAST_SIGNIFICANT_INDEX,
-            MOST_SIGNIFICANT_INDEX,
-        };
+    enum OUTPUT_SELECTION : u8 {
+        LEAST_SIGNIFICANT_INDEX,
+        MOST_SIGNIFICANT_INDEX,
+    };
 
+    template<typename UI8>
+    static u32 pcmpistri8(u128 dst, u128 src, u8 control, Flags* flags) {
         DATA_FORMAT format = (DATA_FORMAT)(control & 0x3);
         AGGREGATION_OPERATION operation = (AGGREGATION_OPERATION)((control >> 2) & 0x3);
         POLARITY polarity = (POLARITY)((control >> 4) & 0x3);
         OUTPUT_SELECTION output = (OUTPUT_SELECTION)((control >> 6) & 0x1);
+        if(format == UNSIGNED_BYTE) assert((std::is_same_v<UI8, u8>));
+        if(format == SIGNED_BYTE) assert((std::is_same_v<UI8, i8>));
+        u32 intres1 = 0;
+        // format
+        std::array<UI8, 16> DST8;
+        std::array<UI8, 16> SRC8;
+        ::memcpy(&DST8, &dst, sizeof(dst));
+        ::memcpy(&SRC8, &src, sizeof(src));
+        u8 invaliddst = (u8)std::distance(DST8.begin(), std::find(DST8.begin(), DST8.end(), 0));
+        u8 invalidsrc = (u8)std::distance(SRC8.begin(), std::find(SRC8.begin(), SRC8.end(), 0));
 
-        assert(format == DATA_FORMAT::SIGNED_BYTE);
-        assert(operation == AGGREGATION_OPERATION::EQUAL_EACH);
-        assert(polarity == POLARITY::MASKED_NEGATIVE);
-        assert(output == OUTPUT_SELECTION::LEAST_SIGNIFICANT_INDEX);
+        // operation
+        if(operation == EQUAL_EACH) {
+            for(int i = 0; i < 16; ++i) {
+                UI8 l = DST8[i];
+                UI8 r = SRC8[i];
+                auto overrideIfInvalid = [&](bool res) -> bool {
+                    if(i >= invaliddst && i >= invalidsrc) return true;
+                    if(i >= invaliddst) return false;
+                    if(i >= invalidsrc) return false;
+                    return res;
+                };
+                intres1 |= ((u32)overrideIfInvalid(l == r) << i);
+            }
+        } else if(operation == EQUAL_ANY) {
+            for(int i = 0; i < 16; ++i) {
+                UI8 li = DST8[i];
+                for(int j = 0; j < 16; ++j) {
+                    UI8 rj = SRC8[j];
+                    auto overrideIfInvalid = [&](bool res) -> bool {
+                        if(i >= invaliddst || j >= invalidsrc) return false;
+                        return res;
+                    };
+                    intres1 |= ((u32)overrideIfInvalid(li == rj) << j);
+                }
+            }
+        } else if(operation == RANGES) {
+            for(int j = 0; j < 16; ++j) {
+                UI8 rj = SRC8[j];
+                for(int i = 0; i < 16; i += 2) {
+                    UI8 li = DST8[i];
+                    UI8 lip = DST8[i+1];
+                    auto overrideIfInvalid = [&](bool res) -> bool {
+                        if(i >= invaliddst || j >= invalidsrc) return false;
+                        return res;
+                    };
+                    auto overrideIfInvalidp = [&](bool res) -> bool {
+                        if(i+1 >= invaliddst || j >= invalidsrc) return false;
+                        return res;
+                    };
+                    intres1 |= ((u32)overrideIfInvalid(rj >= li) << j) & ((u32)overrideIfInvalidp(rj <= lip) << j);
+                }
+            }
+        } else if(operation == EQUAL_ORDERED) {
+            intres1 = 0xFFFF;
+            for(int j = 0; j < 16; ++j) {
+                u32 maskj = ~(1 << j);
+                for(int i = 0, k = j; i < 16-j && k < 16; ++i, ++k) {
+                    UI8 li = DST8[i];
+                    UI8 rk = SRC8[k];
+                    auto overrideIfInvalid = [&](bool res) -> bool {
+                        if(i >= invaliddst) return true;
+                        if(k >= invalidsrc) return false;
+                        return res;
+                    };
+                    intres1 &= (maskj | (overrideIfInvalid(li == rk) << j));
+                }
+            }
+        } else {
+            assert(!"invalid operation");
+            __builtin_unreachable();
+        }
+        // polarity
+        u32 intres2 = 0;
+        if(polarity == POSITIVE_POLARITY) {
+            intres2 = intres1;
+        } else if(polarity == NEGATIVE_POLARITY) {
+            intres2 = 0xFFFF ^ intres1;
+        } else if(polarity == MASKED_POSITIVE) {
+            intres2 = intres1;
+        } else if(polarity == MASKED_NEGATIVE) {
+            for(int i = 0; i < 16; ++i) {
+                intres2 |= ((i >= invalidsrc) ? intres1 : ~intres1) & (1 << i);
+            }
+        } else {
+            assert(!"not implemented");
+            __builtin_unreachable();
+        }
+        // output
+        u32 out = 0;
+        if(output == LEAST_SIGNIFICANT_INDEX) {
+            while(out < 16 && ((intres2 >> out) & 1) == 0) {
+                ++out;
+            }
+        } else if(output == MOST_SIGNIFICANT_INDEX) {
+            out = 16;
+            if(intres2 != 0) {
+                while(out > 0 && ((intres2 >> out) & 1) == 0) {
+                    --out;
+                }
+            }
+        } else {
+            assert(!"not implemented");
+            __builtin_unreachable();
+        }
+        assert(format == SIGNED_BYTE || format == UNSIGNED_BYTE);
+        flags->carry = (intres2 != 0);
+        flags->overflow = (intres2 & 1);
+        flags->sign = std::any_of(DST8.begin(), DST8.end(), [](UI8 val) { return val == 0; });
+        flags->zero = std::any_of(SRC8.begin(), SRC8.end(), [](UI8 val) { return val == 0; });
+        flags->setParity(false);
 
-        (void)dst;
-        (void)src;
-        (void)control;
-        (void)flags;
-        (void)format;
-        (void)operation;
-        (void)polarity;
-        (void)output;
-        return 0;
+        return out;
+    }
+    
+    template<typename UI16>
+    static u32 pcmpistri16(u128 dst, u128 src, u8 control, Flags* flags) {
+        DATA_FORMAT format = (DATA_FORMAT)(control & 0x3);
+        AGGREGATION_OPERATION operation = (AGGREGATION_OPERATION)((control >> 2) & 0x3);
+        POLARITY polarity = (POLARITY)((control >> 4) & 0x3);
+        OUTPUT_SELECTION output = (OUTPUT_SELECTION)((control >> 6) & 0x1);
+        if(format == UNSIGNED_WORD) assert((std::is_same_v<UI16, u16>));
+        if(format == SIGNED_WORD) assert((std::is_same_v<UI16, i16>));
+        u32 intres1 = 0;
+        // format
+        std::array<UI16, 8> DST16;
+        std::array<UI16, 8> SRC16;
+        ::memcpy(&DST16, &dst, sizeof(dst));
+        ::memcpy(&SRC16, &src, sizeof(src));
+        u8 invaliddst = (u8)std::distance(DST16.begin(), std::find(DST16.begin(), DST16.end(), 0));
+        u8 invalidsrc = (u8)std::distance(SRC16.begin(), std::find(SRC16.begin(), SRC16.end(), 0));
+
+        // operation
+        if(operation == EQUAL_EACH) {
+            for(int i = 0; i < 8; ++i) {
+                UI16 l = DST16[i];
+                UI16 r = SRC16[i];
+                auto overrideIfInvalid = [&](bool res) -> bool {
+                    if(i >= invaliddst && i >= invalidsrc) return true;
+                    if(i >= invaliddst) return false;
+                    if(i >= invalidsrc) return false;
+                    return res;
+                };
+                intres1 |= ((u32)overrideIfInvalid(l == r) << i);
+            }
+        } else if(operation == EQUAL_ANY) {
+            for(int i = 0; i < 8; ++i) {
+                UI16 li = DST16[i];
+                for(int j = 0; j < 8; ++j) {
+                    UI16 rj = SRC16[j];
+                    auto overrideIfInvalid = [&](bool res) -> bool {
+                        if(i >= invaliddst || j >= invalidsrc) return false;
+                        return res;
+                    };
+                    intres1 |= ((u32)overrideIfInvalid(li == rj) << j);
+                }
+            }
+        } else if(operation == RANGES) {
+            for(int j = 0; j < 8; ++j) {
+                UI16 rj = SRC16[j];
+                for(int i = 0; i < 8; i += 2) {
+                    UI16 li = DST16[i];
+                    UI16 lip = DST16[i+1];
+                    auto overrideIfInvalid = [&](bool res) -> bool {
+                        if(i >= invaliddst || j >= invalidsrc) return false;
+                        return res;
+                    };
+                    auto overrideIfInvalidp = [&](bool res) -> bool {
+                        if(i+1 >= invaliddst || j >= invalidsrc) return false;
+                        return res;
+                    };
+                    intres1 |= ((u32)overrideIfInvalid(rj >= li) << j) & ((u32)overrideIfInvalidp(rj <= lip) << j);
+                }
+            }
+        } else if(operation == EQUAL_ORDERED) {
+            intres1 = 0xFF;
+            for(int j = 0; j < 8; ++j) {
+                u32 maskj = ~(1 << j);
+                for(int i = 0, k = j; i < 8-j && k < 8; ++i, ++k) {
+                    UI16 li = DST16[i];
+                    UI16 rk = SRC16[k];
+                    auto overrideIfInvalid = [&](bool res) -> bool {
+                        if(i >= invaliddst) return true;
+                        if(k >= invalidsrc) return false;
+                        return res;
+                    };
+                    intres1 &= (maskj | (overrideIfInvalid(li == rk) << j));
+                }
+            }
+        } else {
+            assert(!"invalid operation");
+            __builtin_unreachable();
+        }
+        // polarity
+        u32 intres2 = 0;
+        if(polarity == POSITIVE_POLARITY) {
+            intres2 = intres1;
+        } else if(polarity == NEGATIVE_POLARITY) {
+            intres2 = 0xFF ^ intres1;
+        } else if(polarity == MASKED_POSITIVE) {
+            intres2 = intres1;
+        } else if(polarity == MASKED_NEGATIVE) {
+            for(int i = 0; i < 8; ++i) {
+                intres2 |= ((i >= invalidsrc) ? intres1 : ~intres1) & (1 << i);
+            }
+        } else {
+            assert(!"not implemented");
+            __builtin_unreachable();
+        }
+        // output
+        u32 out = 0;
+        if(output == LEAST_SIGNIFICANT_INDEX) {
+            while(out < 8 && ((intres2 >> out) & 1) == 0) {
+                ++out;
+            }
+        } else if(output == MOST_SIGNIFICANT_INDEX) {
+            out = 8;
+            if(intres2 != 0) {
+                while(out > 0 && ((intres2 >> out) & 1) == 0) {
+                    --out;
+                }
+            }
+        } else {
+            assert(!"not implemented");
+            __builtin_unreachable();
+        }
+        flags->carry = (intres2 != 0);
+        flags->overflow = (intres2 & 1);
+        assert(format == SIGNED_WORD || format == UNSIGNED_WORD);
+        flags->sign = std::any_of(DST16.begin(), DST16.end(), [](UI16 val) { return val == 0; });
+        flags->zero = std::any_of(SRC16.begin(), SRC16.end(), [](UI16 val) { return val == 0; });
+        flags->setParity(false);
+
+        return out;
+    }
+
+    u32 CpuImpl::pcmpistri(u128 dst, u128 src, u8 control, Flags* flags) {
+        DATA_FORMAT format = (DATA_FORMAT)(control & 0x3);
+        if(format == SIGNED_BYTE) {
+            return pcmpistri8<i8>(dst, src, control, flags);
+        } else if(format == UNSIGNED_BYTE) {
+            return pcmpistri8<u8>(dst, src, control, flags);
+        } else if(format == SIGNED_WORD) {
+            return pcmpistri16<i16>(dst, src, control, flags);
+        } else if(format == UNSIGNED_WORD) {
+            return pcmpistri16<u16>(dst, src, control, flags);
+        } else {
+            assert(!"invalid pcmpistri format");
+            return 0;
+        }
     }
 
     template<typename DST_T, typename SRC_T>

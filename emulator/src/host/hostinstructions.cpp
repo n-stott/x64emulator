@@ -168,7 +168,9 @@ namespace host {
 #ifndef SSE41
                            | 1 << 19 // SSE4.1
 #endif
+#ifndef SSE42
                            | 1 << 20 // SSE4.2
+#endif
                            | 1 << 25 // aes
                            | 1 << 26 // xsave
                            | 1 << 27 // xsave by os
