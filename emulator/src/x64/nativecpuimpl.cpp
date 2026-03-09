@@ -4105,6 +4105,50 @@ namespace x64 {
 #endif
     }
 
+    u32 NativeCpuImpl::crc32_8(u32 dst, u8 src) {
+#ifdef SSE42
+        return _mm_crc32_u8(dst, src);
+#else
+        assert(!"crc32 not defined");
+        (void)dst;
+        (void)src;
+        return 0; // dummy value
+#endif
+    }
+
+    u32 NativeCpuImpl::crc32_16(u32 dst, u16 src) {
+#ifdef SSE42
+        return _mm_crc32_u16(dst, src);
+#else
+        assert(!"crc32 not defined");
+        (void)dst;
+        (void)src;
+        return 0; // dummy value
+#endif
+    }
+
+    u32 NativeCpuImpl::crc32_32(u32 dst, u32 src) {
+#ifdef SSE42
+        return _mm_crc32_u32(dst, src);
+#else
+        assert(!"crc32 not defined");
+        (void)dst;
+        (void)src;
+        return 0; // dummy value
+#endif
+    }
+
+    u64 NativeCpuImpl::crc32_64(u64 dst, u64 src) {
+#ifdef SSE42
+        return _mm_crc32_u64(dst, src);
+#else
+        assert(!"crc32 not defined");
+        (void)dst;
+        (void)src;
+        return 0; // dummy value
+#endif
+    }
+
 }
 
 #endif

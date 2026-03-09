@@ -721,7 +721,6 @@ namespace x64 {
             case Insn::PSRLQ_XMM_XMMM128: return toString<XMM, XMMM128>("psrlq");
             case Insn::PSLLDQ_XMM_IMM: return toString<XMM, Imm>("pslldq");
             case Insn::PSRLDQ_XMM_IMM: return toString<XMM, Imm>("psrldq");
-            case Insn::PCMPISTRI_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pcmpistri");
             case Insn::PACKUSWB_MMX_MMXM64: return toString<MMX, MMXM64>("packuswb");
             case Insn::PACKSSWB_MMX_MMXM64: return toString<MMX, MMXM64>("packsswb");
             case Insn::PACKUSWB_XMM_XMMM128: return toString<XMM, XMMM128>("packuswb");
@@ -806,6 +805,11 @@ namespace x64 {
             case Insn::BLENDVPD_XMM_XMMM128: return toString<XMM, XMMM128>("blendvpd");
             case Insn::PBLENDVB_XMM_XMMM128: return toString<XMM, XMMM128>("pblendvb");
             case Insn::PBLENDW_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pblendw");
+            case Insn::PCMPISTRI_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pcmpistri");
+            case Insn::CRC32_R32_RM8: return toString<R32, RM8>("crc32");
+            case Insn::CRC32_R32_RM16: return toString<R32, RM16>("crc32");
+            case Insn::CRC32_R32_RM32: return toString<R32, RM32>("crc32");
+            case Insn::CRC32_R64_RM64: return toString<R64, RM64>("crc32");
             case Insn::RDTSC: return toString("rdtsc");
             case Insn::CPUID: return toString("cpuid");
             case Insn::XGETBV: return toString("xgetbv");

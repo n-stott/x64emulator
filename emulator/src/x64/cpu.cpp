@@ -890,7 +890,6 @@ namespace x64 {
     DEFINE_STANDALONE(PSRLQ_XMM_XMMM128, execPsrlqXMMXMMM128)
     DEFINE_STANDALONE(PSLLDQ_XMM_IMM, execPslldqXMMImm)
     DEFINE_STANDALONE(PSRLDQ_XMM_IMM, execPsrldqXMMImm)
-    DEFINE_STANDALONE(PCMPISTRI_XMM_XMMM128_IMM, execPcmpistriXMMXMMM128Imm)
     DEFINE_STANDALONE(PACKUSWB_MMX_MMXM64, execPackuswbMMXMMXM64)
     DEFINE_STANDALONE(PACKSSWB_MMX_MMXM64, execPacksswbMMXMMXM64)
     DEFINE_STANDALONE(PACKSSDW_MMX_MMXM64, execPackssdwMMXMMXM64)
@@ -975,6 +974,11 @@ namespace x64 {
     DEFINE_STANDALONE(BLENDVPD_XMM_XMMM128, execBlendvpdXMMXMMM128)
     DEFINE_STANDALONE(PBLENDVB_XMM_XMMM128, execPblendvbXMMXMMM128)
     DEFINE_STANDALONE(PBLENDW_XMM_XMMM128_IMM, execPblendwXMMM128Imm)
+    DEFINE_STANDALONE(PCMPISTRI_XMM_XMMM128_IMM, execPcmpistriXMMXMMM128Imm)
+    DEFINE_STANDALONE(CRC32_R32_RM8, execCrc32R32RM8)
+    DEFINE_STANDALONE(CRC32_R32_RM16, execCrc32R32RM16)
+    DEFINE_STANDALONE(CRC32_R32_RM32, execCrc32R32RM32)
+    DEFINE_STANDALONE(CRC32_R64_RM64, execCrc32R64RM64)
     DEFINE_STANDALONE(RDTSC, execRdtsc)
     DEFINE_STANDALONE(CPUID, execCpuid)
     DEFINE_STANDALONE(XGETBV, execXgetbv)
@@ -1678,7 +1682,6 @@ namespace x64 {
         STANDALONE_NAME(PSRLQ_XMM_XMMM128),
         STANDALONE_NAME(PSLLDQ_XMM_IMM),
         STANDALONE_NAME(PSRLDQ_XMM_IMM),
-        STANDALONE_NAME(PCMPISTRI_XMM_XMMM128_IMM),
         STANDALONE_NAME(PACKUSWB_MMX_MMXM64),
         STANDALONE_NAME(PACKSSWB_MMX_MMXM64),
         STANDALONE_NAME(PACKSSDW_MMX_MMXM64),
@@ -1763,6 +1766,11 @@ namespace x64 {
         STANDALONE_NAME(BLENDVPD_XMM_XMMM128),
         STANDALONE_NAME(PBLENDVB_XMM_XMMM128),
         STANDALONE_NAME(PBLENDW_XMM_XMMM128_IMM),
+        STANDALONE_NAME(PCMPISTRI_XMM_XMMM128_IMM),
+        STANDALONE_NAME(CRC32_R32_RM8),
+        STANDALONE_NAME(CRC32_R32_RM16),
+        STANDALONE_NAME(CRC32_R32_RM32),
+        STANDALONE_NAME(CRC32_R64_RM64),
         STANDALONE_NAME(RDTSC),
         STANDALONE_NAME(CPUID),
         STANDALONE_NAME(XGETBV),
@@ -6925,6 +6933,30 @@ namespace x64 {
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pblendw(get(dst), get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execCrc32R32RM8(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RM8>();
+        set(dst, Impl::crc32_8(get(dst), get(src)));
+    }
+
+    void Cpu::execCrc32R32RM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RM16>();
+        set(dst, Impl::crc32_16(get(dst), get(src)));
+    }
+
+    void Cpu::execCrc32R32RM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RM32>();
+        set(dst, Impl::crc32_32(get(dst), get(src)));
+    }
+
+    void Cpu::execCrc32R64RM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RM64>();
+        set(dst, Impl::crc32_64(get(dst), get(src)));
     }
 
     void Cpu::execSyscall(const X64Instruction&) {

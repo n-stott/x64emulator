@@ -702,7 +702,6 @@ namespace x64 {
         PSRLQ_XMM_XMMM128,
         PSLLDQ_XMM_IMM,
         PSRLDQ_XMM_IMM,
-        PCMPISTRI_XMM_XMMM128_IMM,
         PACKUSWB_MMX_MMXM64,
         PACKSSWB_MMX_MMXM64,
         PACKSSDW_MMX_MMXM64,
@@ -796,6 +795,13 @@ namespace x64 {
         BLENDVPD_XMM_XMMM128,
         PBLENDVB_XMM_XMMM128,
         PBLENDW_XMM_XMMM128_IMM,
+
+        // SSE4.2
+        PCMPISTRI_XMM_XMMM128_IMM,
+        CRC32_R32_RM8,
+        CRC32_R32_RM16,
+        CRC32_R32_RM32,
+        CRC32_R64_RM64,
 
         // MISC
         RDTSC,

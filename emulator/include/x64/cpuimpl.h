@@ -390,8 +390,6 @@ namespace x64 {
 
         [[nodiscard]] static u128 pslldq(u128 dst, u8 src);
         [[nodiscard]] static u128 psrldq(u128 dst, u8 src);
-        
-        [[nodiscard]] static u32 pcmpistri(u128 dst, u128 src, u8 control, Flags* flags);
 
         [[nodiscard]] static u64 packuswb64(u64 dst, u64 src);
         [[nodiscard]] static u64 packsswb64(u64 dst, u64 src);
@@ -482,6 +480,12 @@ namespace x64 {
         [[nodiscard]] static u128 blendvpd(u128 dst, u128 src, u128 mask);
         [[nodiscard]] static u128 pblendvb(u128 dst, u128 src, u128 mask);
         [[nodiscard]] static u128 pblendw(u128 dst, u128 src, u8 mask);
+
+        [[nodiscard]] static u32 pcmpistri(u128 dst, u128 src, u8 control, Flags* flags);
+        [[nodiscard]] static u32 crc32_8(u32 dst, u8 src);
+        [[nodiscard]] static u32 crc32_16(u32 dst, u16 src);
+        [[nodiscard]] static u32 crc32_32(u32 dst, u32 src);
+        [[nodiscard]] static u64 crc32_64(u64 dst, u64 src);
 
         [[nodiscard]] static f80 fadd(f80 dst, f80 src, X87Fpu* fpu);
         [[nodiscard]] static f80 fsub(f80 dst, f80 src, X87Fpu* fpu);

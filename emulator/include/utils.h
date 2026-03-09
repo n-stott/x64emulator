@@ -1,6 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <cassert>
 #include <cstdint>
 #include <cstring>
 
@@ -30,6 +31,30 @@ inline bool operator==(u128 a, u128 b) {
 
 inline bool operator!=(u128 a, u128 b) {
     return !(a == b);
+}
+
+inline u128 operator<<(u128 a, int shift) {
+    if(shift >= 128) {
+        return u128 { 0, 0 };
+    } else if(shift >= 64) {
+        return u128 { 0, a.lo << (shift-64) };
+    } else {
+        u64 newlo = a.lo << shift;
+        u64 newhi = (a.hi << shift) | (a.lo >> (64-shift));
+        return u128 { newlo, newhi };
+    }
+}
+
+inline u128 operator&(u128 a, u128 b) {
+    return u128 { a.lo & b.lo, a.hi & b.hi };
+}
+
+inline u128 operator|(u128 a, u128 b) {
+    return u128 { a.lo | b.lo, a.hi | b.hi };
+}
+
+inline u128 operator^(u128 a, u128 b) {
+    return u128 { a.lo ^ b.lo, a.hi ^ b.hi };
 }
 
 using f32 = float;

@@ -1042,8 +1042,6 @@ namespace x64 {
 
         void execPslldqXMMImm(const X64Instruction&);
         void execPsrldqXMMImm(const X64Instruction&);
-        
-        void execPcmpistriXMMXMMM128Imm(const X64Instruction&);
 
         void execPackuswbMMXMMXM64(const X64Instruction&);
         void execPacksswbMMXMMXM64(const X64Instruction&);
@@ -1142,6 +1140,12 @@ namespace x64 {
         void execBlendvpdXMMXMMM128(const X64Instruction&);
         void execPblendvbXMMXMMM128(const X64Instruction&);
         void execPblendwXMMM128Imm(const X64Instruction&);
+        
+        void execPcmpistriXMMXMMM128Imm(const X64Instruction&);
+        void execCrc32R32RM8(const X64Instruction&);
+        void execCrc32R32RM16(const X64Instruction&);
+        void execCrc32R32RM32(const X64Instruction&);
+        void execCrc32R64RM64(const X64Instruction&);
 
         void execRdtsc(const X64Instruction&);
 

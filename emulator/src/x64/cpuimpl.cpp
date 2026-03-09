@@ -3971,5 +3971,74 @@ namespace x64 {
         return dst;
     }
 
+    u32 CpuImpl::crc32_8(u32 dst, u8 src) {
+        static constexpr u64 POLY = 0x82F63B78;
+        for(int i = 0; i < 1; ++i) {
+            u32 byte = src & 0xFF;
+            src >>= 8;
+            dst ^= byte;
+            for(int j = 0; j < 8; ++j) {
+                if(dst & 1) {
+                    dst = (dst >> 1) ^ POLY;
+                } else {
+                   dst >>= 1;
+                }
+            }
+        }
+        return dst & 0xFFFFFFFF;
+    }
+
+    u32 CpuImpl::crc32_16(u32 dst, u16 src) {
+        static constexpr u64 POLY = 0x82F63B78;
+        for(int i = 0; i < 2; ++i) {
+            u32 byte = src & 0xFF;
+            src >>= 8;
+            dst ^= byte;
+            for(int j = 0; j < 8; ++j) {
+                if(dst & 1) {
+                    dst = (dst >> 1) ^ POLY;
+                } else {
+                   dst >>= 1;
+                }
+            }
+        }
+        return dst & 0xFFFFFFFF;
+    }
+
+    u32 CpuImpl::crc32_32(u32 dst, u32 src) {
+        static constexpr u64 POLY = 0x82F63B78;
+        for(int i = 0; i < 4; ++i) {
+            u32 byte = src & 0xFF;
+            src >>= 8;
+            dst ^= byte;
+            for(int j = 0; j < 8; ++j) {
+                if(dst & 1) {
+                    dst = (dst >> 1) ^ POLY;
+                } else {
+                   dst >>= 1;
+                }
+            }
+        }
+        return dst & 0xFFFFFFFF;
+    }
+
+    u64 CpuImpl::crc32_64(u64 dst, u64 src) {
+        static constexpr u64 POLY = 0x82F63B78;
+        dst = (u32)dst;
+        for(int i = 0; i < 8; ++i) {
+            u32 byte = src & 0xFF;
+            src >>= 8;
+            dst ^= byte;
+            for(int j = 0; j < 8; ++j) {
+                if(dst & 1) {
+                    dst = (dst >> 1) ^ POLY;
+                } else {
+                   dst >>= 1;
+                }
+            }
+        }
+        return dst & 0xFFFFFFFF;
+    }
+
 
 }

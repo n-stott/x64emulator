@@ -1640,4 +1640,20 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::roundpd, &NativeCpuImpl::roundpd, src, imm, roundingMode);
     }
 
+    u32 CheckedCpuImpl::crc32_8(u32 dst, u8 src) {
+        return checkCall<u32>(&CpuImpl::crc32_8, &NativeCpuImpl::crc32_8, dst, src);
+    }
+
+    u32 CheckedCpuImpl::crc32_16(u32 dst, u16 src) {
+        return checkCall<u32>(&CpuImpl::crc32_16, &NativeCpuImpl::crc32_16, dst, src);
+    }
+
+    u32 CheckedCpuImpl::crc32_32(u32 dst, u32 src) {
+        return checkCall<u32>(&CpuImpl::crc32_32, &NativeCpuImpl::crc32_32, dst, src);
+    }
+
+    u64 CheckedCpuImpl::crc32_64(u64 dst, u64 src) {
+        return checkCall<u64>(&CpuImpl::crc32_64, &NativeCpuImpl::crc32_64, dst, src);
+    }
+
 }

@@ -4730,6 +4730,23 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeCrc32(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rm8src = asRM8(src);
+        auto rm16src = asRM16(src);
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        if(r32dst && rm8src) return X64Instruction::make<Insn::CRC32_R32_RM8>(insn.runtime_address, insn.info.length, r32dst.value(), rm8src.value());
+        if(r32dst && rm16src) return X64Instruction::make<Insn::CRC32_R32_RM16>(insn.runtime_address, insn.info.length, r32dst.value(), rm16src.value());
+        if(r32dst && rm32src) return X64Instruction::make<Insn::CRC32_R32_RM32>(insn.runtime_address, insn.info.length, r32dst.value(), rm32src.value());
+        if(r64dst && rm64src) return X64Instruction::make<Insn::CRC32_R64_RM64>(insn.runtime_address, insn.info.length, r64dst.value(), rm64src.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makeRdtsc(const ZydisDisassembledInstruction& insn) {
         return X64Instruction::make<Insn::RDTSC>(insn.runtime_address, insn.info.length);
     }
@@ -5121,7 +5138,6 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PSRLQ: return makePsrlq(insn);
             case ZYDIS_MNEMONIC_PSLLDQ: return makePslldq(insn);
             case ZYDIS_MNEMONIC_PSRLDQ: return makePsrldq(insn);
-            case ZYDIS_MNEMONIC_PCMPISTRI: return makePcmpistri(insn);
             case ZYDIS_MNEMONIC_PACKUSWB: return makePackuswb(insn);
             case ZYDIS_MNEMONIC_PACKUSDW: return makePackusdw(insn);
             case ZYDIS_MNEMONIC_PACKSSWB: return makePacksswb(insn);
@@ -5187,6 +5203,10 @@ namespace x64 {
             case ZYDIS_MNEMONIC_BLENDVPD: return makeBlendvpd(insn);
             case ZYDIS_MNEMONIC_PBLENDVB: return makePblendvb(insn);
             case ZYDIS_MNEMONIC_PBLENDW: return makePblendw(insn);
+
+            // SSE4.1
+            case ZYDIS_MNEMONIC_PCMPISTRI: return makePcmpistri(insn);
+            case ZYDIS_MNEMONIC_CRC32: return makeCrc32(insn);
 
             case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);
             case ZYDIS_MNEMONIC_CPUID: return makeCpuid(insn);
