@@ -215,6 +215,14 @@ namespace kernel::gnulinux {
 
         static CloneFlags fromCloneFlags(unsigned long flags);
 
+        struct WaitOptions {
+            bool nohang;
+            bool untraced;
+            bool continued;
+        };
+
+        static WaitOptions fromWaitOptions(int options);
+
         struct Ioctl {
             static bool isFIOCLEX(unsigned long request);
             static bool isFIONCLEX(unsigned long request);

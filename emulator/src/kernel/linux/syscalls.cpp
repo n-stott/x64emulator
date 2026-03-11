@@ -1132,17 +1132,23 @@ namespace kernel::gnulinux {
     }
 
     int Sys::wait4(pid_t pid, x64::Ptr32 wstatus, int options, x64::Ptr rusage) {
-        verify(options == 0, "non-zero options unsupported in wait4");
+        Host::WaitOptions opt = Host::fromWaitOptions(options);
+        verify(!opt.nohang, "nohang option unsupported in wait4");
+        if(opt.continued) warn("continued option unsupported in wait4");
         verify(!rusage, "non-null rusage unsupported in wait4");
         if(kernel_.logSyscalls()) {
             print("Sys::wait4(pid={}, wstatus={:#x}, options={}, rusage={:#x}) = {}", pid, wstatus.address(), options, rusage.address(), 0);
         }
         if(currentProcess_->nbChildren() == 0) {
             return -ECHILD;
-        } else {
-            kernel_.scheduler().wait4(currentThread_, (int)pid, wstatus);
-            return 0;
+        } else if(opt.untraced) {
+            auto child = currentProcess_->tryRetrieveExitedChild();
+            if(child) {
+                return child->pid;
+            }
         }
+        kernel_.scheduler().wait4(currentThread_, (int)pid, wstatus);
+        return 0;
     }
 
     int Sys::kill(pid_t pid, int sig) {

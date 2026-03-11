@@ -297,6 +297,14 @@ namespace kernel::gnulinux {
         return cloneFlags;
     }
 
+    Host::WaitOptions Host::fromWaitOptions(int options) {
+        WaitOptions opt;
+        opt.nohang = options & WNOHANG;
+        opt.untraced = options & WUNTRACED;
+        opt.continued = options & WCONTINUED;
+        return opt;
+    }
+
     bool Host::Ioctl::isFIOCLEX(unsigned long request) {
         return request == FIOCLEX;
     }
