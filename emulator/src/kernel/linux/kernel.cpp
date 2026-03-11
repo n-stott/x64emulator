@@ -74,12 +74,7 @@ namespace kernel::gnulinux {
             Process* mainProcess = processTable_->createMainProcess();
             verify(!!mainProcess, "Unable to create main process");
             Thread* mainThread = [&]() -> Thread* {
-                x64::Mmu mmu(mainProcess->addressSpace());
-                mmu.addCallback(mainProcess);
-                ScopeGuard guard([&]() {
-                    mmu.removeCallback(mainProcess);
-                });
-                ExecVE execve(mmu, processTable(), *mainProcess, scheduler(), fs());
+                ExecVE execve(processTable(), *mainProcess, scheduler(), fs());
                 auto errnoOrThread = scheduler().runInKernelScope([&]() {
                     return execve.exec(programFilePath, arguments, environmentVariables);
                 });

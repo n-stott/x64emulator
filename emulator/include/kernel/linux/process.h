@@ -29,14 +29,19 @@ namespace kernel::gnulinux {
         static std::unique_ptr<Process> tryCreate(ProcessTable&, u32 addressSpaceSizeInMB, FS& fs);
         ~Process();
 
-        std::unique_ptr<Process> clone(ProcessTable&);
+        enum class CloneFlags {
+            VM = (1 << 0),
+        };
+
+        std::unique_ptr<Process> clone(ProcessTable&, BitFlags<CloneFlags> flags);
         void prepareExec();
 
         int pid() const {
             return pid_;
         }
     
-        x64::AddressSpace& addressSpace() { return addressSpace_; }
+        x64::AddressSpace& addressSpace() { return *addressSpace_; }
+        size_t addressSpaceRefCount() const { return addressSpace_.use_count(); }
 
         Thread* addThread(ProcessTable& processTable);
 
@@ -110,7 +115,7 @@ namespace kernel::gnulinux {
         void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
 
     private:
-        Process(int pid, x64::AddressSpace addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
+        Process(int pid, std::shared_ptr<x64::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
 
         void notifyChildCreated(Process* process);
         void notifyChildExited(Process* process, int status, std::optional<int> signal);
@@ -121,7 +126,7 @@ namespace kernel::gnulinux {
         int pid_;
 
         // Memory
-        x64::AddressSpace addressSpace_;
+        std::shared_ptr<x64::AddressSpace> addressSpace_;
 
         // Tasks
         std::vector<std::unique_ptr<Thread>> threads_;

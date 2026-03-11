@@ -961,8 +961,6 @@ namespace kernel::gnulinux {
     [[nodiscard]] static bool checkCloneFlagsFork(const Host::CloneFlags& flags) {
         bool expected =
                 true
-                && flags.childClearTid
-                && flags.childSetTid
                 && !flags.clearSignalHandlers
                 && !flags.cloneSignalHandlers
                 && !flags.cloneFiles
@@ -972,12 +970,8 @@ namespace kernel::gnulinux {
                 && !flags.parentSetTid
                 && !flags.clonePidFd
                 && !flags.setTls
-                && !flags.cloneThread
-                && !flags.cloneVm
-                && !flags.cloneVfork;
+                && !flags.cloneThread;
         if(!expected) {
-            if(!flags.childClearTid) puts("Expected cloneFlags.childClearTid == true");
-            if(!flags.childSetTid) puts("Expected cloneFlags.childSetTid == true");
             if(!!flags.clearSignalHandlers) puts("Expected cloneFlags.clearSignalHandlers == false");
             if(!!flags.cloneSignalHandlers) puts("Expected cloneFlags.cloneSignalHandlers == false");
             if(!!flags.cloneFiles) puts("Expected cloneFlags.cloneFiles == false");
@@ -988,8 +982,6 @@ namespace kernel::gnulinux {
             if(!!flags.clonePidFd) puts("Expected cloneFlags.clonePidFd == false");
             if(!!flags.setTls) puts("Expected cloneFlags.setTls == false");
             if(flags.cloneThread) puts("Expected cloneFlags.cloneThread == false");
-            if(!!flags.cloneVm) puts("Expected cloneFlags.cloneVm == false");
-            if(!!flags.cloneVfork) puts("Expected cloneFlags.cloneVfork == false");
             return false;
         }
         return true;
@@ -1009,10 +1001,11 @@ namespace kernel::gnulinux {
         } else {
             verify(!!currentProcess_);
             verify(!!currentThread_);
-            verify(!cloneFlags.cloneVm, "cloneVm without cloneThread not supported");
             verify(!cloneFlags.cloneFiles, "cloneFiles without cloneThread not supported");
+            BitFlags<Process::CloneFlags> cflags;
+            if(cloneFlags.cloneVm) cflags.add(Process::CloneFlags::VM);
             Process* newProcess = [&]() -> Process* {
-                auto process = currentProcess_->clone(kernel_.processTable());
+                auto process = currentProcess_->clone(kernel_.processTable(), cflags);
                 verify(!!process, "Unable to create new process");
                 return kernel_.processTable().addProcess(std::move(process));
             }();
@@ -1027,7 +1020,11 @@ namespace kernel::gnulinux {
                 return -ENOTSUP;
             }
             newThread = newProcess->addThread(kernel_.processTable());
+            if(cloneFlags.cloneVfork) {
+                kernel_.scheduler().suspendUntilVmReleased(currentThread_);
+            }
         }
+
 
         verify(!!newThread);
         x64::Mmu childMmu(newThread->process()->addressSpace());
@@ -1102,10 +1099,7 @@ namespace kernel::gnulinux {
         int ret = 0;
 
         {
-            x64::Mmu mmu(currentProcess_->addressSpace());
-            mmu.addCallback(currentProcess_);
-            mmu.addCallback(currentProcess_->disassemblyCache());
-            ExecVE execve(mmu, kernel_.processTable(), *currentProcess_, kernel_.scheduler(), kernel_.fs());
+            ExecVE execve(kernel_.processTable(), *currentProcess_, kernel_.scheduler(), kernel_.fs());
             ErrnoOr<Thread*> errnoOrThread = execve.exec(path, args, envs);
             ret = errnoOrThread.errorOr(0);
             errnoOrThread.with([&](Thread* newThread) {
@@ -2396,30 +2390,68 @@ namespace kernel::gnulinux {
         verify(args.size() >= 8);
         u64 flags { args[0] };
         x64::Ptr32 child_tid { args[2] };
+        x64::Ptr32 parent_tid { args[3] };
         u64 stackAddress = args[5] + args[6];
         u64 tls = args[7];
 
         Host::CloneFlags cloneFlags = Host::fromCloneFlags(flags);
-        bool flagsOk = checkCloneFlags(cloneFlags);
-        if(!flagsOk) {
-            if(kernel_.logSyscalls()) {
-                print("Sys::clone3(uargs={:#x}, size={}) = {}",
-                        uargs.address(), size, -ENOTSUP);
+        Thread* newThread { nullptr };
+        if(cloneFlags.cloneThread) {
+            verify(cloneFlags.cloneSignalHandlers, "cloneThread implies cloneSignalHandlers");
+            verify(cloneFlags.cloneVm, "cloneThread implies cloneVm");
+            verify(!!currentProcess_);
+            verify(!!currentThread_);
+            verify(checkCloneFlags(cloneFlags));
+
+            newThread = currentProcess_->addThread(kernel_.processTable());
+        } else {
+            verify(!!currentProcess_);
+            verify(!!currentThread_);
+            verify(!cloneFlags.cloneFiles, "cloneFiles without cloneThread not supported");
+            BitFlags<Process::CloneFlags> cflags;
+            if(cloneFlags.cloneVm) cflags.add(Process::CloneFlags::VM);
+            Process* newProcess = [&]() -> Process* {
+                auto process = currentProcess_->clone(kernel_.processTable(), cflags);
+                verify(!!process, "Unable to create new process");
+                return kernel_.processTable().addProcess(std::move(process));
+            }();
+            newProcess->setEnableJit(currentProcess_->jitEnabled());
+            newProcess->setEnableJitChaining(currentProcess_->jitChainingEnabled());
+            bool flagsOk = checkCloneFlagsFork(cloneFlags);
+            if(!flagsOk) {
+                if(kernel_.logSyscalls()) {
+                    print("Sys::clone(flags={}, stack={:#x}, parent_tid={:#x}, child_tid={:#x}, tls={}) = {}",
+                                flags, stackAddress, parent_tid.address(), child_tid.address(), tls, -ENOTSUP);
+                }
+                return -ENOTSUP;
             }
-            return -ENOTSUP;
+            newThread = newProcess->addThread(kernel_.processTable());
+            if(cloneFlags.cloneVfork) {
+                kernel_.scheduler().suspendUntilVmReleased(currentThread_);
+            }
         }
 
-        Thread* currentThread = currentThread_;
-        Thread* newThread = currentProcess_->addThread(kernel_.processTable());
-        const Thread::SavedCpuState& oldCpuState = currentThread->savedCpuState();
+        verify(!!newThread);
+        x64::Mmu childMmu(newThread->process()->addressSpace());
+        const Thread::SavedCpuState& oldCpuState = currentThread_->savedCpuState();
         Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
         newCpuState.regs = oldCpuState.regs;
         newCpuState.regs.set(x64::R64::RAX, 0);
         newCpuState.regs.rip() = oldCpuState.regs.rip();
         newCpuState.regs.rsp() = stackAddress;
-        mmu_->setRegionName(stackAddress, fmt::format("Stack of thread {}", newThread->description().tid));
-        newCpuState.fsBase = tls;
-        newThread->setClearChildTid(child_tid);
+        mmu_->setRegionName(stackAddress-0x8, fmt::format("Stack of thread {}", newThread->description().tid));
+        if(cloneFlags.setTls) {
+            newCpuState.fsBase = tls;
+        } else {
+            newCpuState.fsBase = oldCpuState.fsBase;
+        }
+        if(cloneFlags.childClearTid) {
+            newThread->setClearChildTid(child_tid);
+        }
+        if(!!child_tid && cloneFlags.childSetTid) {
+            static_assert(sizeof(pid_t) == sizeof(u32));
+            childMmu.write32(child_tid, (u32)newThread->description().tid);
+        }
         long ret = newThread->description().tid;
         if(!!child_tid) {
             static_assert(sizeof(pid_t) == sizeof(u32));

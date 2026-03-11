@@ -17,8 +17,7 @@
 
 namespace kernel::gnulinux {
 
-    ExecVE::ExecVE(x64::Mmu& mmu, ProcessTable& processTable, Process& process, Scheduler& scheduler, FS& fs) :
-            mmu_(mmu),
+    ExecVE::ExecVE(ProcessTable& processTable, Process& process, Scheduler& scheduler, FS& fs) :
             processTable_(processTable),
             process_(process),
             scheduler_(scheduler),
@@ -370,19 +369,22 @@ namespace kernel::gnulinux {
 
             Auxiliary aux;
     
-            u64 entrypoint = loadElf(objects.program.get(), &mmu_, &aux, objects.programPath, true);
+            x64::Mmu mmu(process_.addressSpace());
+            mmu.addCallback(&process_);
+            mmu.addCallback(process_.disassemblyCache());
+            u64 entrypoint = loadElf(objects.program.get(), &mmu, &aux, objects.programPath, true);
             if(objects.elfInterpreter) {
-                entrypoint = loadElf(objects.elfInterpreter.get(), &mmu_, nullptr, objects.interpreterPath, false);
+                entrypoint = loadElf(objects.elfInterpreter.get(), &mmu, nullptr, objects.interpreterPath, false);
             }
     
-            u64 stackTop = setupMemory(&mmu_, &aux);
+            u64 stackTop = setupMemory(&mmu, &aux);
     
             Thread* mainThread = process_.addThread(processTable_);
             Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
             cpuState.regs.rip() = entrypoint;
             cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
             
-            pushProgramArguments(&mmu_, &cpuState.regs, programPath.value(), arguments, environmentVariables, aux);
+            pushProgramArguments(&mmu, &cpuState.regs, programPath.value(), arguments, environmentVariables, aux);
     
             scheduler_.addThread(mainThread);
     

@@ -20,13 +20,12 @@ namespace kernel::gnulinux {
 
     class ExecVE {
     public:
-        ExecVE(x64::Mmu&, ProcessTable&, Process&, Scheduler&, FS&);
+        ExecVE(ProcessTable&, Process&, Scheduler&, FS&);
 
         ErrnoOr<Thread*> exec(const std::string& programFilePath,
                      const std::vector<std::string>& arguments,
                      const std::vector<std::string>& environmentVariables);
     private:
-        x64::Mmu& mmu_;
         ProcessTable& processTable_;
         Process& process_;
         Scheduler& scheduler_;

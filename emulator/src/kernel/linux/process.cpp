@@ -38,10 +38,10 @@ namespace kernel::gnulinux {
 
         auto fds = std::make_unique<FileDescriptors>(fs);
         fds->createStandardStreams(fs.ttyPath());
-        return std::unique_ptr<Process>(new Process(pid, std::move(*addressSpace), fs, std::move(fds), currentWorkDirectory));
+        return std::unique_ptr<Process>(new Process(pid, std::move(addressSpace), fs, std::move(fds), currentWorkDirectory));
     }
 
-    Process::Process(int pid, x64::AddressSpace addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
+    Process::Process(int pid, std::shared_ptr<x64::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
             pid_(pid),
             addressSpace_(std::move(addressSpace)),
             fs_(fs),
@@ -71,17 +71,32 @@ namespace kernel::gnulinux {
         return threadPtr;
     }
 
-    std::unique_ptr<Process> Process::clone(ProcessTable& processTable) {
-        auto addressSpace = addressSpace_.tryCreate(processTable.availableVirtualMemoryInMB());
+    std::unique_ptr<Process> Process::clone(ProcessTable& processTable, BitFlags<CloneFlags> flags) {
+        std::shared_ptr<x64::AddressSpace> addressSpace;
+        if(flags.test(CloneFlags::VM)) {
+            addressSpace = addressSpace_;
+        } else {
+            addressSpace = x64::AddressSpace::tryCreate(processTable.availableVirtualMemoryInMB());
+        }
         if(!addressSpace) return {};
         int newpid = processTable.allocatedPid();
         auto fds = fds_->clone();
-        auto process = std::unique_ptr<Process>(new Process(newpid, std::move(*addressSpace), fs_, std::move(fds), currentWorkDirectory_));
-        {
+        auto process = std::unique_ptr<Process>(new Process(newpid, std::move(addressSpace), fs_, std::move(fds), currentWorkDirectory_));
+        if(flags.test(CloneFlags::VM)) {
+            process->blockInstructions_ = blockInstructions_;
+            codeSegments_.forEachInterval([&](u64 start, u64 end) {
+                process->codeSegments_.reserve(start, end);
+            });
+            codeSegments_.forEach([&](const x64::CodeSegment& segment) {
+                process->codeSegments_.add(segment.start(), std::make_unique<x64::CodeSegment>(segment));
+            });
+            process->symbolProvider_ = symbolProvider_;
+            process->functionNameCache_ = functionNameCache_;
+        } else {
             x64::Mmu mmu(process->addressSpace(), x64::Mmu::WITHOUT_SIDE_EFFECTS::YES);
             mmu.addCallback(process.get());
             mmu.addCallback(process->disassemblyCache());
-            process->addressSpace().clone(mmu, addressSpace_);
+            process->addressSpace().clone(mmu, *addressSpace_);
         }
         process->parent_ = this;
         notifyChildCreated(process.get());
@@ -252,11 +267,19 @@ namespace kernel::gnulinux {
     }
 
     void Process::prepareExec() {
+        u64 size = [&]() -> u64 {
+            x64::Mmu mmu(addressSpace());
+            return mmu.memorySize();
+        }();
+        addressSpace_ = x64::AddressSpace::tryCreate((u32)(size / 1024 / 1024));
         {
             x64::Mmu mmu(addressSpace());
+            mmu.addCallback(this);
+            mmu.addCallback(disassemblyCache());
             mmu.clearAllRegions();
             mmu.ensureNullPage();
         }
+        verify(!!addressSpace_, "Unable to create address space in exec");
         deletedThreads_.insert(deletedThreads_.end(), std::make_move_iterator(threads_.begin()), std::make_move_iterator(threads_.end()));
         threads_.clear();
         // fds_->something();
@@ -304,7 +327,7 @@ namespace kernel::gnulinux {
                 100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
                 100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
         const size_t topCount = 50;
-        const x64::Mmu mmu(addressSpace_);
+        const x64::Mmu mmu(*addressSpace_);
         if(jitStatsLevel() >= 5) {
             std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
                 return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
