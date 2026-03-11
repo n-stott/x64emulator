@@ -62,6 +62,8 @@ namespace kernel::gnulinux {
 
         void blockingRead(Thread* thread, int fd, x64::Ptr buf, size_t count);
 
+        void suspendUntilVmReleased(Thread* thread);
+
         void dumpThreadSummary() const;
         void dumpBlockerSummary() const;
 
@@ -176,6 +178,7 @@ namespace kernel::gnulinux {
         std::vector<SleepBlocker> sleepBlockers_;
         std::vector<WaitBlocker> waitBlockers_;
         std::vector<ReadBlocker> readBlockers_;
+        std::vector<VmReleaseBlocker> vmReleaseBlockers_;
         
         std::condition_variable schedulerHasRunnableThread_;
 

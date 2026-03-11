@@ -160,6 +160,20 @@ namespace kernel::gnulinux {
         size_t count_;
     };
 
+    class VmReleaseBlocker {
+    public:
+        explicit VmReleaseBlocker(Thread* thread) : thread_(thread) { }
+
+        [[nodiscard]] bool tryUnblock();
+
+        Thread* thread() const { return thread_; }
+
+        std::string toString() const;
+
+    private:
+        Thread* thread_;
+    };
+
 }
 
 #endif

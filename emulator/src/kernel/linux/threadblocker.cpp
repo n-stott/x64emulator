@@ -341,4 +341,15 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} waiting on blocking read on {}", pid, tid, fd_);
     }
 
+    bool VmReleaseBlocker::tryUnblock() {
+        return thread_->process()->addressSpaceRefCount() == 1;
+        
+    }
+
+    std::string VmReleaseBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        return fmt::format("thread {}:{} waiting on vm release", pid, tid);
+    }
+
 }

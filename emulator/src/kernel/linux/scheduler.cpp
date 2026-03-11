@@ -522,6 +522,21 @@ namespace kernel::gnulinux {
                 return &blocker == compareBlocker;
             });
         }), readBlockers_.end());
+
+        std::vector<VmReleaseBlocker*> vmReleaseBlockers;
+        for(VmReleaseBlocker& blocker : vmReleaseBlockers_) {
+            bool canUnblock = blocker.tryUnblock();
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                vmReleaseBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
+        }
+        vmReleaseBlockers_.erase(std::remove_if(vmReleaseBlockers_.begin(), vmReleaseBlockers_.end(), [&](const VmReleaseBlocker& blocker) {
+            return std::any_of(vmReleaseBlockers.begin(), vmReleaseBlockers.end(), [&](VmReleaseBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), vmReleaseBlockers_.end());
         return didUnblock;
     }
 
@@ -759,6 +774,13 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
+    void Scheduler::suspendUntilVmReleased(Thread* thread) {
+        verifyInKernel();
+        vmReleaseBlockers_.push_back(VmReleaseBlocker(thread));
+        block(thread);
+        thread->yield();
+    }
+
     void Scheduler::dumpThreadSummary() const {
         forEachThread([&](const Thread& thread) {
             fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
@@ -816,6 +838,10 @@ namespace kernel::gnulinux {
         }
         fmt::print("Read blockers :\n");
         for(const ReadBlocker& blocker : readBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Vm release blockers :\n");
+        for(const VmReleaseBlocker& blocker : vmReleaseBlockers_) {
             fmt::print("  {}\n", blocker.toString());
         }
     }
