@@ -78,6 +78,9 @@ public:
     void split(u64 value);
 
     template<typename Func>
+    void forEachInterval(Func&& callback) const;
+
+    template<typename Func>
     void forEach(Func&& callback) const;
 
     template<typename Func>
@@ -148,6 +151,14 @@ inline void IntervalVector<T>::split(u64 value) {
     auto right = interval->split(value);
     if(right && right->start() < right->end()) {
         insert(std::move(right));
+    }
+}
+
+template<typename T>
+template<typename Func>
+void IntervalVector<T>::forEachInterval(Func&& callback) const {
+    for(auto it = values_.begin(); it != values_.end(); ++it) {
+        callback(it->get()->start(), it->get()->end());
     }
 }
 
