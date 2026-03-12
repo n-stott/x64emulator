@@ -172,6 +172,8 @@ namespace kernel::gnulinux {
             case 0x93: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_get_priority_min, regs));
             case 0x95: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::mlock, regs));
             case 0x96: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::munlock, regs));
+            case 0x97: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::mlockall, regs));
+            case 0x98: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::munlockall, regs));
             case 0x9d: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
             case 0x9e: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::arch_prctl, regs));
             case 0xba: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::gettid, regs));
@@ -1599,6 +1601,20 @@ namespace kernel::gnulinux {
     int Sys::munlock(x64::Ptr addr, size_t len) {
         if(kernel_.logSyscalls()) {
             print("Sys::munlock(addr={:#x}, len={}) = {}", addr.address(), len, 0);
+        }
+        return 0;
+    }
+
+    int Sys::mlockall(int flags) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::mlockall(flags={:#x}) = {}", flags, 0);
+        }
+        return 0;
+    }
+
+    int Sys::munlockall(int flags) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::munlockall(flags={:#x}) = {}", flags, 0);
         }
         return 0;
     }

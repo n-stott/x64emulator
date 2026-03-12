@@ -325,6 +325,10 @@ namespace kernel::gnulinux {
         int mlock(x64::Ptr addr, size_t len);
         // 0x96
         int munlock(x64::Ptr addr, size_t len);
+        // 0x97
+        int mlockall(int flags);
+        // 0x98
+        int munlockall(int flags);
         // 0x9e
         int prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5);
         // 0x9e
