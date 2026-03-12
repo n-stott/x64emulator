@@ -488,6 +488,7 @@ namespace x64 {
         SQRTSD_XMM_M64,
         RSQRTSS_XMM_XMM,
         RSQRTSS_XMM_M32,
+        RCPPS_XMM_XMMM128,
         COMISS_XMM_XMM,
         COMISS_XMM_M32,
         COMISD_XMM_XMM,

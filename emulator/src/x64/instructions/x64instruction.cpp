@@ -507,6 +507,7 @@ namespace x64 {
             case Insn::SQRTSD_XMM_M64: return toString<XMM, M64>("sqrtsd");
             case Insn::RSQRTSS_XMM_XMM: return toString<XMM, XMM>("rsqrtss");
             case Insn::RSQRTSS_XMM_M32: return toString<XMM, M32>("rsqrtss");
+            case Insn::RCPPS_XMM_XMMM128: return toString<XMM, XMMM128>("rcpps");
             case Insn::COMISS_XMM_XMM: return toString<XMM, XMM>("comiss");
             case Insn::COMISS_XMM_M32: return toString<XMM, M32>("comiss");
             case Insn::COMISD_XMM_XMM: return toString<XMM, XMM>("comisd");

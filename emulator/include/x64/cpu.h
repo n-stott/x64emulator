@@ -778,6 +778,7 @@ namespace x64 {
         void execSqrtsdXMMM64(const X64Instruction&);
         void execRsqrtssXMMXMM(const X64Instruction&);
         void execRsqrtssXMMM32(const X64Instruction&);
+        void execRcppsXMMXMMM128(const X64Instruction&);
 
         void execComissXMMXMM(const X64Instruction&);
         void execComissXMMM32(const X64Instruction&);

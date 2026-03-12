@@ -676,6 +676,7 @@ namespace x64 {
     DEFINE_STANDALONE(SQRTSD_XMM_M64, execSqrtsdXMMM64)
     DEFINE_STANDALONE(RSQRTSS_XMM_XMM, execRsqrtssXMMXMM)
     DEFINE_STANDALONE(RSQRTSS_XMM_M32, execRsqrtssXMMM32)
+    DEFINE_STANDALONE(RCPPS_XMM_XMMM128, execRcppsXMMXMMM128)
     DEFINE_STANDALONE(COMISS_XMM_XMM, execComissXMMXMM)
     DEFINE_STANDALONE(COMISS_XMM_M32, execComissXMMM32)
     DEFINE_STANDALONE(COMISD_XMM_XMM, execComisdXMMXMM)
@@ -1470,6 +1471,7 @@ namespace x64 {
         STANDALONE_NAME(SQRTSD_XMM_M64),
         STANDALONE_NAME(RSQRTSS_XMM_XMM),
         STANDALONE_NAME(RSQRTSS_XMM_M32),
+        STANDALONE_NAME(RCPPS_XMM_XMMM128),
         STANDALONE_NAME(COMISS_XMM_XMM),
         STANDALONE_NAME(COMISS_XMM_M32),
         STANDALONE_NAME(COMISD_XMM_XMM),
@@ -4944,6 +4946,13 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::rsqrtss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))));
+        set(dst, res);
+    }
+
+    void Cpu::execRcppsXMMXMMM128(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        u128 res = Impl::rcpps(get(src));
         set(dst, res);
     }
 

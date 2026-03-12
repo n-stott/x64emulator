@@ -787,6 +787,25 @@ namespace x64 {
         return emulated;
     }
 
+    u128 CheckedCpuImpl::rcpps(u128 src) {
+        u128 emulated = NativeCpuImpl::rcpps(src);
+#ifndef NDEBUG
+        u128 native = CpuImpl::rcpps(src);
+        std::array<f32, 4> native32;
+        std::array<f32, 4> emulated32;
+        ::memcpy(&native32, &native, sizeof(native32));
+        ::memcpy(&emulated32, &emulated, sizeof(emulated32));
+        for(size_t i = 0; i < 4; ++i) {
+            assert(std::isfinite(native32[i]) == std::isfinite(emulated32[i]));
+            if(std::isfinite(native32[i]) && std::isfinite(emulated32[i])) {
+                f32 absdiff = std::abs(native32[i] - emulated32[i]);
+                assert(absdiff <= 1.5 * std::max(std::abs(native32[i]), std::abs(emulated32[i])) / std::pow(2, 12));
+            }
+        }
+#endif
+        return emulated;
+    }
+
     u128 CheckedCpuImpl::sqrtsd(u128 dst, u128 src, SIMD_ROUNDING rounding) {
         return checkCall<u128>(&CpuImpl::sqrtsd, &NativeCpuImpl::sqrtsd, dst, src, rounding);
     }
