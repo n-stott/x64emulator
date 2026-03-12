@@ -125,6 +125,8 @@ namespace kernel::gnulinux {
         ssize_t read(int fd, x64::Ptr buf, size_t count);
         // 0x1
         ssize_t write(int fd, x64::Ptr buf, size_t count);
+        // 0x2
+        int open(x64::Ptr pathname, int flags, mode_t mode);
         // 0x3
         int close(int fd);
         // 0x3

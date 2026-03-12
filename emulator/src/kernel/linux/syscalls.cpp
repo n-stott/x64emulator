@@ -72,6 +72,7 @@ namespace kernel::gnulinux {
         switch(sysNumber) {
             case 0x0: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::read, regs));
             case 0x1: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::write, regs));
+            case 0x2: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::open, regs));
             case 0x3: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::close, regs));
             case 0x4: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::stat, regs));
             case 0x5: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::fstat, regs));
@@ -267,6 +268,32 @@ namespace kernel::gnulinux {
                         fd, buf.address(), count, ret);
         }
         return ret;
+    }
+
+    int Sys::open(x64::Ptr pathname, int flags, mode_t mode) {
+        std::string path = mmu_->readString(pathname);
+        BitFlags<AccessMode> accessMode = FS::toAccessMode(flags);
+        BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
+        BitFlags<StatusFlags> statusFlags = FS::toStatusFlags(flags);
+        Permissions permissions = FS::fromMode(mode);
+        auto dirFd = currentProcess_->cwd();
+        auto filepath = kernel_.fs().resolvePath(dirFd, path);
+        FD fd = [&]() -> FD {
+            if(!filepath) return FD{-ENOENT};
+            return currentProcess_->fds().open(*filepath, accessMode, creationFlags, statusFlags, permissions);
+        }();
+        if(kernel_.logSyscalls()) {
+            std::string flagsString = fmt::format("[{}{}{}{}{}{}{}]",
+                accessMode.test(AccessMode::READ)  ? "Read " : "",
+                accessMode.test(AccessMode::WRITE) ? "Write " : "",
+                statusFlags.test(StatusFlags::APPEND) ? "Append " : "",
+                creationFlags.test(CreationFlags::TRUNC) ? "Truncate " : "",
+                creationFlags.test(CreationFlags::CREAT) ? "Create " : "",
+                creationFlags.test(CreationFlags::CLOEXEC) ? "CloseOnExec " : "",
+                creationFlags.test(CreationFlags::DIRECTORY) ? "Directory " : "");
+            print("Sys::open(path={}, flags={}, mode={:o}) = {}", path, flagsString, mode, fd.fd);
+        }
+        return fd.fd;
     }
 
     int Sys::close(int fd) {
