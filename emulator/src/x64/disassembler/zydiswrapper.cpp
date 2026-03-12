@@ -4592,6 +4592,18 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePextrb(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& pos = insn.operands[2];
+        auto r32dst = asRegister32(dst);
+        auto rssesrc = asRegister128(src);
+        auto imm = asImmediate(pos);
+        if(r32dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRB_R32_XMM_IMM>(insn.runtime_address, insn.info.length, r32dst.value(), rssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePextrd(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 3);
         const auto& dst = insn.operands[0];
@@ -4613,6 +4625,18 @@ namespace x64 {
         auto rssesrc = asRegister128(src);
         auto imm = asImmediate(pos);
         if(rm64dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRQ_RM64_XMM_IMM>(insn.runtime_address, insn.info.length, rm64dst.value(), rssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
+    static X64Instruction makePinsrb(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& pos = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto r32src = asRegister32(src);
+        auto imm = asImmediate(pos);
+        if(rssedst && r32src && imm) return X64Instruction::make<Insn::PINSRB_XMM_R32_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), r32src.value(), imm.value());
         return make_failed(insn);
     }
 
@@ -5191,8 +5215,10 @@ namespace x64 {
             case ZYDIS_MNEMONIC_ROUNDPS: return makeRoundps(insn);
             case ZYDIS_MNEMONIC_ROUNDPD: return makeRoundpd(insn);
             case ZYDIS_MNEMONIC_PMULLD: return makePmulld(insn);
+            case ZYDIS_MNEMONIC_PEXTRB: return makePextrb(insn);
             case ZYDIS_MNEMONIC_PEXTRD: return makePextrd(insn);
             case ZYDIS_MNEMONIC_PEXTRQ: return makePextrq(insn);
+            case ZYDIS_MNEMONIC_PINSRB: return makePinsrb(insn);
             case ZYDIS_MNEMONIC_PINSRD: return makePinsrd(insn);
             case ZYDIS_MNEMONIC_PINSRQ: return makePinsrq(insn);
             case ZYDIS_MNEMONIC_EXTRACTPS: return makeExtractps(insn);
@@ -5204,7 +5230,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PBLENDVB: return makePblendvb(insn);
             case ZYDIS_MNEMONIC_PBLENDW: return makePblendw(insn);
 
-            // SSE4.1
+            // SSE4.2
             case ZYDIS_MNEMONIC_PCMPISTRI: return makePcmpistri(insn);
             case ZYDIS_MNEMONIC_CRC32: return makeCrc32(insn);
 

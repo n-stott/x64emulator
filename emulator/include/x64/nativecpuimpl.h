@@ -471,8 +471,10 @@ namespace x64 {
         [[nodiscard]] static u128 roundpd(u128 src, u8 imm, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 pmulld(u128 dst, u128 src);
+        [[nodiscard]] static u32 pextrb(u128 src, u8 order);
         [[nodiscard]] static u32 pextrd(u128 src, u8 order);
         [[nodiscard]] static u64 pextrq(u128 src, u8 order);
+        [[nodiscard]] static u128 pinsrb(u128 dst, u8 src, u8 order);
         [[nodiscard]] static u128 pinsrd(u128 dst, u32 src, u8 order);
         [[nodiscard]] static u128 pinsrq(u128 dst, u64 src, u8 order);
         [[nodiscard]] static u32 extractps(u128 src, u8 order);

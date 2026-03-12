@@ -1584,12 +1584,20 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::pmulld, &NativeCpuImpl::pmulld, dst, src);
     }
 
+    u32 CheckedCpuImpl::pextrb(u128 src, u8 order) {
+        return checkCall<u32>(&CpuImpl::pextrb, &NativeCpuImpl::pextrb, src, order);
+    }
+
     u32 CheckedCpuImpl::pextrd(u128 src, u8 order) {
         return checkCall<u32>(&CpuImpl::pextrd, &NativeCpuImpl::pextrd, src, order);
     }
 
     u64 CheckedCpuImpl::pextrq(u128 src, u8 order) {
         return checkCall<u64>(&CpuImpl::pextrq, &NativeCpuImpl::pextrq, src, order);
+    }
+
+    u128 CheckedCpuImpl::pinsrb(u128 dst, u8 src, u8 order) {
+        return checkCall<u128>(&CpuImpl::pinsrb, &NativeCpuImpl::pinsrb, dst, src, order);
     }
 
     u128 CheckedCpuImpl::pinsrd(u128 dst, u32 src, u8 order) {

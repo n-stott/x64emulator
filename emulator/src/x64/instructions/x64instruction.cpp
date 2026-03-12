@@ -793,8 +793,10 @@ namespace x64 {
             case Insn::ROUNDPS_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundps");
             case Insn::ROUNDPD_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundpd");
             case Insn::PMULLD_XMM_XMMM128: return toString<XMM, XMMM128>("pmulld");
+            case Insn::PEXTRB_R32_XMM_IMM: return toString<R32, XMM, Imm>("pextrb");
             case Insn::PEXTRD_RM32_XMM_IMM: return toString<RM32, XMM, Imm>("pextrd");
             case Insn::PEXTRQ_RM64_XMM_IMM: return toString<RM64, XMM, Imm>("pextrq");
+            case Insn::PINSRB_XMM_R32_IMM: return toString<XMM, R32, Imm>("pinsrb");
             case Insn::PINSRD_XMM_RM32_IMM: return toString<XMM, RM32, Imm>("pinsrd");
             case Insn::PINSRQ_XMM_RM64_IMM: return toString<XMM, RM64, Imm>("pinsrq");
             case Insn::EXTRACTPS_M32_XMM_IMM: return toString<M32, XMM, Imm>("extractps");

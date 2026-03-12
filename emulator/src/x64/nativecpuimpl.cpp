@@ -3791,6 +3791,26 @@ namespace x64 {
 #endif
     }
 
+    u32 NativeCpuImpl::pextrb(u128 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128i s) -> int {
+            CALL_1_WITH_IMM4(_mm_extract_epi8, s);
+        };
+
+        __m128i s;
+        static_assert(sizeof(s) == sizeof(src));
+        memcpy(&s, &src, sizeof(src));
+        assert(order < 8);
+        int r = native(s);
+        return (u32)r;
+#else
+        assert(!"pextrb not defined");
+        (void)src;
+        (void)order;
+        return 0; // dummy value
+#endif
+    }
+
     u32 NativeCpuImpl::pextrd(u128 src, u8 order) {
 #ifdef SSE41
         auto native = [=](__m128i s) -> int {
@@ -3828,6 +3848,27 @@ namespace x64 {
         (void)src;
         (void)order;
         return 0; // dummy value
+#endif
+    }
+
+    u128 NativeCpuImpl::pinsrb(u128 dst, u8 src, u8 order) {
+#ifdef SSE41
+        auto native = [=](__m128i d, u8 s) -> __m128i {
+            CALL_2_WITH_IMM4(_mm_insert_epi8, d, s);
+        };
+
+        __m128i d;
+        static_assert(sizeof(d) == sizeof(dst));
+        memcpy(&d, &dst, sizeof(dst));
+        assert(order < 8);
+        __m128i r = native(d, src);
+        memcpy(&dst, &r, sizeof(dst));
+        return dst;
+#else
+        assert(!"pinsrb not defined");
+        (void)src;
+        (void)order;
+        return dst; // dummy value
 #endif
     }
 

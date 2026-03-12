@@ -3758,6 +3758,14 @@ namespace x64 {
         return dst;
     }
 
+    u32 CpuImpl::pextrb(u128 src, u8 order) {
+        order = order & 0xF;
+        std::array<u8, 16> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        return (u32)SRC[order];
+    }
+
     u32 CpuImpl::pextrd(u128 src, u8 order) {
         order = order & 0x3;
         std::array<u32, 4> SRC;
@@ -3772,6 +3780,16 @@ namespace x64 {
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
         return SRC[order];
+    }
+
+    u128 CpuImpl::pinsrb(u128 dst, u8 src, u8 order) {
+        order = order & 0xF;
+        std::array<u8, 16> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        std::memcpy(DST.data(), &dst, sizeof(u128));
+        DST[order] = src;
+        std::memcpy(&dst, DST.data(), sizeof(u128));
+        return dst;
     }
 
     u128 CpuImpl::pinsrd(u128 dst, u32 src, u8 order) {

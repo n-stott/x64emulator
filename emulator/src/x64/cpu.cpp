@@ -962,8 +962,10 @@ namespace x64 {
     DEFINE_STANDALONE(ROUNDPS_XMM_XMM_IMM, execRoundpsXMMXMMImm)
     DEFINE_STANDALONE(ROUNDPD_XMM_XMM_IMM, execRoundpdXMMXMMImm)
     DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
+    DEFINE_STANDALONE(PEXTRB_R32_XMM_IMM, execPextrbR32XMMImm)
     DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMImm)
     DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMImm)
+    DEFINE_STANDALONE(PINSRB_XMM_R32_IMM, execPinsrbXMMR32Imm)
     DEFINE_STANDALONE(PINSRD_XMM_RM32_IMM, execPinsrdXMMRM32Imm)
     DEFINE_STANDALONE(PINSRQ_XMM_RM64_IMM, execPinsrqXMMRM64Imm)
     DEFINE_STANDALONE(EXTRACTPS_M32_XMM_IMM, execExtractpsM32XMMImm)
@@ -1754,8 +1756,10 @@ namespace x64 {
         STANDALONE_NAME(ROUNDPS_XMM_XMM_IMM),
         STANDALONE_NAME(ROUNDPD_XMM_XMM_IMM),
         STANDALONE_NAME(PMULLD_XMM_XMMM128),
+        STANDALONE_NAME(PEXTRB_R32_XMM_IMM),
         STANDALONE_NAME(PEXTRD_RM32_XMM_IMM),
         STANDALONE_NAME(PEXTRQ_RM64_XMM_IMM),
+        STANDALONE_NAME(PINSRB_XMM_R32_IMM),
         STANDALONE_NAME(PINSRD_XMM_RM32_IMM),
         STANDALONE_NAME(PINSRQ_XMM_RM64_IMM),
         STANDALONE_NAME(EXTRACTPS_M32_XMM_IMM),
@@ -6854,6 +6858,13 @@ namespace x64 {
         set(dst, Impl::pmulld(get(dst), get(src)));
     }
 
+    void Cpu::execPextrbR32XMMImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<XMM>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pextrb(get(src), get<u8>(imm)));
+    }
+
     void Cpu::execPextrdRM32XMMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<XMM>();
@@ -6866,6 +6877,13 @@ namespace x64 {
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pextrq(get(src), get<u8>(imm)));
+    }
+
+    void Cpu::execPinsrbXMMR32Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<R32>();
+        const auto& imm = ins.op2<Imm>();
+        set(dst, Impl::pinsrb(get(dst), (u8)get(src), get<u8>(imm)));
     }
 
     void Cpu::execPinsrdXMMRM32Imm(const X64Instruction& ins) {
