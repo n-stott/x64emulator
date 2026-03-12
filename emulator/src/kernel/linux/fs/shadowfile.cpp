@@ -197,6 +197,14 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer ShadowFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer&) {
+        switch(request) {
+            case Ioctl::tcgets:
+            case Ioctl::tcsets:
+            case Ioctl::tcsetsw:
+            case Ioctl::tiocgwinsz:
+            case Ioctl::tiocswinsz: return ErrnoOrBuffer(-ENOTTY);
+            default: break;
+        }
         verify(false, [&]() { fmt::print("ShadowFile::ioctl({:#x}) not implemented", (int)request); });
         return ErrnoOrBuffer(-ENOTSUP);
     }
