@@ -1106,7 +1106,6 @@ namespace kernel::gnulinux {
     int Sys::execve(x64::Ptr pathname, x64::Ptr64 argv, x64::Ptr64 envp) {
         verify(!!pathname, "cannot exec with null pathname");
         verify(!!argv, "cannot exec with null argv");
-        verify(!!envp, "cannot exec with null envp");
         std::string path = mmu_->readString(pathname);
         std::vector<std::string> args;
         while(true) {
@@ -1118,11 +1117,15 @@ namespace kernel::gnulinux {
         verify(!args.empty(), "unexpected empty argv list in exec");
         args.erase(args.begin()); // args[0] is dropped
         std::vector<std::string> envs;
-        while(true) {
-            u64 env = mmu_->read64(envp);
-            if(env == 0) break;
-            envs.push_back(mmu_->readString(x64::Ptr{env}));
-            ++envp;
+        if(!!envp) {
+            while(true) {
+                u64 env = mmu_->read64(envp);
+                if(env == 0) break;
+                envs.push_back(mmu_->readString(x64::Ptr{env}));
+                ++envp;
+            }
+        } else {
+            warn("calling exec with null envp");
         }
 
         int ret = 0;
