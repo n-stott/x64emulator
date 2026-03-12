@@ -1161,7 +1161,6 @@ namespace kernel::gnulinux {
 
     int Sys::wait4(pid_t pid, x64::Ptr32 wstatus, int options, x64::Ptr rusage) {
         Host::WaitOptions opt = Host::fromWaitOptions(options);
-        verify(!opt.nohang, "nohang option unsupported in wait4");
         if(opt.continued) warn("continued option unsupported in wait4");
         verify(!rusage, "non-null rusage unsupported in wait4");
         if(kernel_.logSyscalls()) {
@@ -1174,6 +1173,8 @@ namespace kernel::gnulinux {
             if(child) {
                 return child->pid;
             }
+        } else if(opt.nohang && currentProcess_->nbExitedChildren() == 0) {
+            return 0;
         }
         kernel_.scheduler().wait4(currentThread_, (int)pid, wstatus);
         return 0;

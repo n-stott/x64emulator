@@ -88,7 +88,7 @@ namespace kernel::gnulinux {
 
         void notifyExit(int status, std::optional<int> signal);
         size_t nbChildren() const { return children_.size(); }
-
+        size_t nbExitedChildren() const { return exitedChildren_.size(); }
         struct ExitedChild {
             int pid;
             int status;
