@@ -168,6 +168,8 @@ namespace kernel::gnulinux {
             case 0x8f: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sched_getparam, regs));
             case 0x90: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::sched_setscheduler, regs));
             case 0x91: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_getscheduler, regs));
+            case 0x92: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_get_priority_max, regs));
+            case 0x93: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::sched_get_priority_min, regs));
             case 0x95: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::mlock, regs));
             case 0x96: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::munlock, regs));
             case 0x9d: return threadRegs.set(x64::R64::RAX, invoke_syscall_5(&Sys::prctl, regs));
@@ -1565,6 +1567,22 @@ namespace kernel::gnulinux {
             print("Sys::sched_getscheduler(pid={}) = {}", pid, -ENOTSUP);
         }
         warn("sched_getscheduler not implemented");
+        return -ENOTSUP;
+    }
+
+    int Sys::sched_get_priority_max(int policy) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::sched_get_priority_max(policy={}) = {}", policy, -ENOTSUP);
+        }
+        warn("sched_get_priority_max not implemented");
+        return -ENOTSUP;
+    }
+
+    int Sys::sched_get_priority_min(int policy) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::sched_get_priority_min(policy={}) = {}", policy, -ENOTSUP);
+        }
+        warn("sched_get_priority_min not implemented");
         return -ENOTSUP;
     }
 

@@ -317,6 +317,10 @@ namespace kernel::gnulinux {
         int sched_setscheduler(pid_t pid, int policy, x64::Ptr param);
         // 0x91
         int sched_getscheduler(pid_t pid);
+        // 0x92
+        int sched_get_priority_max(int policy);
+        // 0x93
+        int sched_get_priority_min(int policy);
         // 0x95
         int mlock(x64::Ptr addr, size_t len);
         // 0x96
