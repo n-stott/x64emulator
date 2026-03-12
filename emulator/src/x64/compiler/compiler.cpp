@@ -949,6 +949,8 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR64R64(R64 dst, R64 src) {
+        // don't jit "unusual" writes to RSP (longjmp)
+        if(dst == R64::RSP && src != R64::RBP) return false;
         // read from the source register
         readReg64(Reg::GPR0, src);
         // write to the destination register
