@@ -15,6 +15,7 @@ namespace emulator {
             regs.get(x64::R64::R8), regs.get(x64::R64::R9), regs.get(x64::R64::R10), regs.get(x64::R64::R11));
         fmt::print("    r12 {:>#18x}      r13 {:>#18x}      r14 {:>#18x}      r15 {:>#18x}\n",
             regs.get(x64::R64::R12), regs.get(x64::R64::R13), regs.get(x64::R64::R14), regs.get(x64::R64::R15));
+        fmt::print("    fs  {:>#18x}\n", savedCpuState_.fsBase);
 
         fmt::print("    xmm0  {:>#18x}/{:<#18x}             xmm1  {:>#18x}/{:<#18x}\n",
             regs.get(x64::XMM::XMM0).hi, regs.get(x64::XMM::XMM0).lo, regs.get(x64::XMM::XMM1).hi, regs.get(x64::XMM::XMM1).lo);
