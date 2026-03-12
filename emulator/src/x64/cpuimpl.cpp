@@ -1176,6 +1176,19 @@ namespace x64 {
         });
     }
 
+    u128 CpuImpl::cvtps2pd(u128 src) {
+        std::array<float, 4> SRC;
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+        
+        std::array<double, 2> RES;
+        RES[0] = (double)SRC[0];
+        RES[1] = (double)SRC[1];
+
+        u128 res { 0, 0 };
+        std::memcpy(&res, RES.data(), sizeof(u128));
+        return res;
+    }
+
     u128 CpuImpl::cvtpd2ps(u128 src, SIMD_ROUNDING rounding) {
         if(rounding != SIMD_ROUNDING::NEAREST) throw std::logic_error{"unimplemented case in cvtd2ps"};
         std::array<double, 2> SRC;

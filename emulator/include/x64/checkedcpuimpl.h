@@ -245,6 +245,7 @@ namespace x64 {
 
         [[nodiscard]] static u128 cvtps2dq(u128 src, SIMD_ROUNDING);
 
+        [[nodiscard]] static u128 cvtps2pd(u128 src);
         [[nodiscard]] static u128 cvtpd2ps(u128 src, SIMD_ROUNDING);
 
         [[nodiscard]] static u128 shufps(u128 dst, u128 src, u8 order);

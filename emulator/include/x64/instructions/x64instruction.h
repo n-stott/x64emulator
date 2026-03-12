@@ -545,6 +545,8 @@ namespace x64 {
         CVTDQ2PS_XMM_XMMM128,
         CVTDQ2PD_XMM_M64,
         CVTPS2DQ_XMM_XMMM128,
+        CVTPS2PD_XMM_XMM,
+        CVTPS2PD_XMM_M64,
         CVTPD2PS_XMM_XMMM128,
         STMXCSR_M32,
         LDMXCSR_M32,
