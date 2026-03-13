@@ -1943,10 +1943,13 @@ namespace x64 {
                     assert(mmxdst == ins.in1().as<MMX>());
                     auto r128dst = ins.out().as<XMM>();
                     assert(r128dst == ins.in1().as<XMM>());
+                    auto r128src = ins.in2().as<XMM>();
                     auto imm8src = ins.in2().as<u8>();
 
                     if(mmxdst && imm8src) {
                         assembler_->psllq(mmxdst.value(), imm8src.value());
+                    } else if(r128dst && r128src) {
+                        assembler_->psllq(r128dst.value(), r128src.value());
                     } else if(r128dst && imm8src) {
                         assembler_->psllq(r128dst.value(), imm8src.value());
                     } else {
