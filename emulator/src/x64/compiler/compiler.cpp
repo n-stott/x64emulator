@@ -43,6 +43,10 @@ namespace x64 {
     }
 #endif
         try {
+            // Generate the block's entrypoint
+            auto entry = basicBlockEntrypoint();
+            if(!entry) return {};
+
             // Try compiling all non-terminating instructions.
             auto body = basicBlockBody(basicBlock, diagnose);
             if(!body) return {};
@@ -62,9 +66,19 @@ namespace x64 {
             if(!basicBlockExit) return {};
             
             ir::IR wholeIr;
-            wholeIr.reserveInstructions(body->nbInstructions() + exitPreparation->nbInstructions() + basicBlockExit->nbInstructions());
-            wholeIr.reserveLabels(body->nbLabels() + exitPreparation->nbLabels() + basicBlockExit->nbLabels());
-            wholeIr.add(body.value())
+            wholeIr.reserveInstructions(
+                    entry->nbInstructions()
+                    + body->nbInstructions()
+                    + exitPreparation->nbInstructions()
+                    + basicBlockExit->nbInstructions());
+            wholeIr.reserveLabels(
+                    entry->nbLabels()
+                    + body->nbLabels()
+                    + exitPreparation->nbLabels()
+                    + basicBlockExit->nbLabels());
+            wholeIr
+                .add(entry.value())
+                .add(body.value())
                 .add(exitPreparation.value())
                 .add(basicBlockExit.value());
             return wholeIr;
@@ -737,9 +751,17 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::jitEntry() {
         generator_->clear();
+        saveStack();
         loadArguments(TmpReg{Reg::GPR1});
         loadFlagsFromEmulator(TmpReg{Reg::GPR1});
         callNativeBasicBlock(TmpReg{Reg::GPR1});
+        return generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::basicBlockEntrypoint() {
+        generator_->clear();
+        saveStack();
+        generator_->reportJumpLanding();
         return generator_->generateIR();
     }
 
@@ -774,6 +796,7 @@ namespace x64 {
             if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), instructions.size(), instructions.size());
             return {};
         }
+        restoreStack();
         generator_->ret(); // exit the native code of this basic block
         return generator_->generateIR();
     }
@@ -781,6 +804,7 @@ namespace x64 {
     std::optional<ir::IR> Compiler::jitExit() {
         generator_->clear();
         storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        restoreStack();
         generator_->ret();
         return generator_->generateIR();
     }
@@ -6149,6 +6173,15 @@ namespace x64 {
     void Compiler::loadImm64(Reg dst, u64 imm) {
         R64 d = get(dst);
         generator_->mov(d, imm);
+    }
+
+    void Compiler::saveStack() {
+        generator_->push64(R64::RBP);
+        generator_->mov(R64::RBP, R64::RSP);
+    }
+
+    void Compiler::restoreStack() {
+        generator_->pop64(R64::RBP);
     }
 
     void Compiler::loadArguments(TmpReg) {

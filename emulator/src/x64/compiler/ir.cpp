@@ -320,6 +320,10 @@ namespace x64::ir {
         for(size_t label : other.labels) {
             labels.push_back(instructions.size() + label);
         }
+        if(other.jumpLanding) {
+            verify(!jumpLanding, "Cannot merge blocks with jumps");
+            jumpLanding = instructions.size() + other.jumpLanding.value();
+        }
         if(other.jumpToNext) {
             verify(!jumpToNext, "Cannot merge blocks with jumps");
             jumpToNext = instructions.size() + other.jumpToNext.value();
@@ -349,6 +353,9 @@ namespace x64::ir {
         auto removeInstruction = [&](size_t position) {
             for(size_t& label : labels) {
                 if(label > position) --label;
+            }
+            if(jumpLanding && jumpLanding.value() > position) {
+                --jumpLanding.value();
             }
             if(jumpToNext && jumpToNext.value() > position) {
                 --jumpToNext.value();

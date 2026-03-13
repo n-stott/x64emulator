@@ -125,7 +125,7 @@ namespace emulator {
             if(currentSegment->jitBasicBlock()) {
                 currentSegment->onJitCall();
                 jit->exec(&cpu_, &mmu_,
-                          (x64::NativeExecPtr)currentSegment->jitBasicBlock()->executableMemory(),
+                          (x64::NativeExecPtr)currentSegment->jitBasicBlock()->callEntrypoint(),
                           time.ticks(),
                           (void**)&currentSegment,
                           currentSegment->jitBasicBlock());

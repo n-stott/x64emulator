@@ -434,6 +434,7 @@ namespace x64::ir {
     struct IR {
         std::vector<ir::Instruction> instructions;
         std::vector<size_t> labels;
+        std::optional<size_t> jumpLanding;
         std::optional<size_t> jumpToNext;
         std::optional<size_t> jumpToOther;
         std::optional<size_t> pushCallstack;

@@ -27,15 +27,15 @@ namespace x64 {
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t NATIVE_BLOCK_OFFSET = 0x0;
+    static constexpr size_t NATIVE_BLOCK_OFFSET = 0x18;
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x18;
+    static constexpr size_t BLOCK_LOOKUP_TABLE_OFFSET = 0x20;
 
     // DO NOT CHANGE THIS VALUE UNLESS THE LAYOUT
     // OF emulator::BasicBlock CHANGES AS WELL
-    static constexpr size_t CALLS_OFFSET = 0x38;
+    static constexpr size_t CALLS_OFFSET = 0x40;
 
     static constexpr u64 TICK_LIMIT_MASK = (u64)(~(u64)0xFFFFF);
 
@@ -84,8 +84,12 @@ namespace x64 {
                 || !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock;
         }
 
-        const u8* executableMemory() const {
+        const u8* callEntrypoint() const {
             return executableMemory_.ptr;
+        }
+
+        const u8* jumpEntrypoint() const {
+            return jumpEntrypoint_;
         }
 
         void syncBlockLookupTable(u64 size, const u64* addresses, const JitBasicBlock** blocks, u64* hitCounts);
@@ -112,6 +116,12 @@ namespace x64 {
             executableMemory_ = executableMemory;
         }
 
+        void setJumpLandingOffset(size_t offset) {
+            assert(!jumpLandingOffset_);
+            jumpLandingOffset_ = offset;
+            jumpEntrypoint_ = executableMemory_.ptr + offset;
+        }
+
         void setPendingPatchToConditionalBlock(size_t offset) {
             assert(!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock);
             pendingPatches_.offsetOfReplaceableJumpToConditionalBlock = offset;
@@ -128,6 +138,8 @@ namespace x64 {
 
         MemoryBlock executableMemory_;
 
+        const u8* jumpEntrypoint_ { nullptr };
+
         x64::BlockLookupTable variableDestinationTable_;
 
         u64 calls_ { 0 };
@@ -136,13 +148,11 @@ namespace x64 {
             std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
             std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         } pendingPatches_;
-
-
+        std::optional<size_t> jumpLandingOffset_;
     };
 
     class BasicBlockTest {
-        static_assert(offsetof(JitBasicBlock, executableMemory_) == x64::NATIVE_BLOCK_OFFSET);
-        static_assert(offsetof(MemoryBlock, ptr) == 0);
+        static_assert(offsetof(JitBasicBlock, jumpEntrypoint_) == x64::NATIVE_BLOCK_OFFSET);
         static_assert(offsetof(JitBasicBlock, variableDestinationTable_) == x64::BLOCK_LOOKUP_TABLE_OFFSET);
         static_assert(offsetof(JitBasicBlock, calls_) == x64::CALLS_OFFSET);
     };

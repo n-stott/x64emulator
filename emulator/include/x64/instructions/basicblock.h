@@ -43,6 +43,7 @@ namespace x64 {
 
     struct NativeBasicBlock {
         std::vector<u8> nativecode;
+        std::optional<size_t> offsetOfJumpLandingPad;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         std::optional<size_t> offsetOfReplaceableCallstackPush;

@@ -7,6 +7,7 @@ namespace x64::ir {
         instructions_.clear();
         labels_.clear();
         jumpKinds_.clear();
+        jumpLanding_.reset();
         pushCallstacks_.reset();
         popCallstacks_.reset();
     }
@@ -33,6 +34,7 @@ namespace x64::ir {
         return IR {
             instructions_,
             std::move(labels),
+            jumpLanding_,
             jumpToNext,
             jumpToOther,
             pushCallstacks_,
@@ -575,6 +577,11 @@ namespace x64::ir {
 
     void IrGenerator::reportJump(JumpKind jumpKind) {
         jumpKinds_.push_back(std::make_pair(instructions_.size(), jumpKind));
+    }
+
+    void IrGenerator::reportJumpLanding() {
+        verify(!jumpLanding_, "Cannot more than one landing");
+        jumpLanding_ = instructions_.size();
     }
 
     void IrGenerator::reportPushCallstack() {

@@ -80,7 +80,7 @@ int main() {
         void* basicBlockPtr = &basicBlockData;
         std::array<u64, 0x100> jitBasicBlockData;
         std::fill(jitBasicBlockData.begin(), jitBasicBlockData.end(), 0);
-        jit->exec(&cpu, &mmu, (NativeExecPtr)jbb->executableMemory(), &ticks, &basicBlockPtr, &jitBasicBlockData);
+        jit->exec(&cpu, &mmu, (NativeExecPtr)jbb->callEntrypoint(), &ticks, &basicBlockPtr, &jitBasicBlockData);
         cpu.exec(bb);
         cpu.save(&state);
 

@@ -38,6 +38,7 @@ namespace x64 {
         bool tryCompileLastInstruction(const X64Instruction&);
 
         std::optional<ir::IR> jitEntry();
+        std::optional<ir::IR> basicBlockEntrypoint();
         std::optional<ir::IR> basicBlockBody(const BasicBlock&, bool diagnose);
         std::optional<ir::IR> prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr, u64 jitBasicBlockPtr);
         std::optional<ir::IR> basicBlockExit(const BasicBlock&, bool diagnose);
@@ -680,6 +681,8 @@ namespace x64 {
         void loadMxcsrFromEmulator(Reg dst);
         void push64(Reg src, TmpReg tmp);
         void pop64(Reg dst, TmpReg tmp);
+        void saveStack();
+        void restoreStack();
 
         void tryCompileBlockLookup();
 

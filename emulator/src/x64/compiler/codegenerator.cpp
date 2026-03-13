@@ -19,6 +19,7 @@ namespace x64 {
 
     std::optional<NativeBasicBlock> CodeGenerator::tryGenerate(const ir::IR& ir) {
         assembler_->clear();
+        std::optional<size_t> offsetOfJumpLandingPad;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
         std::optional<size_t> offsetOfReplaceableCallstackPush;
@@ -34,6 +35,9 @@ namespace x64 {
                 if(ir.labels[l] == i) {
                     assembler_->putLabel(*labels[l]);
                 }
+            }
+            if(ir.jumpLanding == i) {
+                offsetOfJumpLandingPad = assembler_->code().size();
             }
             if(ir.jumpToNext == i) {
                 offsetOfReplaceableJumpToContinuingBlock = assembler_->code().size();
@@ -3187,6 +3191,7 @@ namespace x64 {
 
         return NativeBasicBlock{
             assembler_->code(),
+            offsetOfJumpLandingPad,
             offsetOfReplaceableJumpToContinuingBlock,
             offsetOfReplaceableJumpToConditionalBlock,
             offsetOfReplaceableCallstackPush,

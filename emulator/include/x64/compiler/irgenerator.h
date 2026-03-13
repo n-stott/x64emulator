@@ -499,6 +499,8 @@ namespace x64::ir {
         };
         void reportJump(JumpKind);
 
+        void reportJumpLanding();
+
         void reportPushCallstack();
         void reportPopCallstack();
 
@@ -511,6 +513,7 @@ namespace x64::ir {
         std::vector<Instruction> instructions_;
         std::deque<Label> labels_;
         std::vector<std::pair<size_t, JumpKind>> jumpKinds_;
+        std::optional<size_t> jumpLanding_;
         std::optional<size_t> pushCallstacks_;
         std::optional<size_t> popCallstacks_;
     };

@@ -43,7 +43,7 @@ namespace x64 {
             return nullptr;
         }
         JitBasicBlock* ptr = jbb.get();
-        verify(!!jbb->executableMemory());
+        verify(!!jbb->callEntrypoint());
         blocks_.push_back(std::move(jbb));
         return ptr;
     }
@@ -126,6 +126,9 @@ namespace x64 {
         if(!!nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock) {
             dst->setPendingPatchToConditionalBlock(nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock.value());
         }
+        if(!!nativeBasicBlock->offsetOfJumpLandingPad) {
+            dst->setJumpLandingOffset(nativeBasicBlock->offsetOfJumpLandingPad.value());
+        }
         return dst;
     }
 
@@ -144,7 +147,7 @@ namespace x64 {
         u8* replacementLocation = mutableExecutableMemory() + offset;
         assert(offset <= executableMemory_.size);
         size_t replacementSize = executableMemory_.size - offset;
-        const u8* jumpLocation = next->executableMemory();
+        const u8* jumpLocation = next->jumpEntrypoint();
         compiler->writeJumpTo((u64)jumpLocation, replacementLocation, replacementSize);
         pendingPatch->reset();
     }
