@@ -455,6 +455,7 @@ namespace x64 {
             case Insn::BTR_RM64_IMM: return tryCompileBtrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
             case Insn::BTS_RM64_R64: return tryCompileBtsRM64R64(ins.op0<RM64>(), ins.op1<R64>());
             case Insn::BTS_RM64_IMM: return tryCompileBtsRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::REP_STOS_M8_R8: return tryCompileRepStosM8R8(ins.op0<M8>(), ins.op1<R8>());
             case Insn::REP_STOS_M32_R32: return tryCompileRepStosM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::REP_STOS_M64_R64: return tryCompileRepStosM64R64(ins.op0<M64>(), ins.op1<R64>());
             case Insn::REP_MOVS_M8_M8: return tryCompileRepMovsM8M8(ins.op0<M8>(), ins.op1<M8>());
@@ -3121,6 +3122,44 @@ namespace x64 {
         return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
             generator_->bts(get(dst), imm.as<u8>());
         });
+    }
+
+    bool Compiler::tryCompileRepStosM8R8(const M8& dst, R8 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R8::AL) return false;
+        // save rdi, rcx and rax
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RCX);
+        generator_->push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg8(Reg::GPR0, R8::AL);
+        generator_->mov(R8::AL, get8(Reg::GPR0));
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repstos8();
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        generator_->pop64(R64::RAX);
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RDI);
+        return true;
     }
 
     bool Compiler::tryCompileRepStosM32R32(const M32& dst, R32 src) {

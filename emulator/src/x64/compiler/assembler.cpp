@@ -2449,6 +2449,11 @@ namespace x64 {
         write8((u8)imm);
     }
 
+    void Assembler::repstos8() {
+        write8(0xf3);
+        write8(0xaa);
+    }
+
     void Assembler::repstos32() {
         write8(0xf3);
         write8(0xab);

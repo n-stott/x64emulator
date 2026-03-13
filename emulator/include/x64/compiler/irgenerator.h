@@ -208,6 +208,7 @@ namespace x64::ir {
         void bts(R64, R64);
         void bts(R64, u8);
 
+        void repstos8();
         void repstos32();
         void repstos64();
         void repmovs8();

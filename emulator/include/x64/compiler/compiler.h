@@ -232,6 +232,7 @@ namespace x64 {
         bool tryCompileBtsRM64R64(const RM64&, R64);
         bool tryCompileBtsRM64Imm(const RM64&, Imm);
 
+        bool tryCompileRepStosM8R8(const M8&, R8);
         bool tryCompileRepStosM32R32(const M32&, R32);
         bool tryCompileRepStosM64R64(const M64&, R64);
         bool tryCompileRepMovsM8M8(const M8&, const M8&);

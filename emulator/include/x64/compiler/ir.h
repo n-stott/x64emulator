@@ -198,6 +198,7 @@ namespace x64::ir {
         BT,
         BTR,
         BTS,
+        REPSTOS8,
         REPSTOS32,
         REPSTOS64,
         REPMOVS8,

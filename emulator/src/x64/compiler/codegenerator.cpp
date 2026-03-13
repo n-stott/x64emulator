@@ -1096,6 +1096,10 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::REPSTOS8: {
+                    assembler_->repstos8();
+                    break;
+                }
                 case ir::Op::REPSTOS32: {
                     assembler_->repstos32();
                     break;
