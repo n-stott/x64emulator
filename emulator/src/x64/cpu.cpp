@@ -597,6 +597,7 @@ namespace x64 {
     DEFINE_STANDALONE(MOVQ_RM64_XMM, execMovqRM64XMM)
     DEFINE_STANDALONE(FLDZ, execFldz)
     DEFINE_STANDALONE(FLD1, execFld1)
+    DEFINE_STANDALONE(FLDLG2, execFldlg2)
     DEFINE_STANDALONE(FLD_ST, execFldST)
     DEFINE_STANDALONE(FLD_M32, execFldM32)
     DEFINE_STANDALONE(FLD_M64, execFldM64)
@@ -1400,6 +1401,7 @@ namespace x64 {
         STANDALONE_NAME(MOVQ_RM64_XMM),
         STANDALONE_NAME(FLDZ),
         STANDALONE_NAME(FLD1),
+        STANDALONE_NAME(FLDLG2),
         STANDALONE_NAME(FLD_ST),
         STANDALONE_NAME(FLD_M32),
         STANDALONE_NAME(FLD_M64),
@@ -4443,6 +4445,7 @@ namespace x64 {
 
     void Cpu::execFldz(const X64Instruction&) { x87fpu_.push(F80::fromLongDouble(0.0)); }
     void Cpu::execFld1(const X64Instruction&) { x87fpu_.push(F80::fromLongDouble(1.0)); }
+    void Cpu::execFldlg2(const X64Instruction&) { x87fpu_.push(F80::lg2()); }
     void Cpu::execFldST(const X64Instruction& ins) {
         const auto& src = ins.op0<ST>();
         x87fpu_.push(x87fpu_.st(src));

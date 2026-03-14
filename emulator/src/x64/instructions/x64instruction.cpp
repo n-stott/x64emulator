@@ -428,6 +428,7 @@ namespace x64 {
             case Insn::MOVQ_RM64_XMM: return toString<RM64, XMM>("movq");
             case Insn::FLDZ: return toString("fldz");
             case Insn::FLD1: return toString("fld1");
+            case Insn::FLDLG2: return toString("fldlg2");
             case Insn::FLD_ST: return toString<ST>("fld");
             case Insn::FLD_M32: return toString<M32>("fld");
             case Insn::FLD_M64: return toString<M64>("fld");

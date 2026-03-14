@@ -134,6 +134,21 @@ namespace host {
         return val;
     }
 
+    f80 lg2() {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
+        f80 val;
+        long double v;
+        memset(&v, 0, sizeof(v));
+        asm volatile("fldlg2;"
+                     "fstpt %0;"
+                        : "=m"(v));
+        memcpy(&val, &v, sizeof(val));
+#endif
+        return val;
+    }
+
     IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor) {
         u32 quotient;
         u32 remainder;

@@ -409,6 +409,7 @@ namespace x64 {
         MOVQ_RM64_XMM,
         FLDZ,
         FLD1,
+        FLDLG2,
         FLD_ST,
         FLD_M32,
         FLD_M64,

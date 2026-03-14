@@ -2059,6 +2059,13 @@ namespace x64 {
         return X64Instruction::make<Insn::FLD1>(insn.runtime_address, insn.info.length);
     }
 
+    static X64Instruction makeFldlg2(const ZydisDisassembledInstruction& insn) {
+#ifndef NDEBUG
+        assert(insn.info.operand_count_visible == 0);
+#endif
+        return X64Instruction::make<Insn::FLDLG2>(insn.runtime_address, insn.info.length);
+    }
+
     static X64Instruction makeFld(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 1);
         const auto& src = insn.operands[0];
@@ -5013,6 +5020,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_MOVQ: return makeMovq(insn);
             case ZYDIS_MNEMONIC_FLDZ: return makeFldz(insn);
             case ZYDIS_MNEMONIC_FLD1: return makeFld1(insn);
+            case ZYDIS_MNEMONIC_FLDLG2: return makeFldlg2(insn);
             case ZYDIS_MNEMONIC_FLD: return makeFld(insn);
             case ZYDIS_MNEMONIC_FILD: return makeFild(insn);
             case ZYDIS_MNEMONIC_FSTP: return makeFstp(insn);

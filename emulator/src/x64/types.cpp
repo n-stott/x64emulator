@@ -131,4 +131,8 @@ namespace x64 {
         return host::fabs(val);
     }
 
+    f80 F80::lg2() {
+        return host::lg2();
+    }
+
 }

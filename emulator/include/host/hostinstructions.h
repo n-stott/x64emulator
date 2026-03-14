@@ -13,6 +13,7 @@ namespace host {
     f80 f2xm1(f80);
     f80 fscale(f80 val, f80 scale);
     f80 fabs(f80 val);
+    f80 lg2();
 
     template<typename U>
     struct IdivResult {

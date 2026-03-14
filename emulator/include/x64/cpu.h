@@ -684,6 +684,7 @@ namespace x64 {
 
         void execFldz(const X64Instruction&);
         void execFld1(const X64Instruction&);
+        void execFldlg2(const X64Instruction&);
         void execFldST(const X64Instruction&);
         void execFldM32(const X64Instruction&);
         void execFldM64(const X64Instruction&);
