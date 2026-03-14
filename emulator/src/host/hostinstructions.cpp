@@ -74,6 +74,66 @@ namespace host {
         return val;
     }
 
+    f80 f2xm1(f80 val) {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
+        long double x;
+        static_assert(sizeof(val) <= sizeof(x), "");
+        memset(&x, 0, sizeof(x));
+        memcpy(&x, &val, sizeof(val));
+        asm volatile("fldt %1;"
+                     "f2xm1;"
+                     "fstpt %0;"
+                        : "=m"(x)
+                        : "m"(x));
+        memcpy(&val, &x, sizeof(val));
+#endif
+        return val;
+    }
+
+    f80 fscale(f80 val, f80 scale) {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
+        long double v;
+        long double s;
+        static_assert(sizeof(val) <= sizeof(v), "");
+        static_assert(sizeof(scale) <= sizeof(s), "");
+        memset(&v, 0, sizeof(v));
+        memcpy(&v, &val, sizeof(val));
+        memset(&s, 0, sizeof(s));
+        memcpy(&s, &scale, sizeof(scale));
+        asm volatile("fldt %3;"
+                     "fldt %2;"
+                     "fscale;"
+                     "fstpt %0;"
+                     "fstpt %1;"
+                        : "=m"(v), "=m"(s)
+                        : "m"(v), "m"(s));
+        memcpy(&val, &v, sizeof(val));
+#endif
+        return val;
+    }
+
+    f80 fabs(f80 val) {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
+        long double v;
+        static_assert(sizeof(val) <= sizeof(v), "");
+        memset(&v, 0, sizeof(v));
+        memcpy(&v, &val, sizeof(val));
+        asm volatile("fldt %1;"
+                     "fabs;"
+                     "fstpt %0;"
+                        : "=m"(v)
+                        : "m"(v));
+        memcpy(&val, &v, sizeof(val));
+#endif
+        return val;
+    }
+
     IdivResult<u32> idiv32(u32 upperDividend, u32 lowerDividend, u32 divisor) {
         u32 quotient;
         u32 remainder;

@@ -459,8 +459,12 @@ namespace x64 {
             case Insn::FDIVRP_ST_ST: return toString<ST, ST>("fdivrp");
             case Insn::FCOMI_ST_ST: return toString<ST, ST>("fcomi");
             case Insn::FUCOMI_ST_ST: return toString<ST, ST>("fucomi");
+            case Insn::FUCOMIP_ST_ST: return toString<ST, ST>("fucomip");
             case Insn::FRNDINT: return toString("frndint");
             case Insn::FCMOV_ST: return toString<Cond, ST>("fcmov");
+            case Insn::F2XM1: return toString("f2xm1");
+            case Insn::FSCALE: return toString("fscale");
+            case Insn::FABS: return toString("fabs");
             case Insn::FNSTCW_M16: return toString<M16>("fnstcw");
             case Insn::FLDCW_M16: return toString<M16>("fldcw");
             case Insn::FNSTSW_R16: return toString<R16>("fnstsw");

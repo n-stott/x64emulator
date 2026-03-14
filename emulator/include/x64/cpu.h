@@ -717,9 +717,13 @@ namespace x64 {
 
         void execFcomiSTST(const X64Instruction&);
         void execFucomiSTST(const X64Instruction&);
+        void execFucomipSTST(const X64Instruction&);
         void execFrndint(const X64Instruction&);
 
         void execFcmovST(const X64Instruction&);
+        void execF2xm1(const X64Instruction&);
+        void execFscale(const X64Instruction&);
+        void execFabs(const X64Instruction&);
 
         void execFnstcwM16(const X64Instruction&);
         void execFldcwM16(const X64Instruction&);

@@ -1,5 +1,6 @@
 #include "x64/x87.h"
 #include <fmt/format.h>
+#include <fmt/color.h>
 
 namespace x64 {
 
@@ -115,4 +116,16 @@ namespace x64 {
         status_.C3 = 0;
     }
 
+    void X87Fpu::f2xm1() {
+        f80 dstValue = st(ST::ST0);
+        set(ST::ST0, F80::p2m1(dstValue));
+        fmt::print(fg(fmt::color::red), "f2xm1 rounding not checked\n");
+        status_.C1 = 0; // rounding not checked here
+    }
+
+    void X87Fpu::fabs() {
+        f80 dstValue = st(ST::ST0);
+        set(ST::ST0, F80::abs(dstValue));
+        status_.C1 = 0;
+    }
 }

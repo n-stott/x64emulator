@@ -59,6 +59,8 @@ namespace x64 {
         void set(ST st, f80 val);
         u8 top() const { return status_.top; }
         void fxam();
+        void f2xm1();
+        void fabs();
 
         X87Control& control() { return control_; }
         const X87Control& control() const { return control_; }

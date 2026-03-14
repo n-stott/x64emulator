@@ -119,4 +119,16 @@ namespace x64 {
         return val.val[9] & 0x80;
     }
 
+    f80 F80::p2m1(f80 val) {
+        return host::f2xm1(val);
+    }
+
+    f80 F80::scale(f80 val, f80 scale) {
+        return host::fscale(val, scale);
+    }
+
+    f80 F80::abs(f80 val) {
+        return host::fabs(val);
+    }
+
 }

@@ -2293,6 +2293,19 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeFucomip(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        auto stdst = asST(dst);
+        auto stsrc = asST(src);
+        if(stdst && stsrc) {
+            assert(stdst == ST::ST0);
+            return X64Instruction::make<Insn::FUCOMIP_ST_ST>(insn.runtime_address, insn.info.length, stdst.value(), stsrc.value());
+        }
+        return make_failed(insn);
+    }
+
     static X64Instruction makeFrndint(const ZydisDisassembledInstruction& insn) {
 #ifndef NDEBUG
         assert(insn.info.operand_count_visible == 0);
@@ -2310,6 +2323,18 @@ namespace x64 {
         auto stsrc = asST(src);
         if(stsrc) return X64Instruction::make<Insn::FCMOV_ST>(insn.runtime_address, insn.info.length, cond, stsrc.value());
         return make_failed(insn);
+    }
+
+    static X64Instruction makeF2xm1(const ZydisDisassembledInstruction& insn) {
+        return X64Instruction::make<Insn::F2XM1>(insn.runtime_address, insn.info.length);
+    }
+
+    static X64Instruction makeFscale(const ZydisDisassembledInstruction& insn) {
+        return X64Instruction::make<Insn::FSCALE>(insn.runtime_address, insn.info.length);
+    }
+
+    static X64Instruction makeFabs(const ZydisDisassembledInstruction& insn) {
+        return X64Instruction::make<Insn::FABS>(insn.runtime_address, insn.info.length);
     }
 
     static X64Instruction makeFnstcw(const ZydisDisassembledInstruction& insn) {
@@ -4982,6 +5007,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FDIVRP: return makeFdivrp(insn);
             case ZYDIS_MNEMONIC_FCOMI: return makeFcomi(insn);
             case ZYDIS_MNEMONIC_FUCOMI: return makeFucomi(insn);
+            case ZYDIS_MNEMONIC_FUCOMIP: return makeFucomip(insn);
             case ZYDIS_MNEMONIC_FRNDINT: return makeFrndint(insn);
             case ZYDIS_MNEMONIC_FCMOVB: return makeFcmov<Cond::B>(insn);
             case ZYDIS_MNEMONIC_FCMOVBE: return makeFcmov<Cond::BE>(insn);
@@ -4991,6 +5017,9 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FCMOVNE: return makeFcmov<Cond::NE>(insn);
             case ZYDIS_MNEMONIC_FCMOVNU: return makeFcmov<Cond::NU>(insn);
             case ZYDIS_MNEMONIC_FCMOVU: return makeFcmov<Cond::U>(insn);
+            case ZYDIS_MNEMONIC_F2XM1: return makeF2xm1(insn);
+            case ZYDIS_MNEMONIC_FSCALE: return makeFscale(insn);
+            case ZYDIS_MNEMONIC_FABS: return makeFabs(insn);
             case ZYDIS_MNEMONIC_FNSTCW: return makeFnstcw(insn);
             case ZYDIS_MNEMONIC_FLDCW: return makeFldcw(insn);
             case ZYDIS_MNEMONIC_FNSTSW: return makeFnstsw(insn);
