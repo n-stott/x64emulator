@@ -428,6 +428,8 @@ namespace x64 {
         FADD_M32,
         FADD_M64,
         FADDP_ST,
+        FSUB_ST_M32,
+        FSUB_ST_M64,
         FSUB_ST_ST,
         FSUBP_ST,
         FSUBRP_ST,

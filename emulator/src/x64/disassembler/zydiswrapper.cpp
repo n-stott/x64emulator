@@ -2156,6 +2156,13 @@ namespace x64 {
 
     static X64Instruction makeFsub(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 1 || insn.info.operand_count_visible == 2);
+        if(insn.info.operand_count_visible == 1) {
+            const auto& src = insn.operands[0];
+            auto m32src = asMemory32(src);
+            auto m64src = asMemory64(src);
+            if(m32src) return X64Instruction::make<Insn::FSUB_ST_M32>(insn.runtime_address, insn.info.length, ST::ST0, m32src.value());
+            if(m64src) return X64Instruction::make<Insn::FSUB_ST_M64>(insn.runtime_address, insn.info.length, ST::ST0, m64src.value());
+        }
         if(insn.info.operand_count_visible == 2) {
             const auto& dst = insn.operands[0];
             const auto& src = insn.operands[1];

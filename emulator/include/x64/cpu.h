@@ -704,6 +704,8 @@ namespace x64 {
         void execFaddM32(const X64Instruction&);
         void execFaddM64(const X64Instruction&);
         void execFaddpST(const X64Instruction&);
+        void execFsubSTM32(const X64Instruction&);
+        void execFsubSTM64(const X64Instruction&);
         void execFsubSTST(const X64Instruction&);
         void execFsubpST(const X64Instruction&);
         void execFsubrpST(const X64Instruction&);

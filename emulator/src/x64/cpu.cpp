@@ -616,6 +616,8 @@ namespace x64 {
     DEFINE_STANDALONE(FADD_M32, execFaddM32)
     DEFINE_STANDALONE(FADD_M64, execFaddM64)
     DEFINE_STANDALONE(FADDP_ST, execFaddpST)
+    DEFINE_STANDALONE(FSUB_ST_M32, execFsubSTM32)
+    DEFINE_STANDALONE(FSUB_ST_M64, execFsubSTM64)
     DEFINE_STANDALONE(FSUB_ST_ST, execFsubSTST)
     DEFINE_STANDALONE(FSUBP_ST, execFsubpST)
     DEFINE_STANDALONE(FSUBRP_ST, execFsubrpST)
@@ -1420,6 +1422,8 @@ namespace x64 {
         STANDALONE_NAME(FADD_M32),
         STANDALONE_NAME(FADD_M64),
         STANDALONE_NAME(FADDP_ST),
+        STANDALONE_NAME(FSUB_ST_M32),
+        STANDALONE_NAME(FSUB_ST_M64),
         STANDALONE_NAME(FSUB_ST_ST),
         STANDALONE_NAME(FSUBP_ST),
         STANDALONE_NAME(FSUBRP_ST),
@@ -4541,6 +4545,22 @@ namespace x64 {
         f80 dstValue = x87fpu_.st(dst);
         x87fpu_.set(dst, Impl::fadd(topValue, dstValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
         x87fpu_.pop();
+    }
+
+    void Cpu::execFsubSTM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<M32>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
+        x87fpu_.set(dst, Impl::fsub(dstValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
+    }
+
+    void Cpu::execFsubSTM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<M64>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
+        x87fpu_.set(dst, Impl::fsub(dstValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
     void Cpu::execFsubSTST(const X64Instruction& ins) {

@@ -447,6 +447,8 @@ namespace x64 {
             case Insn::FADD_M32: return toString<M32>("fadd");
             case Insn::FADD_M64: return toString<M64>("fadd");
             case Insn::FADDP_ST: return toString<ST>("faddp");
+            case Insn::FSUB_ST_M32: return toString<ST, M32>("fsub");
+            case Insn::FSUB_ST_M64: return toString<ST, M64>("fsub");
             case Insn::FSUB_ST_ST: return toString<ST>("fsub");
             case Insn::FSUBP_ST: return toString<ST>("fsubp");
             case Insn::FSUBRP_ST: return toString<ST>("fsubrp");
