@@ -469,13 +469,16 @@ namespace x64 {
             case Insn::FCOMP_ST_M64: return toString<ST, M64>("fcomp");
             case Insn::FCOMP_ST_ST: return toString<ST, ST>("fcomp");
             case Insn::FCOMI_ST_ST: return toString<ST, ST>("fcomi");
+            case Insn::FCOMIP_ST_ST: return toString<ST, ST>("fcomip");
             case Insn::FUCOMI_ST_ST: return toString<ST, ST>("fucomi");
             case Insn::FUCOMIP_ST_ST: return toString<ST, ST>("fucomip");
             case Insn::FRNDINT: return toString("frndint");
             case Insn::FCMOV_ST: return toString<Cond, ST>("fcmov");
             case Insn::F2XM1: return toString("f2xm1");
+            case Insn::FYL2X: return toString("fyl2x");
             case Insn::FSCALE: return toString("fscale");
             case Insn::FABS: return toString("fabs");
+            case Insn::FCHS: return toString("fchs");
             case Insn::FNSTCW_M16: return toString<M16>("fnstcw");
             case Insn::FLDCW_M16: return toString<M16>("fldcw");
             case Insn::FNSTSW_R16: return toString<R16>("fnstsw");

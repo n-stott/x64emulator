@@ -128,4 +128,10 @@ namespace x64 {
         set(ST::ST0, F80::abs(dstValue));
         status_.C1 = 0;
     }
+
+    void X87Fpu::fchs() {
+        f80 dstValue = st(ST::ST0);
+        set(ST::ST0, F80::chs(dstValue));
+        status_.C1 = 0;
+    }
 }

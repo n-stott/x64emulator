@@ -11,8 +11,10 @@ namespace host {
     i64 roundWithoutTruncation64(f64 src);
     f80 round(f80);
     f80 f2xm1(f80);
+    f80 fyl2x(f80, f80);
     f80 fscale(f80 val, f80 scale);
     f80 fabs(f80 val);
+    f80 fchs(f80 val);
     f80 lg2();
 
     template<typename U>

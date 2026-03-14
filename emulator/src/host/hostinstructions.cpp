@@ -92,6 +92,28 @@ namespace host {
         return val;
     }
 
+    f80 fyl2x(f80 x, f80 y) {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
+        long double xd;
+        long double yd;
+        static_assert(sizeof(x) <= sizeof(xd), "");
+        static_assert(sizeof(y) <= sizeof(yd), "");
+        memset(&xd, 0, sizeof(xd));
+        memcpy(&xd, &x, sizeof(x));
+        memset(&yd, 0, sizeof(yd));
+        memcpy(&yd, &y, sizeof(y));
+        asm volatile("fldt %1;"
+                     "fldt %0;"
+                     "fyl2x;"
+                     "fstpt %0;"
+                        : "+m"(x), "+m"(y));
+        memcpy(&x, &xd, sizeof(x));
+#endif
+        return x;
+    }
+
     f80 fscale(f80 val, f80 scale) {
 #ifdef MSVC_COMPILER
         std::abort();
@@ -126,6 +148,24 @@ namespace host {
         memcpy(&v, &val, sizeof(val));
         asm volatile("fldt %1;"
                      "fabs;"
+                     "fstpt %0;"
+                        : "=m"(v)
+                        : "m"(v));
+        memcpy(&val, &v, sizeof(val));
+#endif
+        return val;
+    }
+
+    f80 fchs(f80 val) {
+#ifdef MSVC_COMPILER
+        std::abort();
+#else
+        long double v;
+        static_assert(sizeof(val) <= sizeof(v), "");
+        memset(&v, 0, sizeof(v));
+        memcpy(&v, &val, sizeof(val));
+        asm volatile("fldt %1;"
+                     "fchs;"
                      "fstpt %0;"
                         : "=m"(v)
                         : "m"(v));

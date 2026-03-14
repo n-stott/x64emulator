@@ -638,13 +638,16 @@ namespace x64 {
     DEFINE_STANDALONE(FCOMP_ST_M64, execFcompSTM64)
     DEFINE_STANDALONE(FCOMP_ST_ST, execFcompSTST)
     DEFINE_STANDALONE(FCOMI_ST_ST, execFcomiSTST)
+    DEFINE_STANDALONE(FCOMIP_ST_ST, execFcomipSTST)
     DEFINE_STANDALONE(FUCOMI_ST_ST, execFucomiSTST)
     DEFINE_STANDALONE(FUCOMIP_ST_ST, execFucomipSTST)
     DEFINE_STANDALONE(FRNDINT, execFrndint)
     DEFINE_STANDALONE(FCMOV_ST, execFcmovST)
     DEFINE_STANDALONE(F2XM1, execF2xm1)
+    DEFINE_STANDALONE(FYL2X, execFyl2x)
     DEFINE_STANDALONE(FSCALE, execFscale)
     DEFINE_STANDALONE(FABS, execFabs)
+    DEFINE_STANDALONE(FCHS, execFchs)
     DEFINE_STANDALONE(FNSTCW_M16, execFnstcwM16)
     DEFINE_STANDALONE(FLDCW_M16, execFldcwM16)
     DEFINE_STANDALONE(FNSTSW_R16, execFnstswR16)
@@ -1450,13 +1453,16 @@ namespace x64 {
         STANDALONE_NAME(FCOMP_ST_M64),
         STANDALONE_NAME(FCOMP_ST_ST),
         STANDALONE_NAME(FCOMI_ST_ST),
+        STANDALONE_NAME(FCOMIP_ST_ST),
         STANDALONE_NAME(FUCOMI_ST_ST),
         STANDALONE_NAME(FUCOMIP_ST_ST),
         STANDALONE_NAME(FRNDINT),
         STANDALONE_NAME(FCMOV_ST),
         STANDALONE_NAME(F2XM1),
+        STANDALONE_NAME(FYL2X),
         STANDALONE_NAME(FSCALE),
         STANDALONE_NAME(FABS),
+        STANDALONE_NAME(FCHS),
         STANDALONE_NAME(FNSTCW_M16),
         STANDALONE_NAME(FLDCW_M16),
         STANDALONE_NAME(FNSTSW_R16),
@@ -4743,6 +4749,15 @@ namespace x64 {
         Impl::fcomi(dstValue, srcValue, &x87fpu_, &flags_);
     }
 
+    void Cpu::execFcomipSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        Impl::fcomi(dstValue, srcValue, &x87fpu_, &flags_);
+        x87fpu_.pop();
+    }
+
     void Cpu::execFucomiSTST(const X64Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
@@ -4777,6 +4792,14 @@ namespace x64 {
         x87fpu_.f2xm1();
     }
 
+    void Cpu::execFyl2x(const X64Instruction&) {
+        f80 x = x87fpu_.st(ST::ST0);
+        f80 y = x87fpu_.st(ST::ST1);
+        f80 res = F80::yl2x(x, y);
+        x87fpu_.set(ST::ST1, res);
+        x87fpu_.pop();
+    }
+
     void Cpu::execFscale(const X64Instruction&) {
         fmt::print(fg(fmt::color::red), "fscale rounding not checked\n");
         f80 val = x87fpu_.st(ST::ST0);
@@ -4787,6 +4810,10 @@ namespace x64 {
 
     void Cpu::execFabs(const X64Instruction&) {
         x87fpu_.fabs();
+    }
+
+    void Cpu::execFchs(const X64Instruction&) {
+        x87fpu_.fchs();
     }
 
     void Cpu::execFnstcwM16(const X64Instruction& ins) {

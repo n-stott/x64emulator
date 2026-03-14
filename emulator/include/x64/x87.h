@@ -61,6 +61,7 @@ namespace x64 {
         void fxam();
         void f2xm1();
         void fabs();
+        void fchs();
 
         X87Control& control() { return control_; }
         const X87Control& control() const { return control_; }

@@ -123,12 +123,20 @@ namespace x64 {
         return host::f2xm1(val);
     }
 
+    f80 F80::yl2x(f80 x, f80 y) {
+        return host::fyl2x(x, y);
+    }
+
     f80 F80::scale(f80 val, f80 scale) {
         return host::fscale(val, scale);
     }
 
     f80 F80::abs(f80 val) {
         return host::fabs(val);
+    }
+
+    f80 F80::chs(f80 val) {
+        return host::fchs(val);
     }
 
     f80 F80::lg2() {

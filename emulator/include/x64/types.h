@@ -475,8 +475,10 @@ namespace x64 {
 
         static bool sign(f80 val);
         static f80 p2m1(f80 val);
+        static f80 yl2x(f80 x, f80 y);
         static f80 scale(f80 val, f80 scale);
         static f80 abs(f80 val);
+        static f80 chs(f80 val);
 
         static f80 lg2();
     };
