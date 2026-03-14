@@ -631,6 +631,12 @@ namespace x64 {
     DEFINE_STANDALONE(FDIVR_ST_ST, execFdivrSTST)
     DEFINE_STANDALONE(FDIVR_M32, execFdivrM32)
     DEFINE_STANDALONE(FDIVRP_ST_ST, execFdivrpSTST)
+    DEFINE_STANDALONE(FCOM_ST_M32, execFcomSTM32)
+    DEFINE_STANDALONE(FCOM_ST_M64, execFcomSTM64)
+    DEFINE_STANDALONE(FCOM_ST_ST, execFcomSTST)
+    DEFINE_STANDALONE(FCOMP_ST_M32, execFcompSTM32)
+    DEFINE_STANDALONE(FCOMP_ST_M64, execFcompSTM64)
+    DEFINE_STANDALONE(FCOMP_ST_ST, execFcompSTST)
     DEFINE_STANDALONE(FCOMI_ST_ST, execFcomiSTST)
     DEFINE_STANDALONE(FUCOMI_ST_ST, execFucomiSTST)
     DEFINE_STANDALONE(FUCOMIP_ST_ST, execFucomipSTST)
@@ -1437,6 +1443,12 @@ namespace x64 {
         STANDALONE_NAME(FDIVR_ST_ST),
         STANDALONE_NAME(FDIVR_M32),
         STANDALONE_NAME(FDIVRP_ST_ST),
+        STANDALONE_NAME(FCOM_ST_M32),
+        STANDALONE_NAME(FCOM_ST_M64),
+        STANDALONE_NAME(FCOM_ST_ST),
+        STANDALONE_NAME(FCOMP_ST_M32),
+        STANDALONE_NAME(FCOMP_ST_M64),
+        STANDALONE_NAME(FCOMP_ST_ST),
         STANDALONE_NAME(FCOMI_ST_ST),
         STANDALONE_NAME(FUCOMI_ST_ST),
         STANDALONE_NAME(FUCOMIP_ST_ST),
@@ -4669,6 +4681,57 @@ namespace x64 {
         f80 srcValue = x87fpu_.st(src);
         f80 res = Impl::fdiv(srcValue, dstValue, &x87fpu_);
         x87fpu_.set(dst, res);
+        x87fpu_.pop();
+    }
+
+    void Cpu::execFcomSTM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<M32>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
+        Impl::fcom(dstValue, srcValue, &x87fpu_);
+    }
+
+    void Cpu::execFcomSTM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<M32>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
+        Impl::fcom(dstValue, srcValue, &x87fpu_);
+    }
+
+    void Cpu::execFcomSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        Impl::fcom(dstValue, srcValue, &x87fpu_);
+    }
+
+    void Cpu::execFcompSTM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<M32>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
+        Impl::fcom(dstValue, srcValue, &x87fpu_);
+        x87fpu_.pop();
+    }
+
+    void Cpu::execFcompSTM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<M64>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
+        Impl::fcom(dstValue, srcValue, &x87fpu_);
+        x87fpu_.pop();
+    }
+
+    void Cpu::execFcompSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        Impl::fcom(dstValue, srcValue, &x87fpu_);
         x87fpu_.pop();
     }
 

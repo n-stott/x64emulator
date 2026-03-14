@@ -1406,6 +1406,24 @@ namespace x64 {
         return nativeRes;
     }
 
+    void NativeCpuImpl::fcom(f80 dst, f80 src, [[maybe_unused]] X87Fpu* x87fpu) {
+        u16 x87cw;
+        asm volatile("fstcw %0" : "+m"(x87cw));
+        X87Control cw = X87Control::fromWord(x87cw);
+        (void)cw;
+        // TODO: change host fpu state if it does not match the emulated state
+        assert(cw.im == x87fpu->control().im);
+
+        f80 dummy;
+        u16 x87sw;
+        asm volatile("fldt %0" :: "m"(src));
+        asm volatile("fldt %0" :: "m"(dst));
+        asm volatile("fcomp");
+        asm volatile("fnstsw %0" : "+m"(x87sw));
+        asm volatile("fstpt %0" : "=m"(dummy));
+        x87fpu->status() = X87Status::fromWord(x87sw);
+    }
+
     void NativeCpuImpl::fcomi(f80 dst, f80 src, [[maybe_unused]] X87Fpu* x87fpu, Flags* flags) {
         u16 x87cw;
         asm volatile("fstcw %0" : "+m"(x87cw));

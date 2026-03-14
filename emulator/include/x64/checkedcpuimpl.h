@@ -500,6 +500,7 @@ namespace x64 {
 
         [[nodiscard]] static f80 frndint(f80 dst, X87Fpu* fpu);
 
+        static void fcom(f80 dst, f80 src, X87Fpu* fpu);
         static void fcomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
         static void fucomi(f80 dst, f80 src, X87Fpu* fpu, Flags* flags);
 

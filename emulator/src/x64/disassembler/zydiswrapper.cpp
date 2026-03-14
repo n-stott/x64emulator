@@ -2304,6 +2304,50 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makeFcom(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 1 || insn.info.operand_count_visible == 2);
+        if(insn.info.operand_count_visible == 1) {
+            const auto& src = insn.operands[0];
+            auto m32src = asMemory32(src);
+            auto m64src = asMemory64(src);
+            if(m32src) return X64Instruction::make<Insn::FCOM_ST_M32>(insn.runtime_address, insn.info.length, ST::ST0, m32src.value());
+            if(m64src) return X64Instruction::make<Insn::FCOM_ST_M64>(insn.runtime_address, insn.info.length, ST::ST0, m64src.value());
+        }
+        if(insn.info.operand_count_visible == 2) {
+            const auto& dst = insn.operands[0];
+            const auto& src = insn.operands[1];
+            auto stdst = asST(dst);
+            auto stsrc = asST(src);
+            if(stdst && stsrc) {
+                assert(stdst == ST::ST0);
+                return X64Instruction::make<Insn::FCOM_ST_ST>(insn.runtime_address, insn.info.length, ST::ST0, stsrc.value());
+            }
+        }
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeFcomp(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 1 || insn.info.operand_count_visible == 2);
+        if(insn.info.operand_count_visible == 1) {
+            const auto& src = insn.operands[0];
+            auto m32src = asMemory32(src);
+            auto m64src = asMemory64(src);
+            if(m32src) return X64Instruction::make<Insn::FCOMP_ST_M32>(insn.runtime_address, insn.info.length, ST::ST0, m32src.value());
+            if(m64src) return X64Instruction::make<Insn::FCOMP_ST_M64>(insn.runtime_address, insn.info.length, ST::ST0, m64src.value());
+        }
+        if(insn.info.operand_count_visible == 2) {
+            const auto& dst = insn.operands[0];
+            const auto& src = insn.operands[1];
+            auto stdst = asST(dst);
+            auto stsrc = asST(src);
+            if(stdst && stsrc) {
+                assert(stdst == ST::ST0);
+                return X64Instruction::make<Insn::FCOMP_ST_ST>(insn.runtime_address, insn.info.length, ST::ST0, stsrc.value());
+            }
+        }
+        return make_failed(insn);
+    }
+
     static X64Instruction makeFcomi(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -5044,6 +5088,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FDIVP: return makeFdivp(insn);
             case ZYDIS_MNEMONIC_FDIVR: return makeFdivr(insn);
             case ZYDIS_MNEMONIC_FDIVRP: return makeFdivrp(insn);
+            case ZYDIS_MNEMONIC_FCOM: return makeFcom(insn);
+            case ZYDIS_MNEMONIC_FCOMP: return makeFcomp(insn);
             case ZYDIS_MNEMONIC_FCOMI: return makeFcomi(insn);
             case ZYDIS_MNEMONIC_FUCOMI: return makeFucomi(insn);
             case ZYDIS_MNEMONIC_FUCOMIP: return makeFucomip(insn);

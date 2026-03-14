@@ -728,6 +728,33 @@ namespace x64 {
         return F80::fromLongDouble(r);
     }
 
+    void CpuImpl::fcom(f80 dst, f80 src, X87Fpu* x87fpu) {
+        long double d = F80::toLongDouble(dst);
+        long double s = F80::toLongDouble(src);
+        if(d > s) {
+            x87fpu->status().C3 = 0;
+            x87fpu->status().C2 = 0;
+            x87fpu->status().C0 = 0;
+        }
+        if(d < s) {
+            x87fpu->status().C3 = 0;
+            x87fpu->status().C2 = 0;
+            x87fpu->status().C0 = 1;
+        }
+        if(d == s) {
+            x87fpu->status().C3 = 1;
+            x87fpu->status().C2 = 0;
+            x87fpu->status().C0 = 0;
+        }
+        if(d != d || s != s) {
+            if(x87fpu->control().im) {
+                x87fpu->status().C3 = 1;
+                x87fpu->status().C2 = 1;
+                x87fpu->status().C0 = 1;
+            }
+        }
+    }
+
     void CpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
         long double d = F80::toLongDouble(dst);
         long double s = F80::toLongDouble(src);

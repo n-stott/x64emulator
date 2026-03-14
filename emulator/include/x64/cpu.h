@@ -720,6 +720,12 @@ namespace x64 {
         void execFdivrM32(const X64Instruction&);
         void execFdivrpSTST(const X64Instruction&);
 
+        void execFcomSTM32(const X64Instruction&);
+        void execFcomSTM64(const X64Instruction&);
+        void execFcomSTST(const X64Instruction&);
+        void execFcompSTM32(const X64Instruction&);
+        void execFcompSTM64(const X64Instruction&);
+        void execFcompSTST(const X64Instruction&);
         void execFcomiSTST(const X64Instruction&);
         void execFucomiSTST(const X64Instruction&);
         void execFucomipSTST(const X64Instruction&);

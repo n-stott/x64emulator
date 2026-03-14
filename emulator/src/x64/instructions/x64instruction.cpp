@@ -462,6 +462,12 @@ namespace x64 {
             case Insn::FDIVR_ST_ST: return toString<ST, ST>("fdivr");
             case Insn::FDIVR_M32: return toString<M32>("fdivr");
             case Insn::FDIVRP_ST_ST: return toString<ST, ST>("fdivrp");
+            case Insn::FCOM_ST_M32: return toString<ST, M32>("fcom");
+            case Insn::FCOM_ST_M64: return toString<ST, M64>("fcom");
+            case Insn::FCOM_ST_ST: return toString<ST, ST>("fcom");
+            case Insn::FCOMP_ST_M32: return toString<ST, M32>("fcomp");
+            case Insn::FCOMP_ST_M64: return toString<ST, M64>("fcomp");
+            case Insn::FCOMP_ST_ST: return toString<ST, ST>("fcomp");
             case Insn::FCOMI_ST_ST: return toString<ST, ST>("fcomi");
             case Insn::FUCOMI_ST_ST: return toString<ST, ST>("fucomi");
             case Insn::FUCOMIP_ST_ST: return toString<ST, ST>("fucomip");

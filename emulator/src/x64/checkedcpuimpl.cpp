@@ -638,6 +638,10 @@ namespace x64 {
         return checkCallWithFpu<f80>(&CpuImpl::fdiv, &NativeCpuImpl::fdiv, &noFpuComparison, fpu, dst, src);
     }
 
+    void CheckedCpuImpl::fcom(f80 dst, f80 src, X87Fpu* x87fpu) {
+        return checkCallWithFpu<void>(&CpuImpl::fcom, &NativeCpuImpl::fcom, &noFpuComparison, x87fpu, dst, src);
+    }
+
     void CheckedCpuImpl::fcomi(f80 dst, f80 src, X87Fpu* x87fpu, Flags* flags) {
         return checkCallWithFlags<void>(&CpuImpl::fcomi, &NativeCpuImpl::fcomi, &sameCarryZeroParity, flags, dst, src, x87fpu);
     }
