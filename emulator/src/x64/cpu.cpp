@@ -620,6 +620,8 @@ namespace x64 {
     DEFINE_STANDALONE(FSUBRP_ST, execFsubrpST)
     DEFINE_STANDALONE(FMUL1_M32, execFmul1M32)
     DEFINE_STANDALONE(FMUL1_M64, execFmul1M64)
+    DEFINE_STANDALONE(FMUL_ST_ST, execFmulSTST)
+    DEFINE_STANDALONE(FMULP_ST_ST, execFmulpSTST)
     DEFINE_STANDALONE(FDIV_ST_ST, execFdivSTST)
     DEFINE_STANDALONE(FDIV_M32, execFdivM32)
     DEFINE_STANDALONE(FDIVP_ST_ST, execFdivpSTST)
@@ -1421,6 +1423,8 @@ namespace x64 {
         STANDALONE_NAME(FSUBRP_ST),
         STANDALONE_NAME(FMUL1_M32),
         STANDALONE_NAME(FMUL1_M64),
+        STANDALONE_NAME(FMUL_ST_ST),
+        STANDALONE_NAME(FMULP_ST_ST),
         STANDALONE_NAME(FDIV_ST_ST),
         STANDALONE_NAME(FDIV_M32),
         STANDALONE_NAME(FDIVP_ST_ST),
@@ -4572,6 +4576,24 @@ namespace x64 {
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
+    }
+
+    void Cpu::execFmulSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        x87fpu_.set(dst, Impl::fmul(dstValue, srcValue, &x87fpu_));
+    }
+
+    void Cpu::execFmulpSTST(const X64Instruction& ins) {
+        const auto& dst = ins.op0<ST>();
+        const auto& src = ins.op1<ST>();
+        f80 dstValue = x87fpu_.st(dst);
+        f80 srcValue = x87fpu_.st(src);
+        f80 res = Impl::fmul(dstValue, srcValue, &x87fpu_);
+        x87fpu_.set(dst, res);
+        x87fpu_.pop();
     }
 
     void Cpu::execFdivSTST(const X64Instruction& ins) {

@@ -2196,6 +2196,29 @@ namespace x64 {
             if(m32src) return X64Instruction::make<Insn::FMUL1_M32>(insn.runtime_address, insn.info.length, m32src.value());
             if(m64src) return X64Instruction::make<Insn::FMUL1_M64>(insn.runtime_address, insn.info.length, m64src.value());
         }
+        if(insn.info.operand_count_visible == 2) {
+            const auto& dst = insn.operands[0];
+            const auto& src = insn.operands[1];
+            auto stdst = asST(dst);
+            auto stsrc = asST(src);
+            if(stdst && stsrc) {
+                assert(stdst == ST::ST0);
+                return X64Instruction::make<Insn::FMUL_ST_ST>(insn.runtime_address, insn.info.length, ST::ST0, stsrc.value());
+            }
+        }
+        return make_failed(insn);
+    }
+
+    static X64Instruction makeFmulp(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 2);
+        const auto& dst = insn.operands[0];
+        auto stdst = asST(dst);
+#ifndef NDEBUG
+        const auto& src = insn.operands[1];
+        auto stsrc = asST(src);
+        assert(stsrc == ST::ST0);
+#endif
+        if(stdst) return X64Instruction::make<Insn::FMULP_ST_ST>(insn.runtime_address, insn.info.length, stdst.value(), ST::ST0);
         return make_failed(insn);
     }
 
@@ -5001,6 +5024,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_FSUBP: return makeFsubp(insn);
             case ZYDIS_MNEMONIC_FSUBRP: return makeFsubrp(insn);
             case ZYDIS_MNEMONIC_FMUL: return makeFmul(insn);
+            case ZYDIS_MNEMONIC_FMULP: return makeFmulp(insn);
             case ZYDIS_MNEMONIC_FDIV: return makeFdiv(insn);
             case ZYDIS_MNEMONIC_FDIVP: return makeFdivp(insn);
             case ZYDIS_MNEMONIC_FDIVR: return makeFdivr(insn);

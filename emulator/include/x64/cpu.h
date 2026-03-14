@@ -708,6 +708,8 @@ namespace x64 {
         void execFsubrpST(const X64Instruction&);
         void execFmul1M32(const X64Instruction&);
         void execFmul1M64(const X64Instruction&);
+        void execFmulSTST(const X64Instruction&);
+        void execFmulpSTST(const X64Instruction&);
         void execFdivSTST(const X64Instruction&);
         void execFdivM32(const X64Instruction&);
         void execFdivpSTST(const X64Instruction&);

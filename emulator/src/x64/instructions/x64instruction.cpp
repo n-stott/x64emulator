@@ -451,6 +451,8 @@ namespace x64 {
             case Insn::FSUBRP_ST: return toString<ST>("fsubrp");
             case Insn::FMUL1_M32: return toString<M32>("fmul1");
             case Insn::FMUL1_M64: return toString<M64>("fmul1");
+            case Insn::FMUL_ST_ST: return toString<ST, ST>("fmul");
+            case Insn::FMULP_ST_ST: return toString<ST, ST>("fmulp");
             case Insn::FDIV_ST_ST: return toString<ST, ST>("fdiv");
             case Insn::FDIV_M32: return toString<M32>("fdiv");
             case Insn::FDIVP_ST_ST: return toString<ST, ST>("fdivp");

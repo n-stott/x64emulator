@@ -432,6 +432,8 @@ namespace x64 {
         FSUBRP_ST,
         FMUL1_M32,
         FMUL1_M64,
+        FMUL_ST_ST,
+        FMULP_ST_ST,
         FDIV_ST_ST,
         FDIV_M32,
         FDIVP_ST_ST,
