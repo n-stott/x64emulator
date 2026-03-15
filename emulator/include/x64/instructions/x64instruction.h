@@ -805,6 +805,7 @@ namespace x64 {
 
         PMULLD_XMM_XMMM128,
         PEXTRB_R32_XMM_IMM,
+        PEXTRB_M8_XMM_IMM,
         PEXTRD_RM32_XMM_IMM,
         PEXTRQ_RM64_XMM_IMM,
         PINSRB_XMM_R32_IMM,

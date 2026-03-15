@@ -3821,7 +3821,7 @@ namespace x64 {
 #endif
     }
 
-    u32 NativeCpuImpl::pextrb(u128 src, u8 order) {
+    u8 NativeCpuImpl::pextrb(u128 src, u8 order) {
 #ifdef SSE41
         auto native = [=](__m128i s) -> int {
             CALL_1_WITH_IMM4(_mm_extract_epi8, s);
@@ -3832,7 +3832,7 @@ namespace x64 {
         memcpy(&s, &src, sizeof(src));
         assert(order < 8);
         int r = native(s);
-        return (u32)r;
+        return (u8)r;
 #else
         assert(!"pextrb not defined");
         (void)src;

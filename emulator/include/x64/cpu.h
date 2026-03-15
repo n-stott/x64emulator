@@ -1150,6 +1150,7 @@ namespace x64 {
 
         void execPmulldXMMXMMM128(const X64Instruction&);
         void execPextrbR32XMMImm(const X64Instruction&);
+        void execPextrbM8XMMImm(const X64Instruction&);
         void execPextrdRM32XMMImm(const X64Instruction&);
         void execPextrqRM64XMMImm(const X64Instruction&);
         void execPinsrbXMMR32Imm(const X64Instruction&);

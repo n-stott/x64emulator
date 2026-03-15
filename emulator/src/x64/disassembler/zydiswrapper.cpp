@@ -4747,9 +4747,11 @@ namespace x64 {
         const auto& src = insn.operands[1];
         const auto& pos = insn.operands[2];
         auto r32dst = asRegister32(dst);
+        auto m8dst = asMemory8(dst);
         auto rssesrc = asRegister128(src);
         auto imm = asImmediate(pos);
         if(r32dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRB_R32_XMM_IMM>(insn.runtime_address, insn.info.length, r32dst.value(), rssesrc.value(), imm.value());
+        if(m8dst && rssesrc && imm) return X64Instruction::make<Insn::PEXTRB_M8_XMM_IMM>(insn.runtime_address, insn.info.length, m8dst.value(), rssesrc.value(), imm.value());
         return make_failed(insn);
     }
 

@@ -984,6 +984,7 @@ namespace x64 {
     DEFINE_STANDALONE(ROUNDPD_XMM_XMM_IMM, execRoundpdXMMXMMImm)
     DEFINE_STANDALONE(PMULLD_XMM_XMMM128, execPmulldXMMXMMM128)
     DEFINE_STANDALONE(PEXTRB_R32_XMM_IMM, execPextrbR32XMMImm)
+    DEFINE_STANDALONE(PEXTRB_M8_XMM_IMM, execPextrbM8XMMImm)
     DEFINE_STANDALONE(PEXTRD_RM32_XMM_IMM, execPextrdRM32XMMImm)
     DEFINE_STANDALONE(PEXTRQ_RM64_XMM_IMM, execPextrqRM64XMMImm)
     DEFINE_STANDALONE(PINSRB_XMM_R32_IMM, execPinsrbXMMR32Imm)
@@ -1799,6 +1800,7 @@ namespace x64 {
         STANDALONE_NAME(ROUNDPD_XMM_XMM_IMM),
         STANDALONE_NAME(PMULLD_XMM_XMMM128),
         STANDALONE_NAME(PEXTRB_R32_XMM_IMM),
+        STANDALONE_NAME(PEXTRB_M8_XMM_IMM),
         STANDALONE_NAME(PEXTRD_RM32_XMM_IMM),
         STANDALONE_NAME(PEXTRQ_RM64_XMM_IMM),
         STANDALONE_NAME(PINSRB_XMM_R32_IMM),
@@ -2615,6 +2617,7 @@ namespace x64 {
     template<> u64 narrow(const Xmm& val) { return val.lo; }
 
     template<typename T, typename U> T zeroExtend(const U& val);
+    template<> u32 zeroExtend(const u8& val) { return (u32)val; }
     template<> u32 zeroExtend(const u16& val) { return (u32)val; }
     template<> u64 zeroExtend(const u16& val) { return (u64)val; }
     template<> u64 zeroExtend(const u32& val) { return (u64)val; }
@@ -7055,7 +7058,14 @@ namespace x64 {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
-        set(dst, Impl::pextrb(get(src), get<u8>(imm)));
+        set(dst, zeroExtend<u32, u8>(Impl::pextrb(get(src), get<u8>(imm))));
+    }
+
+    void Cpu::execPextrbM8XMMImm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<M8>();
+        const auto& src = ins.op1<XMM>();
+        const auto& imm = ins.op2<Imm>();
+        set(resolve(dst), Impl::pextrb(get(src), get<u8>(imm)));
     }
 
     void Cpu::execPextrdRM32XMMImm(const X64Instruction& ins) {

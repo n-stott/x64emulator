@@ -3811,12 +3811,12 @@ namespace x64 {
         return dst;
     }
 
-    u32 CpuImpl::pextrb(u128 src, u8 order) {
+    u8 CpuImpl::pextrb(u128 src, u8 order) {
         order = order & 0xF;
         std::array<u8, 16> SRC;
         static_assert(sizeof(SRC) == sizeof(u128));
         std::memcpy(SRC.data(), &src, sizeof(u128));
-        return (u32)SRC[order];
+        return SRC[order];
     }
 
     u32 CpuImpl::pextrd(u128 src, u8 order) {
