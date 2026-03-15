@@ -2,6 +2,7 @@
 #define HOSTDEVICE_H
 
 #include "kernel/linux/dev/device.h"
+#include "host/host.h"
 #include <fmt/core.h>
 #include <memory>
 #include <string>
@@ -25,7 +26,7 @@ namespace kernel::gnulinux {
         void close() override;
         bool keepAfterClose() const override { return false; }
 
-        std::optional<int> hostFileDescriptor() const override { return hostFd_; }
+        std::optional<int> hostFileDescriptor() const override { return handle_->fd().fd; }
 
         ReadResult read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
@@ -41,12 +42,14 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {
-            return fmt::format("HostDevice(realfd={})", hostFd_);
+            return fmt::format("HostDevice(realfd={})", handle_->fd().fd);
         }
 
     private:
-        HostDevice(std::string name, int hostFd) : Device(std::move(name)), hostFd_(hostFd) { }
-        int hostFd_ { -1 };
+        HostDevice(std::string name, std::optional<Host::FileHandle> handle) :
+                Device(std::move(name)),
+                handle_(std::move(handle)) { }
+        std::optional<Host::FileHandle> handle_;
     };
 
 }

@@ -17,41 +17,20 @@ namespace kernel::gnulinux {
 
     std::unique_ptr<HostFile> HostFile::tryCreate(const Path& path, BitFlags<AccessMode> accessMode, bool closeOnExec) {
         std::string pathname = path.absolute();
-
-        verify(!accessMode.test(AccessMode::WRITE), "HostFile should not have write access");
-        int flags = O_RDONLY;
-        if(closeOnExec) flags |= O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-        if(fd < 0) return {};
-
-        ScopeGuard guard([=]() {
-            if(fd >= 0) ::close(fd);
-        });
-
-        // check that the file is a regular file
-        struct stat s;
-        if(::fstat(fd, &s) < 0) {
-            return {};
-        }
-        
-        mode_t fileType = (s.st_mode & S_IFMT);
-        if (fileType != S_IFREG) {
-            // not a regular file
-            return {};
-        }
-        guard.disable();
-
-        return std::unique_ptr<HostFile>(new HostFile(path.last(), fd));
+        verify(!accessMode.test(AccessMode::WRITE), "Hostfile is not writable");
+        auto handle = Host::tryOpen(pathname.c_str(), Host::FileType::REGULAR_FILE,
+                closeOnExec ? Host::CloseOnExec::YES : Host::CloseOnExec::NO);
+        if(!handle) return {};
+        return std::unique_ptr<HostFile>(new HostFile(path.last(), std::move(handle)));
     }
 
     void HostFile::close() {
         if(refCount_ > 0) return;
-        int rc = ::close(hostFd_);
-        verify(rc == 0);
+        handle_.reset();
     }
 
     bool HostFile::canRead() const {
-        return Host::pollCanRead(Host::FD{hostFd_});
+        return Host::pollCanRead(handle_->fd());
     }
 
     bool HostFile::canWrite() const {
@@ -64,7 +43,7 @@ namespace kernel::gnulinux {
         off_t offset = openFileDescription.offset();
         if(offset < 0) return ErrnoOrBuffer{-EINVAL};
         Buffer buffer(count, 0x0);
-        ssize_t nbytes = ::pread(hostFd_, buffer.data(), count, offset);
+        ssize_t nbytes = handle_->pread(buffer.data(), count, offset);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
         buffer.shrink((size_t)nbytes);
         return ErrnoOrBuffer(std::move(buffer));
@@ -76,30 +55,19 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostFile::stat() {
-        struct stat st;
-        std::string path = this->path().absolute();
-        int rc = ::stat(path.c_str(), &st);
-        if(rc < 0) return ErrnoOrBuffer(-errno);
-        Buffer buf(sizeof(st), 0x0);
-        std::memcpy(buf.data(), &st, sizeof(st));
-        return ErrnoOrBuffer(std::move(buf));
+        return handle_->stat();
     }
 
     ErrnoOrBuffer HostFile::statfs() {
-        struct statfs stfs;
-        int rc = ::fstatfs(hostFd_, &stfs);
-        if(rc < 0) return ErrnoOrBuffer(-errno);
-        Buffer buf(sizeof(stfs), 0x0);
-        std::memcpy(buf.data(), &stfs, sizeof(stfs));
-        return ErrnoOrBuffer(std::move(buf));
+        return handle_->statfs();
     }
 
     ErrnoOrBuffer HostFile::statx(unsigned int mask) {
-        return Host::statx(Host::FD{hostFd_}, "", AT_EMPTY_PATH, mask);
+        return Host::statx(handle_->fd(), "", AT_EMPTY_PATH, mask);
     }
 
     void HostFile::advanceInternalOffset(off_t offset) {
-        off_t ret = ::lseek(hostFd_, offset, SEEK_CUR);
+        off_t ret = ::lseek(handle_->fd().fd, offset, SEEK_CUR);
         verify(ret >= 0, []() {
             fmt::print("Expected no error in HostFile::advanceInternalOffset, but got errno = {}\n", errno);
         });
@@ -108,10 +76,10 @@ namespace kernel::gnulinux {
     off_t HostFile::lseek(OpenFileDescription& ofd, off_t offset, int whence) {
         off_t ret = [&]() {
             if(whence == SEEK_CUR) {
-                return ::lseek(hostFd_, ofd.offset() + offset, SEEK_SET);
+                return ::lseek(handle_->fd().fd, ofd.offset() + offset, SEEK_SET);
             } else {
                 // SEEK_SET or SEEK_END
-                return ::lseek(hostFd_, offset, whence);
+                return ::lseek(handle_->fd().fd, offset, whence);
             }
         }();
         if(ret < 0) return -errno;
@@ -120,39 +88,39 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer HostFile::getdents64(size_t count) {
         Buffer buf(count, 0x0);
-        ssize_t nbytes = ::getdents64(hostFd_, buf.data(), buf.size());
+        ssize_t nbytes = ::getdents64(handle_->fd().fd, buf.data(), buf.size());
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
         buf.shrink((size_t)nbytes);
         return ErrnoOrBuffer(std::move(buf));
     }
 
     std::optional<int> HostFile::fcntl(int cmd, int arg) {
-        return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
+        return Host::fcntl(handle_->fd(), cmd, arg);
     }
 
     ErrnoOrBuffer HostFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {
         switch(request) {
             case Ioctl::tcgets: {
                 struct termios ts;
-                int ret = ::ioctl(hostFd_, TCGETS, &ts);
+                int ret = ::ioctl(handle_->fd().fd, TCGETS, &ts);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 Buffer buffer(sizeof(ts), 0x0);
                 std::memcpy(buffer.data(), &ts, sizeof(ts));
                 return ErrnoOrBuffer(std::move(buffer));
             }
             case Ioctl::fioclex: {
-                int ret = ::ioctl(hostFd_, FIOCLEX, nullptr);
+                int ret = ::ioctl(handle_->fd().fd, FIOCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
             case Ioctl::fionclex: {
-                int ret = ::ioctl(hostFd_, FIONCLEX, nullptr);
+                int ret = ::ioctl(handle_->fd().fd, FIONCLEX, nullptr);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
             case Ioctl::tiocgwinsz: {
                 struct winsize ws;
-                int ret = ::ioctl(hostFd_, TIOCGWINSZ, &ws);
+                int ret = ::ioctl(handle_->fd().fd, TIOCGWINSZ, &ws);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 Buffer buffer(sizeof(ws), 0x0);
                 std::memcpy(buffer.data(), &ws, sizeof(ws));
@@ -161,14 +129,14 @@ namespace kernel::gnulinux {
             case Ioctl::tiocswinsz: {
                 struct winsize ws;
                 std::memcpy(&ws, inputBuffer.data(), sizeof(ws));
-                int ret = ::ioctl(hostFd_, TIOCSWINSZ, &ws);
+                int ret = ::ioctl(handle_->fd().fd, TIOCSWINSZ, &ws);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }
             case Ioctl::tcsetsw: {
                 struct termios ts;
                 std::memcpy(&ts, inputBuffer.data(), sizeof(ts));
-                int ret = ::ioctl(hostFd_, TCSETSW, &ts);
+                int ret = ::ioctl(handle_->fd().fd, TCSETSW, &ts);
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(Buffer{});
             }

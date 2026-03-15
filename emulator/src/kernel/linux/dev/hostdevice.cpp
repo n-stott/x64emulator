@@ -12,39 +12,18 @@ namespace kernel::gnulinux {
 
     std::unique_ptr<HostDevice> HostDevice::tryCreate(const Path& path) {
         std::string pathname = path.absolute();
-
-        int flags = O_RDONLY | O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-        if(fd < 0) return {};
-
-        ScopeGuard guard([=]() {
-            if(fd >= 0) ::close(fd);
-        });
-
-        // check that the file is a device
-        struct stat s;
-        if(::fstat(fd, &s) < 0) {
-            return {};
-        }
-        
-        mode_t fileType = (s.st_mode & S_IFMT);
-        if(fileType != S_IFCHR && fileType != S_IFBLK) {
-            // not a character device or block device
-            return {};
-        }
-        guard.disable();
-
-        return std::unique_ptr<HostDevice>(new HostDevice(path.last(), fd));
+        auto handle = Host::tryOpen(pathname.c_str(), Host::FileType::DEVICE, Host::CloseOnExec::YES);
+        if(!handle) return {};
+        return std::unique_ptr<HostDevice>(new HostDevice(path.last(), std::move(handle)));
     }
 
     void HostDevice::close() {
         if(refCount_ > 0) return;
-        int rc = ::close(hostFd_);
-        verify(rc == 0);
+        handle_.reset();
     }
 
     bool HostDevice::canRead() const {
-        return Host::pollCanRead(Host::FD{hostFd_});
+        return Host::pollCanRead(handle_->fd());
     }
 
     bool HostDevice::canWrite() const {
@@ -55,7 +34,7 @@ namespace kernel::gnulinux {
     ReadResult HostDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         Buffer buffer(count, 0x0);
-        ssize_t nbytes = ::read(hostFd_, buffer.data(), count);
+        ssize_t nbytes = ::read(handle_->fd().fd, buffer.data(), count);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
         buffer.shrink((size_t)nbytes);
         return ErrnoOrBuffer(std::move(buffer));
@@ -81,7 +60,7 @@ namespace kernel::gnulinux {
     }
 
     void HostDevice::advanceInternalOffset(off_t offset) {
-        off_t ret = ::lseek(hostFd_, offset, SEEK_CUR);
+        off_t ret = ::lseek(handle_->fd().fd, offset, SEEK_CUR);
         verify(ret >= 0, "advanceInternalOffset failed in HostDevice");
     }
 
@@ -91,7 +70,7 @@ namespace kernel::gnulinux {
     }
 
     std::optional<int> HostDevice::fcntl(int cmd, int arg) {
-        return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
+        return Host::fcntl(handle_->fd(), cmd, arg);
     }
 
     ErrnoOrBuffer HostDevice::ioctl(OpenFileDescription&, Ioctl, const Buffer&) {

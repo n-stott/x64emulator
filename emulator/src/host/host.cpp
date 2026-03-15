@@ -882,4 +882,74 @@ namespace kernel::gnulinux {
         return {};
     }
 
+    Host::FileHandle::FileHandle(FD fd) : fd_(fd) {
+        assert(fd_.fd >= 0);
+    }
+    
+    Host::FileHandle::~FileHandle() {
+        if(fd_.fd < 0) return;
+        [[maybe_unused]] int rc = ::close(fd_.fd);
+        assert(rc == 0);
+    }
+
+    Host::FileHandle::FileHandle(FileHandle&& other) {
+        fd_ = other.fd_;
+        other.fd_.fd = -1;
+    }
+
+    std::optional<Host::FileHandle> Host::tryOpen(const char* pathname, FileType type, CloseOnExec cloexec) {
+        int flags = O_RDONLY;
+        if(cloexec == CloseOnExec::YES) flags |= O_CLOEXEC;
+        int fd = ::openat(AT_FDCWD, pathname, flags);
+        if(fd < 0) return {};
+
+        ScopeGuard guard([=]() {
+            if(fd >= 0) ::close(fd);
+        });
+
+        // check that the file is a regular file
+        struct stat s;
+        if(::fstat(fd, &s) < 0) {
+            return {};
+        }
+        
+        
+        mode_t fileType = (s.st_mode & S_IFMT);
+        switch(type) {
+            case FileType::DEVICE: {
+                if(fileType != S_IFCHR && fileType != S_IFBLK) return {};
+                break;
+            }
+            case FileType::REGULAR_FILE: {
+                if (fileType != S_IFREG) return {};
+                break;
+            }
+        }
+        guard.disable();
+
+        return FileHandle(FD{fd});
+    }
+
+    ssize_t Host::FileHandle::pread(u8* buffer, size_t count, off_t offset) const {
+        return ::pread(fd_.fd, buffer, count, offset);
+    }
+
+    ErrnoOrBuffer Host::FileHandle::stat() const {
+        struct stat st;
+        int rc = ::fstat(fd_.fd, &st);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        Buffer buf(sizeof(st), 0x0);
+        std::memcpy(buf.data(), &st, sizeof(st));
+        return ErrnoOrBuffer(std::move(buf));
+    }
+
+    ErrnoOrBuffer Host::FileHandle::statfs() const {
+        struct statfs stfs;
+        int rc = ::fstatfs(fd_.fd, &stfs);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        Buffer buf(sizeof(stfs), 0x0);
+        std::memcpy(buf.data(), &stfs, sizeof(stfs));
+        return ErrnoOrBuffer(std::move(buf));
+    }
+
 }

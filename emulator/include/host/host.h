@@ -64,6 +64,36 @@ namespace kernel::gnulinux {
             static bool isTruncating(int flag);
         };
 
+        enum class FileType {
+            REGULAR_FILE,
+            DEVICE,
+        };
+
+        enum class CloseOnExec {
+            NO,
+            YES,
+        };
+
+        class FileHandle {
+        public:
+            explicit FileHandle(FD fd);
+            ~FileHandle();
+            FileHandle(FileHandle&&);
+
+            FD fd() const { return fd_; }
+
+            ssize_t pread(u8* buffer, size_t count, off_t offset) const;
+
+            ErrnoOrBuffer stat() const;
+            ErrnoOrBuffer statfs() const;
+
+        private:
+            FD fd_;
+            FileHandle(const FileHandle&) = delete;
+        };
+
+        static std::optional<FileHandle> tryOpen(const char* pathname, FileType type, CloseOnExec cloexec = CloseOnExec::YES);
+
         struct Fcntl {
             enum Command {
                 DUPFD,

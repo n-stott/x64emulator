@@ -39,8 +39,8 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    std::optional<int> NullDevice::fcntl(int, int) {
-        verify(false, "NullDevice::fcntl not implemented");
+    std::optional<int> NullDevice::fcntl(int cmd, int arg) {
+        verify(false, fmt::format("NullDevice::fcntl({}, {}) not implemented", cmd, arg));
         return -ENOTSUP;
     }
 
