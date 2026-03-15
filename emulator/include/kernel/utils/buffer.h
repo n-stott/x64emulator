@@ -114,9 +114,9 @@ namespace kernel {
             } else {
                 // We need to move the data from the heap to the stack
                 std::array<u8, InlineBytes> tmp;
-                ::memcpy(tmp.data(), data_.heapBuffer, InlineBytes);
+                std::memcpy(tmp.data(), data_.heapBuffer, InlineBytes);
                 free(data_.heapBuffer);
-                ::memcpy(data_.stackBuffer, tmp.data(), InlineBytes);
+                std::memcpy(data_.stackBuffer, tmp.data(), InlineBytes);
                 size_ = (u32)newSize;
                 return;
             }
@@ -135,7 +135,7 @@ namespace kernel {
         Buffer() = default;
 
         Buffer(size_t size, u8 value) : SVOBuffer(size) {
-            ::memset(data(), value, size);
+            std::memset(data(), value, size);
         }
 
         template<typename T>

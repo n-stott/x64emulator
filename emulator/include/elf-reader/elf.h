@@ -241,7 +241,7 @@ namespace elf {
 
     inline std::string_view StringTable::operator[](size_t idx) const {
         assert(idx < size());
-        size_t len = ::strlen(begin_+idx);
+        size_t len = std::strlen(begin_+idx);
         std::string_view sv(begin_+idx, len);
         return sv;
     }

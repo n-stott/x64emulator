@@ -947,23 +947,23 @@ namespace x64 {
     u128 CpuImpl::rsqrtss(u128 dst, u128 src) {
         std::array<float, 4> DST;
         std::array<float, 4> SRC;
-        ::mempcpy(DST.data(), &dst, sizeof(dst));
-        ::mempcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         DST[0] = 1.0f / std::sqrt(SRC[0]);
-        ::mempcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
     u128 CpuImpl::rcpps(u128 src) {
         std::array<float, 4> DST;
         std::array<float, 4> SRC;
-        ::mempcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         DST[0] = 1.0f / SRC[0];
         DST[1] = 1.0f / SRC[1];
         DST[2] = 1.0f / SRC[2];
         DST[3] = 1.0f / SRC[3];
         u128 dst;
-        ::mempcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -2657,8 +2657,8 @@ namespace x64 {
         // format
         std::array<UI8, 16> DST8;
         std::array<UI8, 16> SRC8;
-        ::memcpy(&DST8, &dst, sizeof(dst));
-        ::memcpy(&SRC8, &src, sizeof(src));
+        std::memcpy(&DST8, &dst, sizeof(dst));
+        std::memcpy(&SRC8, &src, sizeof(src));
         u8 invaliddst = (u8)std::distance(DST8.begin(), std::find(DST8.begin(), DST8.end(), 0));
         u8 invalidsrc = (u8)std::distance(SRC8.begin(), std::find(SRC8.begin(), SRC8.end(), 0));
 
@@ -2778,8 +2778,8 @@ namespace x64 {
         // format
         std::array<UI16, 8> DST16;
         std::array<UI16, 8> SRC16;
-        ::memcpy(&DST16, &dst, sizeof(dst));
-        ::memcpy(&SRC16, &src, sizeof(src));
+        std::memcpy(&DST16, &dst, sizeof(dst));
+        std::memcpy(&SRC16, &src, sizeof(src));
         u8 invaliddst = (u8)std::distance(DST16.begin(), std::find(DST16.begin(), DST16.end(), 0));
         u8 invalidsrc = (u8)std::distance(SRC16.begin(), std::find(SRC16.begin(), SRC16.end(), 0));
 
@@ -3074,11 +3074,11 @@ namespace x64 {
     u128 CpuImpl::movshdup(u128 src) {
         std::array<float, 4> TMP;
         static_assert(sizeof(src) == sizeof(TMP));
-        ::memcpy(&TMP, &src, sizeof(src));
+        std::memcpy(&TMP, &src, sizeof(src));
         TMP[0] = TMP[1];
         TMP[2] = TMP[3];
         u128 dst;
-        ::memcpy(&dst, &TMP, sizeof(dst));
+        std::memcpy(&dst, &TMP, sizeof(dst));
         return dst;
     }
 
@@ -3089,10 +3089,10 @@ namespace x64 {
     u128 CpuImpl::movddup128(u128 src) {
         std::array<double, 2> TMP;
         static_assert(sizeof(src) == sizeof(TMP));
-        ::memcpy(&TMP, &src, sizeof(src));
+        std::memcpy(&TMP, &src, sizeof(src));
         TMP[1] = TMP[0];
         u128 dst;
-        ::memcpy(&dst, &TMP, sizeof(dst));
+        std::memcpy(&dst, &TMP, sizeof(dst));
         return dst;
     }
 
@@ -3101,13 +3101,13 @@ namespace x64 {
         std::array<float, 4> SRC;
         static_assert(sizeof(dst) == sizeof(DST));
         static_assert(sizeof(src) == sizeof(SRC));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         DST[0] -= SRC[0];
         DST[1] += SRC[1];
         DST[2] -= SRC[2];
         DST[3] += SRC[3];
-        ::memcpy(&dst, &DST, sizeof(dst));
+        std::memcpy(&dst, &DST, sizeof(dst));
         return dst;
     }
 
@@ -3116,11 +3116,11 @@ namespace x64 {
         std::array<double, 2> SRC;
         static_assert(sizeof(dst) == sizeof(DST));
         static_assert(sizeof(src) == sizeof(SRC));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         DST[0] -= SRC[0];
         DST[1] += SRC[1];
-        ::memcpy(&dst, &DST, sizeof(dst));
+        std::memcpy(&dst, &DST, sizeof(dst));
         return dst;
     }
 
@@ -3129,14 +3129,14 @@ namespace x64 {
         std::array<float, 4> SRC;
         static_assert(sizeof(dst) == sizeof(DST));
         static_assert(sizeof(src) == sizeof(SRC));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         std::array<float, 4> TMP;
         TMP[0] = DST[0] + DST[1];
         TMP[1] = DST[2] + DST[3];
         TMP[2] = SRC[0] + SRC[1];
         TMP[3] = SRC[2] + SRC[3];
-        ::memcpy(&dst, &TMP, sizeof(dst));
+        std::memcpy(&dst, &TMP, sizeof(dst));
         return dst;
     }
 
@@ -3145,12 +3145,12 @@ namespace x64 {
         std::array<double, 2> SRC;
         static_assert(sizeof(dst) == sizeof(DST));
         static_assert(sizeof(src) == sizeof(SRC));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         std::array<double, 2> TMP;
         TMP[0] = DST[0] + DST[1];
         TMP[1] = SRC[0] + SRC[1];
-        ::memcpy(&dst, &TMP, sizeof(dst));
+        std::memcpy(&dst, &TMP, sizeof(dst));
         return dst;
     }
 
@@ -3200,15 +3200,15 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         for(size_t i = 0; i < 2; ++i) {
             RES[i] = (i16)(DST[2*i+0] + DST[2*i+1]);
         }
         for(size_t i = 0; i < 2; ++i) {
             RES[2+i] = (i16)(SRC[2*i+0] + SRC[2*i+1]);
         }
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3219,15 +3219,15 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         for(size_t i = 0; i < 4; ++i) {
             RES[i] = (i16)(DST[2*i+0] + DST[2*i+1]);
         }
         for(size_t i = 0; i < 4; ++i) {
             RES[4+i] = (i16)(SRC[2*i+0] + SRC[2*i+1]);
         }
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3238,11 +3238,11 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         RES[0] = DST[0] + DST[1];
         RES[1] = SRC[0] + SRC[1];
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3253,13 +3253,13 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         RES[0] = DST[0] + DST[1];
         RES[1] = DST[2] + DST[3];
         RES[2] = SRC[0] + SRC[1];
         RES[3] = SRC[2] + SRC[3];
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3277,8 +3277,8 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         for(size_t i = 0; i < 4; ++i) {
             i16 ld = (i16)(u16)(u8)DST[2*i+0];
             i16 ls = (i16)SRC[2*i+0];
@@ -3288,7 +3288,7 @@ namespace x64 {
             i16 r = (i16)(rd*rs);
             RES[i] = signSaturatedAdd(l, r);
         }
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3299,8 +3299,8 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         for(size_t i = 0; i < 8; ++i) {
             i16 ld = (i16)(u16)(u8)DST[2*i+0];
             i16 ls = (i16)SRC[2*i+0];
@@ -3310,7 +3310,7 @@ namespace x64 {
             i16 r = (i16)(rd*rs);
             RES[i] = signSaturatedAdd(l, r);
         }
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3321,8 +3321,8 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         for(size_t i = 0; i < 4; ++i) {
             i32 prod = ((i32)DST[i]) * ((i32)SRC[i]);
             prod >>= 14;
@@ -3330,7 +3330,7 @@ namespace x64 {
             prod >>= 1;
             RES[i] = (i16)prod;
         }
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
@@ -3341,8 +3341,8 @@ namespace x64 {
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
         static_assert(sizeof(RES) == sizeof(dst));
-        ::memcpy(&DST, &dst, sizeof(dst));
-        ::memcpy(&SRC, &src, sizeof(src));
+        std::memcpy(&DST, &dst, sizeof(dst));
+        std::memcpy(&SRC, &src, sizeof(src));
         for(size_t i = 0; i < 8; ++i) {
             i32 prod = ((i32)DST[i]) * ((i32)SRC[i]);
             prod >>= 14;
@@ -3350,79 +3350,79 @@ namespace x64 {
             prod >>= 1;
             RES[i] = (i16)prod;
         }
-        ::memcpy(&dst, &RES, sizeof(dst));
+        std::memcpy(&dst, &RES, sizeof(dst));
         return dst;
     }
 
     u64 CpuImpl::pabsb64(u64 src) {
         std::array<u8, 8> TMP;
         static_assert(sizeof(TMP) == sizeof(src));
-        ::memcpy(TMP.data(), &src, sizeof(src));
+        std::memcpy(TMP.data(), &src, sizeof(src));
         for(u8& u : TMP) {
             i16 v = (i16)(i8)u;
             u = (u8)(v >= 0 ? v : -v);
         }
-        ::memcpy(&src, TMP.data(), sizeof(src));
+        std::memcpy(&src, TMP.data(), sizeof(src));
         return src;
     }
 
     u64 CpuImpl::pabsw64(u64 src) {
         std::array<u16, 4> TMP;
         static_assert(sizeof(TMP) == sizeof(src));
-        ::memcpy(TMP.data(), &src, sizeof(src));
+        std::memcpy(TMP.data(), &src, sizeof(src));
         for(u16& u : TMP) {
             i32 v = (i32)(i16)u;
             u = (u16)(v >= 0 ? v : -v);
         }
-        ::memcpy(&src, TMP.data(), sizeof(src));
+        std::memcpy(&src, TMP.data(), sizeof(src));
         return src;
     }
 
     u64 CpuImpl::pabsd64(u64 src) {
         std::array<u32, 2> TMP;
         static_assert(sizeof(TMP) == sizeof(src));
-        ::memcpy(TMP.data(), &src, sizeof(src));
+        std::memcpy(TMP.data(), &src, sizeof(src));
         for(u32& u : TMP) {
             i64 v = (i64)(i32)u;
             u = (u32)(v >= 0 ? v : -v);
         }
-        ::memcpy(&src, TMP.data(), sizeof(src));
+        std::memcpy(&src, TMP.data(), sizeof(src));
         return src;
     }
 
     u128 CpuImpl::pabsb128(u128 src) {
         std::array<u8, 16> TMP;
         static_assert(sizeof(TMP) == sizeof(src));
-        ::memcpy(TMP.data(), &src, sizeof(src));
+        std::memcpy(TMP.data(), &src, sizeof(src));
         for(u8& u : TMP) {
             i16 v = (i16)(i8)u;
             u = (u8)(v >= 0 ? v : -v);
         }
-        ::memcpy(&src, TMP.data(), sizeof(src));
+        std::memcpy(&src, TMP.data(), sizeof(src));
         return src;
     }
 
     u128 CpuImpl::pabsw128(u128 src) {
         std::array<u16, 8> TMP;
         static_assert(sizeof(TMP) == sizeof(src));
-        ::memcpy(TMP.data(), &src, sizeof(src));
+        std::memcpy(TMP.data(), &src, sizeof(src));
         for(u16& u : TMP) {
             i32 v = (i32)(i16)u;
             u = (u16)(v >= 0 ? v : -v);
         }
-        ::memcpy(&src, TMP.data(), sizeof(src));
+        std::memcpy(&src, TMP.data(), sizeof(src));
         return src;
     }
 
     u128 CpuImpl::pabsd128(u128 src) {
         std::array<u32, 4> TMP;
         static_assert(sizeof(TMP) == sizeof(src));
-        ::memcpy(TMP.data(), &src, sizeof(src));
+        std::memcpy(TMP.data(), &src, sizeof(src));
         for(u32& u : TMP) {
             i64 v = (i64)(i32)u;
             u = (u32)(v >= 0 ? v : -v);
         }
-        ::memcpy(&src, TMP.data(), sizeof(src));
+        std::memcpy(&src, TMP.data(), sizeof(src));
         return src;
     }
 
@@ -3438,12 +3438,12 @@ namespace x64 {
         std::array<i8, 8> SRC;
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         for(int i = 0; i < 8; ++i) {
             DST[i] = psign(DST[i], SRC[i]);
         }
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3452,12 +3452,12 @@ namespace x64 {
         std::array<i16, 4> SRC;
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         for(int i = 0; i < 4; ++i) {
             DST[i] = psign(DST[i], SRC[i]);
         }
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3466,12 +3466,12 @@ namespace x64 {
         std::array<i32, 2> SRC;
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         for(int i = 0; i < 2; ++i) {
             DST[i] = psign(DST[i], SRC[i]);
         }
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3480,12 +3480,12 @@ namespace x64 {
         std::array<i8, 16> SRC;
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         for(int i = 0; i < 16; ++i) {
             DST[i] = psign(DST[i], SRC[i]);
         }
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3494,12 +3494,12 @@ namespace x64 {
         std::array<i16, 8> SRC;
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         for(int i = 0; i < 8; ++i) {
             DST[i] = psign(DST[i], SRC[i]);
         }
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3508,12 +3508,12 @@ namespace x64 {
         std::array<i32, 4> SRC;
         static_assert(sizeof(DST) == sizeof(dst));
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         for(int i = 0; i < 4; ++i) {
             DST[i] = psign(DST[i], SRC[i]);
         }
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3648,84 +3648,84 @@ namespace x64 {
     u128 CpuImpl::pmovzxbw(u64 src) {
         std::array<u8, 8> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         std::array<u16, 8> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         for(size_t i = 0; i < SRC.size(); ++i) {
             DST[i] = (u16)SRC[i];
         }
         u128 dst;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
     u128 CpuImpl::pmovzxbd(u32 src) {
         std::array<u8, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         std::array<u32, 4> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         for(size_t i = 0; i < SRC.size(); ++i) {
             DST[i] = (u32)SRC[i];
         }
         u128 dst;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
     u128 CpuImpl::pmovzxbq(u16 src) {
         std::array<u8, 2> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         std::array<u64, 2> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         for(size_t i = 0; i < SRC.size(); ++i) {
             DST[i] = (u64)SRC[i];
         }
         u128 dst;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
     u128 CpuImpl::pmovzxwd(u64 src) {
         std::array<u16, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         std::array<u32, 4> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         for(size_t i = 0; i < SRC.size(); ++i) {
             DST[i] = (u32)SRC[i];
         }
         u128 dst;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
     u128 CpuImpl::pmovzxwq(u32 src) {
         std::array<u16, 2> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         std::array<u64, 2> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         for(size_t i = 0; i < SRC.size(); ++i) {
             DST[i] = (u64)SRC[i];
         }
         u128 dst;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
     u128 CpuImpl::pmovzxdq(u64 src) {
         std::array<u32, 2> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         std::array<u64, 2> DST;
         static_assert(sizeof(DST) == sizeof(u128));
         for(size_t i = 0; i < SRC.size(); ++i) {
             DST[i] = (u64)SRC[i];
         }
         u128 dst;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3741,7 +3741,7 @@ namespace x64 {
         SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
         std::array<f32, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         f32 value = SRC[0];
         if(rc == SIMD_ROUNDING::NEAREST) {
             value = std::round(value);
@@ -3754,9 +3754,9 @@ namespace x64 {
         }
         std::array<f32, 4> DST;
         static_assert(sizeof(DST) == sizeof(dst));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
         DST[0] = value;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3772,7 +3772,7 @@ namespace x64 {
         SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
         std::array<f64, 2> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         f64 value = SRC[0];
         if(rc == SIMD_ROUNDING::NEAREST) {
             value = std::round(value);
@@ -3785,9 +3785,9 @@ namespace x64 {
         }
         std::array<f64, 2> DST;
         static_assert(sizeof(DST) == sizeof(dst));
-        ::memcpy(DST.data(), &dst, sizeof(dst));
+        std::memcpy(DST.data(), &dst, sizeof(dst));
         DST[0] = value;
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -3991,7 +3991,7 @@ namespace x64 {
         SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
         std::array<f32, 4> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         auto round = [=](f32 value) -> f32 {
             if(rc == SIMD_ROUNDING::NEAREST) {
                 return std::round(value);
@@ -4011,7 +4011,7 @@ namespace x64 {
         DST[3] = round(SRC[3]);
         u128 dst;
         static_assert(sizeof(DST) == sizeof(dst));
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 
@@ -4020,7 +4020,7 @@ namespace x64 {
         SIMD_ROUNDING rc = (SIMD_ROUNDING)(imm & 0x3);
         std::array<f64, 2> SRC;
         static_assert(sizeof(SRC) == sizeof(src));
-        ::memcpy(SRC.data(), &src, sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
         auto round = [=](f64 value) -> f64 {
             if(rc == SIMD_ROUNDING::NEAREST) {
                 return std::round(value);
@@ -4038,7 +4038,7 @@ namespace x64 {
         DST[1] = round(SRC[1]);
         u128 dst;
         static_assert(sizeof(DST) == sizeof(dst));
-        ::memcpy(&dst, DST.data(), sizeof(dst));
+        std::memcpy(&dst, DST.data(), sizeof(dst));
         return dst;
     }
 

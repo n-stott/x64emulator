@@ -176,7 +176,7 @@ namespace kernel::gnulinux {
         ssize_t ret = ::recvmsg(hostFd_, &header, flags);
         if(header.msg_controllen != 0) {
             Buffer buffer(header.msg_controllen, 0x0);
-            ::memcpy(buffer.data(), (const u8*)header.msg_control, header.msg_controllen);
+            std::memcpy(buffer.data(), (const u8*)header.msg_control, header.msg_controllen);
             message->msg_control = std::move(buffer);
         } else {
             message->msg_control = {};

@@ -780,8 +780,8 @@ namespace x64 {
         u128 native = CpuImpl::rsqrtss(dst, src);
         f32 native32;
         f32 emulated32;
-        ::memcpy(&native32, &native, sizeof(native32));
-        ::memcpy(&emulated32, &emulated, sizeof(emulated32));
+        std::memcpy(&native32, &native, sizeof(native32));
+        std::memcpy(&emulated32, &emulated, sizeof(emulated32));
         assert(std::isfinite(native32) == std::isfinite(emulated32));
         if(std::isfinite(native32) && std::isfinite(emulated32)) {
             f32 absdiff = std::abs(native32 - emulated32);
@@ -797,8 +797,8 @@ namespace x64 {
         u128 native = CpuImpl::rcpps(src);
         std::array<f32, 4> native32;
         std::array<f32, 4> emulated32;
-        ::memcpy(&native32, &native, sizeof(native32));
-        ::memcpy(&emulated32, &emulated, sizeof(emulated32));
+        std::memcpy(&native32, &native, sizeof(native32));
+        std::memcpy(&emulated32, &emulated, sizeof(emulated32));
         for(size_t i = 0; i < 4; ++i) {
             assert(std::isfinite(native32[i]) == std::isfinite(emulated32[i]));
             if(std::isfinite(native32[i]) && std::isfinite(emulated32[i])) {

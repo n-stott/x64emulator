@@ -3019,8 +3019,8 @@ namespace x64 {
 #ifdef SSE42
         __m128i mdst;
         __m128i msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         u32 res = [&](u8 imm) -> u32 {
             u8 order = imm;
             CALL_2_WITH_IMM8(_mm_cmpistri, mdst, msrc);
@@ -3144,10 +3144,10 @@ namespace x64 {
     u128 NativeCpuImpl::movshdup(u128 src) {
 #ifdef SSE3
         __m128 msrc;
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&msrc, &src, sizeof(src));
         __m128 mdst = _mm_movehdup_ps(msrc);
         u128 dst;
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         assert(!"movshdup not defined");
@@ -3159,10 +3159,10 @@ namespace x64 {
 #ifdef SSE3
         __m128d msrc;
         u128 src2 { src, src };
-        ::memcpy(&msrc, &src2, sizeof(src2));
+        std::memcpy(&msrc, &src2, sizeof(src2));
         __m128d mdst = _mm_movedup_pd(msrc);
         u128 dst;
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         assert(!"movddup64 not defined");
@@ -3173,10 +3173,10 @@ namespace x64 {
     u128 NativeCpuImpl::movddup128(u128 src) {
 #ifdef SSE3
         __m128d msrc;
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&msrc, &src, sizeof(src));
         __m128d mdst = _mm_movedup_pd(msrc);
         u128 dst;
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         assert(!"movddup128 not defined");
@@ -3187,11 +3187,11 @@ namespace x64 {
     u128 NativeCpuImpl::addsubps(u128 dst, u128 src) {
 #ifdef SSE3
         __m128 mdst;
-        ::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&mdst, &dst, sizeof(dst));
         __m128 msrc;
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_addsub_ps(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)dst;
@@ -3203,11 +3203,11 @@ namespace x64 {
     u128 NativeCpuImpl::addsubpd(u128 dst, u128 src) {
 #ifdef SSE3
         __m128d mdst;
-        ::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&mdst, &dst, sizeof(dst));
         __m128d msrc;
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_addsub_pd(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)dst;
@@ -3219,11 +3219,11 @@ namespace x64 {
     u128 NativeCpuImpl::haddps(u128 dst, u128 src) {
 #ifdef SSE3
         __m128 mdst;
-        ::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&mdst, &dst, sizeof(dst));
         __m128 msrc;
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_hadd_ps(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)dst;
@@ -3235,11 +3235,11 @@ namespace x64 {
     u128 NativeCpuImpl::haddpd(u128 dst, u128 src) {
 #ifdef SSE3
         __m128d mdst;
-        ::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&mdst, &dst, sizeof(dst));
         __m128d msrc;
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_hadd_pd(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)dst;
@@ -3262,10 +3262,10 @@ namespace x64 {
         };
         __m64 mdst;
         __m64 msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = native(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
     }
 
@@ -3283,10 +3283,10 @@ namespace x64 {
         };
         __m128i mdst;
         __m128i msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = native(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
     }
 
@@ -3295,10 +3295,10 @@ namespace x64 {
 #ifdef SSSE3
         __m64 mdst;
         __m64 msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_hadd_pi16(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3311,10 +3311,10 @@ namespace x64 {
 #ifdef SSSE3
         __m128i mdst;
         __m128i msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_hadd_epi16(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3327,10 +3327,10 @@ namespace x64 {
 #ifdef SSSE3
         __m64 mdst;
         __m64 msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_hadd_pi32(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3343,10 +3343,10 @@ namespace x64 {
 #ifdef SSSE3
         __m128i mdst;
         __m128i msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_hadd_epi32(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3359,10 +3359,10 @@ namespace x64 {
 #ifdef SSSE3
         __m64 mdst;
         __m64 msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_maddubs_pi16(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3375,10 +3375,10 @@ namespace x64 {
 #ifdef SSSE3
         __m128i mdst;
         __m128i msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_maddubs_epi16(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3391,10 +3391,10 @@ namespace x64 {
 #ifdef SSSE3
         __m64 mdst;
         __m64 msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_mulhrs_pi16(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;
@@ -3407,10 +3407,10 @@ namespace x64 {
 #ifdef SSSE3
         __m128i mdst;
         __m128i msrc;
-        ::memcpy(&mdst, &dst, sizeof(dst));
-        ::memcpy(&msrc, &src, sizeof(src));
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
         mdst = _mm_mulhrs_epi16(mdst, msrc);
-        ::memcpy(&dst, &mdst, sizeof(dst));
+        std::memcpy(&dst, &mdst, sizeof(dst));
         return dst;
 #else
         (void)src;

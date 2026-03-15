@@ -7,7 +7,7 @@ namespace kernel::gnulinux {
         if(bufferSize == 0) return ErrnoOrBuffer(-EINVAL);
         std::vector<char> linkpath(link_.begin(), link_.end());
         Buffer buffer(linkpath.size(), 0x0);
-        ::memcpy(buffer.data(), linkpath.data(), buffer.size());
+        std::memcpy(buffer.data(), linkpath.data(), buffer.size());
         if(bufferSize < buffer.size()) {
             buffer.shrink(bufferSize);
         }

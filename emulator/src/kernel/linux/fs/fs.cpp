@@ -702,7 +702,7 @@ namespace kernel::gnulinux {
             verify(!readResult.isBlocking(), "blocking read not handled in readv");
             ssize_t ret = readResult.value().errorOrWith<ssize_t>([&](const Buffer& readBuffer) {
                 verify(readBuffer.size() <= buf.size());
-                ::memcpy(buf.data(), readBuffer.data(), readBuffer.size());
+                std::memcpy(buf.data(), readBuffer.data(), readBuffer.size());
                 return (ssize_t)readBuffer.size();
             });
             if(ret < 0) return ret;
@@ -1149,7 +1149,7 @@ namespace kernel::gnulinux {
         }
         int ret = 0;
         Buffer buffer(rfds.size()*sizeof(PollFd), 0);
-        ::memcpy(buffer.data(), rfds.data(), buffer.size());
+        std::memcpy(buffer.data(), rfds.data(), buffer.size());
         BufferAndReturnValue<int> bufferAndRetVal {
             std::move(buffer),
             ret,

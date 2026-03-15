@@ -411,7 +411,7 @@ namespace x64 {
             // getWritePtr(dst.address()+count-1);
             getReadPtr(src.address()+count-1);
         }
-        ::memmove(dstPtr, srcPtr, count);
+        std::memmove(dstPtr, srcPtr, count);
     }
 
     Ptr8 Mmu::copyToMmu(Ptr8 dst, const u8* src, size_t n) {
@@ -422,7 +422,7 @@ namespace x64 {
             fmt::print("Write lookup for {:#x} is null\n", address);
         });
         // TODO check that the whole range is writable
-        ::memcpy(dataPtr, src, n);
+        std::memcpy(dataPtr, src, n);
         return dst;
     }
 
@@ -434,7 +434,7 @@ namespace x64 {
             fmt::print("Read lookup for {:#x} is null\n", address);
         });
         // TODO check that the whole range is readable
-        ::memcpy(dst, dataPtr, n);
+        std::memcpy(dst, dataPtr, n);
         return dst;
     }
 

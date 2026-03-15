@@ -303,7 +303,7 @@ namespace x64 {
             u64 address = ptr.address();
             const u8* dataPtr = getReadPtr(address);
             T value;
-            ::memcpy(&value, dataPtr, sizeof(T));
+            std::memcpy(&value, dataPtr, sizeof(T));
             return value;
         }
 
@@ -319,7 +319,7 @@ namespace x64 {
             MmuRegion* region = findAddress(address);
             SpinlockLocker locker(region->lock());
 #endif
-            ::memcpy(dataPtr, &value, sizeof(T));
+            std::memcpy(dataPtr, &value, sizeof(T));
         }
 
         template<typename T, Size s>
@@ -336,7 +336,7 @@ namespace x64 {
 #else
             (void)locker;
 #endif
-            ::memcpy(dataPtr, &value, sizeof(T));
+            std::memcpy(dataPtr, &value, sizeof(T));
         }
 
         template<typename T, Size s>

@@ -88,7 +88,7 @@ namespace kernel::gnulinux {
         size_t bytesRead = (size_t)offset < data_.size() ? std::min(data_.size() - (size_t)offset, count) : 0;
         const u8* beginRead = data_.data() + offset;
         Buffer buffer(bytesRead, 0x0);
-        ::memcpy(buffer.data(), beginRead, bytesRead);
+        std::memcpy(buffer.data(), beginRead, bytesRead);
         return ErrnoOrBuffer(std::move(buffer));
     }
 

@@ -617,7 +617,7 @@ namespace kernel::gnulinux {
 
         for(size_t s = 1; s <= size; ++s) {
             void* ptr = boundary->get(s);
-            ::memcpy(ptr, data, s);
+            std::memcpy(ptr, data, s);
             if(!boundary->tryLock()) return {};
             int ret = ::ioctl(fd.fd, request, ptr);
             if(ret < 0) {
@@ -689,7 +689,7 @@ namespace kernel::gnulinux {
         int ret = ::getgroups(size, groups.data());
         if(ret < 0) return ErrnoOrBuffer(-errno);
         Buffer buffer(groups.size()*sizeof(gid_t), 0);
-        ::memcpy(buffer.data(), groups.data(), buffer.size());
+        std::memcpy(buffer.data(), groups.data(), buffer.size());
         return ErrnoOrBuffer(std::move(buffer));
     }
 

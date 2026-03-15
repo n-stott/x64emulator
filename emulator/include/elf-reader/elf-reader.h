@@ -110,7 +110,7 @@ namespace elf {
         for(auto& section : sectionHeaders) {
             u64 stringNameOffset = section.sh_name;
             const char* name = bytes.data() + stringTable.sh_offset + stringNameOffset;
-            size_t len = ::strlen(name);
+            size_t len = std::strlen(name);
             section.name = std::string_view(name, len);
         }
 
@@ -168,7 +168,7 @@ namespace elf {
         for(auto& section : sectionHeaders) {
             u64 stringNameOffset = section.sh_name;
             const char* name = bytes.data() + stringTable.sh_offset + stringNameOffset;
-            size_t len = ::strlen(name);
+            size_t len = std::strlen(name);
             section.name = std::string_view(name, len);
         }
 
