@@ -82,7 +82,15 @@ namespace kernel::gnulinux {
 
             FD fd() const { return fd_; }
 
+            ssize_t read(u8* buffer, size_t count) const;
             ssize_t pread(u8* buffer, size_t count, off_t offset) const;
+
+            enum class SEEK {
+                CUR,
+                SET,
+                END,
+            };
+            off_t lseek(off_t offset, SEEK) const;
 
             ErrnoOrBuffer stat() const;
             ErrnoOrBuffer statfs() const;

@@ -34,7 +34,7 @@ namespace kernel::gnulinux {
     ReadResult HostDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         Buffer buffer(count, 0x0);
-        ssize_t nbytes = ::read(handle_->fd().fd, buffer.data(), count);
+        ssize_t nbytes = handle_->read(buffer.data(), count);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
         buffer.shrink((size_t)nbytes);
         return ErrnoOrBuffer(std::move(buffer));
@@ -60,7 +60,7 @@ namespace kernel::gnulinux {
     }
 
     void HostDevice::advanceInternalOffset(off_t offset) {
-        off_t ret = ::lseek(handle_->fd().fd, offset, SEEK_CUR);
+        off_t ret = handle_->lseek(offset, Host::FileHandle::SEEK::CUR);
         verify(ret >= 0, "advanceInternalOffset failed in HostDevice");
     }
 

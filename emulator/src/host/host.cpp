@@ -930,8 +930,21 @@ namespace kernel::gnulinux {
         return FileHandle(FD{fd});
     }
 
+    ssize_t Host::FileHandle::read(u8* buffer, size_t count) const {
+        return ::read(fd_.fd, buffer, count);
+    }
+
     ssize_t Host::FileHandle::pread(u8* buffer, size_t count, off_t offset) const {
         return ::pread(fd_.fd, buffer, count, offset);
+    }
+
+    off_t Host::FileHandle::lseek(off_t offset, SEEK seek) const {
+        switch(seek) {
+            case SEEK::CUR: return ::lseek(fd_.fd, offset, SEEK_CUR);
+            case SEEK::SET: return ::lseek(fd_.fd, offset, SEEK_SET);
+            case SEEK::END: return ::lseek(fd_.fd, offset, SEEK_END);
+        }
+        UNREACHABLE();
     }
 
     ErrnoOrBuffer Host::FileHandle::stat() const {

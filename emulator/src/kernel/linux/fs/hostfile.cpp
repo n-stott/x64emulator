@@ -67,7 +67,7 @@ namespace kernel::gnulinux {
     }
 
     void HostFile::advanceInternalOffset(off_t offset) {
-        off_t ret = ::lseek(handle_->fd().fd, offset, SEEK_CUR);
+        off_t ret = handle_->lseek(offset, Host::FileHandle::SEEK::CUR);
         verify(ret >= 0, []() {
             fmt::print("Expected no error in HostFile::advanceInternalOffset, but got errno = {}\n", errno);
         });
@@ -76,10 +76,12 @@ namespace kernel::gnulinux {
     off_t HostFile::lseek(OpenFileDescription& ofd, off_t offset, int whence) {
         off_t ret = [&]() {
             if(whence == SEEK_CUR) {
-                return ::lseek(handle_->fd().fd, ofd.offset() + offset, SEEK_SET);
+                return handle_->lseek(ofd.offset() + offset, Host::FileHandle::SEEK::SET);
+            } else if(whence == SEEK_SET) {
+                return handle_->lseek(offset, Host::FileHandle::SEEK::SET);
             } else {
-                // SEEK_SET or SEEK_END
-                return ::lseek(handle_->fd().fd, offset, whence);
+                verify(whence == SEEK_END);
+                return handle_->lseek(offset, Host::FileHandle::SEEK::END);
             }
         }();
         if(ret < 0) return -errno;
