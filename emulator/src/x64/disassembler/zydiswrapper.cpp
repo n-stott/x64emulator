@@ -4197,6 +4197,18 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static X64Instruction makePcmpestri(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& order = insn.operands[2];
+        auto rssedst = asRegister128(dst);
+        auto rmssesrc = asRM128(src);
+        auto imm = asImmediate(order);
+        if(rssedst && rmssesrc && imm) return X64Instruction::make<Insn::PCMPESTRI_XMM_XMMM128_IMM>(insn.runtime_address, insn.info.length, rssedst.value(), rmssesrc.value(), imm.value());
+        return make_failed(insn);
+    }
+
     static X64Instruction makePackuswb(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -5396,6 +5408,7 @@ namespace x64 {
 
             // SSE4.2
             case ZYDIS_MNEMONIC_PCMPISTRI: return makePcmpistri(insn);
+            case ZYDIS_MNEMONIC_PCMPESTRI: return makePcmpestri(insn);
             case ZYDIS_MNEMONIC_CRC32: return makeCrc32(insn);
 
             case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);

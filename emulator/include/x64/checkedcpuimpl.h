@@ -488,6 +488,7 @@ namespace x64 {
         [[nodiscard]] static u128 pblendw(u128 dst, u128 src, u8 mask);
 
         [[nodiscard]] static u32 pcmpistri(u128 dst, u128 src, u8 control, Flags* flags);
+        [[nodiscard]] static u32 pcmpestri(u128 dst, i32 lendst, u128 src, i32 lensrc, u8 control, Flags* flags);
         [[nodiscard]] static u32 crc32_8(u32 dst, u8 src);
         [[nodiscard]] static u32 crc32_16(u32 dst, u16 src);
         [[nodiscard]] static u32 crc32_32(u32 dst, u32 src);

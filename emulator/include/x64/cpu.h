@@ -1166,6 +1166,7 @@ namespace x64 {
         void execPblendwXMMM128Imm(const X64Instruction&);
         
         void execPcmpistriXMMXMMM128Imm(const X64Instruction&);
+        void execPcmpestriXMMXMMM128Imm(const X64Instruction&);
         void execCrc32R32RM8(const X64Instruction&);
         void execCrc32R32RM16(const X64Instruction&);
         void execCrc32R32RM32(const X64Instruction&);

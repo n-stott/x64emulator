@@ -1359,6 +1359,10 @@ namespace x64 {
         return checkCallWithFlags<u32>(&CpuImpl::pcmpistri, &NativeCpuImpl::pcmpistri, &sameFlags, flags, dst, src, control);
     }
 
+    u32 CheckedCpuImpl::pcmpestri(u128 dst, i32 lendst, u128 src, i32 lensrc, u8 control, Flags* flags) {
+        return checkCallWithFlags<u32>(&CpuImpl::pcmpestri, &NativeCpuImpl::pcmpestri, &sameFlags, flags, dst, lendst, src, lensrc, control);
+    }
+
     u64 CheckedCpuImpl::packuswb64(u64 dst, u64 src) {
         return checkCall<u64>(&CpuImpl::packuswb64, &NativeCpuImpl::packuswb64, dst, src);
     }

@@ -830,6 +830,7 @@ namespace x64 {
             case Insn::PBLENDVB_XMM_XMMM128: return toString<XMM, XMMM128>("pblendvb");
             case Insn::PBLENDW_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pblendw");
             case Insn::PCMPISTRI_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pcmpistri");
+            case Insn::PCMPESTRI_XMM_XMMM128_IMM: return toString<XMM, XMMM128, Imm>("pcmpestri");
             case Insn::CRC32_R32_RM8: return toString<R32, RM8>("crc32");
             case Insn::CRC32_R32_RM16: return toString<R32, RM16>("crc32");
             case Insn::CRC32_R32_RM32: return toString<R32, RM32>("crc32");

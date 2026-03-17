@@ -822,6 +822,7 @@ namespace x64 {
 
         // SSE4.2
         PCMPISTRI_XMM_XMMM128_IMM,
+        PCMPESTRI_XMM_XMMM128_IMM,
         CRC32_R32_RM8,
         CRC32_R32_RM16,
         CRC32_R32_RM32,

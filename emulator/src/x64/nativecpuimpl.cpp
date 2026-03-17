@@ -640,6 +640,267 @@
         default: __builtin_unreachable(); \
     }
 
+#define CALL_4_WITH_IMM8(f, a, b, c, d) \
+    switch(order) { \
+        case 0x00: return f(a, b, c, d, 0x00); \
+        case 0x01: return f(a, b, c, d, 0x01); \
+        case 0x02: return f(a, b, c, d, 0x02); \
+        case 0x03: return f(a, b, c, d, 0x03); \
+        case 0x04: return f(a, b, c, d, 0x04); \
+        case 0x05: return f(a, b, c, d, 0x05); \
+        case 0x06: return f(a, b, c, d, 0x06); \
+        case 0x07: return f(a, b, c, d, 0x07); \
+        case 0x08: return f(a, b, c, d, 0x08); \
+        case 0x09: return f(a, b, c, d, 0x09); \
+        case 0x0a: return f(a, b, c, d, 0x0a); \
+        case 0x0b: return f(a, b, c, d, 0x0b); \
+        case 0x0c: return f(a, b, c, d, 0x0c); \
+        case 0x0d: return f(a, b, c, d, 0x0d); \
+        case 0x0e: return f(a, b, c, d, 0x0e); \
+        case 0x0f: return f(a, b, c, d, 0x0f); \
+        case 0x10: return f(a, b, c, d, 0x10); \
+        case 0x11: return f(a, b, c, d, 0x11); \
+        case 0x12: return f(a, b, c, d, 0x12); \
+        case 0x13: return f(a, b, c, d, 0x13); \
+        case 0x14: return f(a, b, c, d, 0x14); \
+        case 0x15: return f(a, b, c, d, 0x15); \
+        case 0x16: return f(a, b, c, d, 0x16); \
+        case 0x17: return f(a, b, c, d, 0x17); \
+        case 0x18: return f(a, b, c, d, 0x18); \
+        case 0x19: return f(a, b, c, d, 0x19); \
+        case 0x1a: return f(a, b, c, d, 0x1a); \
+        case 0x1b: return f(a, b, c, d, 0x1b); \
+        case 0x1c: return f(a, b, c, d, 0x1c); \
+        case 0x1d: return f(a, b, c, d, 0x1d); \
+        case 0x1e: return f(a, b, c, d, 0x1e); \
+        case 0x1f: return f(a, b, c, d, 0x1f); \
+        case 0x20: return f(a, b, c, d, 0x20); \
+        case 0x21: return f(a, b, c, d, 0x21); \
+        case 0x22: return f(a, b, c, d, 0x22); \
+        case 0x23: return f(a, b, c, d, 0x23); \
+        case 0x24: return f(a, b, c, d, 0x24); \
+        case 0x25: return f(a, b, c, d, 0x25); \
+        case 0x26: return f(a, b, c, d, 0x26); \
+        case 0x27: return f(a, b, c, d, 0x27); \
+        case 0x28: return f(a, b, c, d, 0x28); \
+        case 0x29: return f(a, b, c, d, 0x29); \
+        case 0x2a: return f(a, b, c, d, 0x2a); \
+        case 0x2b: return f(a, b, c, d, 0x2b); \
+        case 0x2c: return f(a, b, c, d, 0x2c); \
+        case 0x2d: return f(a, b, c, d, 0x2d); \
+        case 0x2e: return f(a, b, c, d, 0x2e); \
+        case 0x2f: return f(a, b, c, d, 0x2f); \
+        case 0x30: return f(a, b, c, d, 0x30); \
+        case 0x31: return f(a, b, c, d, 0x31); \
+        case 0x32: return f(a, b, c, d, 0x32); \
+        case 0x33: return f(a, b, c, d, 0x33); \
+        case 0x34: return f(a, b, c, d, 0x34); \
+        case 0x35: return f(a, b, c, d, 0x35); \
+        case 0x36: return f(a, b, c, d, 0x36); \
+        case 0x37: return f(a, b, c, d, 0x37); \
+        case 0x38: return f(a, b, c, d, 0x38); \
+        case 0x39: return f(a, b, c, d, 0x39); \
+        case 0x3a: return f(a, b, c, d, 0x3a); \
+        case 0x3b: return f(a, b, c, d, 0x3b); \
+        case 0x3c: return f(a, b, c, d, 0x3c); \
+        case 0x3d: return f(a, b, c, d, 0x3d); \
+        case 0x3e: return f(a, b, c, d, 0x3e); \
+        case 0x3f: return f(a, b, c, d, 0x3f); \
+        case 0x40: return f(a, b, c, d, 0x40); \
+        case 0x41: return f(a, b, c, d, 0x41); \
+        case 0x42: return f(a, b, c, d, 0x42); \
+        case 0x43: return f(a, b, c, d, 0x43); \
+        case 0x44: return f(a, b, c, d, 0x44); \
+        case 0x45: return f(a, b, c, d, 0x45); \
+        case 0x46: return f(a, b, c, d, 0x46); \
+        case 0x47: return f(a, b, c, d, 0x47); \
+        case 0x48: return f(a, b, c, d, 0x48); \
+        case 0x49: return f(a, b, c, d, 0x49); \
+        case 0x4a: return f(a, b, c, d, 0x4a); \
+        case 0x4b: return f(a, b, c, d, 0x4b); \
+        case 0x4c: return f(a, b, c, d, 0x4c); \
+        case 0x4d: return f(a, b, c, d, 0x4d); \
+        case 0x4e: return f(a, b, c, d, 0x4e); \
+        case 0x4f: return f(a, b, c, d, 0x4f); \
+        case 0x50: return f(a, b, c, d, 0x50); \
+        case 0x51: return f(a, b, c, d, 0x51); \
+        case 0x52: return f(a, b, c, d, 0x52); \
+        case 0x53: return f(a, b, c, d, 0x53); \
+        case 0x54: return f(a, b, c, d, 0x54); \
+        case 0x55: return f(a, b, c, d, 0x55); \
+        case 0x56: return f(a, b, c, d, 0x56); \
+        case 0x57: return f(a, b, c, d, 0x57); \
+        case 0x58: return f(a, b, c, d, 0x58); \
+        case 0x59: return f(a, b, c, d, 0x59); \
+        case 0x5a: return f(a, b, c, d, 0x5a); \
+        case 0x5b: return f(a, b, c, d, 0x5b); \
+        case 0x5c: return f(a, b, c, d, 0x5c); \
+        case 0x5d: return f(a, b, c, d, 0x5d); \
+        case 0x5e: return f(a, b, c, d, 0x5e); \
+        case 0x5f: return f(a, b, c, d, 0x5f); \
+        case 0x60: return f(a, b, c, d, 0x60); \
+        case 0x61: return f(a, b, c, d, 0x61); \
+        case 0x62: return f(a, b, c, d, 0x62); \
+        case 0x63: return f(a, b, c, d, 0x63); \
+        case 0x64: return f(a, b, c, d, 0x64); \
+        case 0x65: return f(a, b, c, d, 0x65); \
+        case 0x66: return f(a, b, c, d, 0x66); \
+        case 0x67: return f(a, b, c, d, 0x67); \
+        case 0x68: return f(a, b, c, d, 0x68); \
+        case 0x69: return f(a, b, c, d, 0x69); \
+        case 0x6a: return f(a, b, c, d, 0x6a); \
+        case 0x6b: return f(a, b, c, d, 0x6b); \
+        case 0x6c: return f(a, b, c, d, 0x6c); \
+        case 0x6d: return f(a, b, c, d, 0x6d); \
+        case 0x6e: return f(a, b, c, d, 0x6e); \
+        case 0x6f: return f(a, b, c, d, 0x6f); \
+        case 0x70: return f(a, b, c, d, 0x70); \
+        case 0x71: return f(a, b, c, d, 0x71); \
+        case 0x72: return f(a, b, c, d, 0x72); \
+        case 0x73: return f(a, b, c, d, 0x73); \
+        case 0x74: return f(a, b, c, d, 0x74); \
+        case 0x75: return f(a, b, c, d, 0x75); \
+        case 0x76: return f(a, b, c, d, 0x76); \
+        case 0x77: return f(a, b, c, d, 0x77); \
+        case 0x78: return f(a, b, c, d, 0x78); \
+        case 0x79: return f(a, b, c, d, 0x79); \
+        case 0x7a: return f(a, b, c, d, 0x7a); \
+        case 0x7b: return f(a, b, c, d, 0x7b); \
+        case 0x7c: return f(a, b, c, d, 0x7c); \
+        case 0x7d: return f(a, b, c, d, 0x7d); \
+        case 0x7e: return f(a, b, c, d, 0x7e); \
+        case 0x7f: return f(a, b, c, d, 0x7f); \
+        case 0x80: return f(a, b, c, d, 0x80); \
+        case 0x81: return f(a, b, c, d, 0x81); \
+        case 0x82: return f(a, b, c, d, 0x82); \
+        case 0x83: return f(a, b, c, d, 0x83); \
+        case 0x84: return f(a, b, c, d, 0x84); \
+        case 0x85: return f(a, b, c, d, 0x85); \
+        case 0x86: return f(a, b, c, d, 0x86); \
+        case 0x87: return f(a, b, c, d, 0x87); \
+        case 0x88: return f(a, b, c, d, 0x88); \
+        case 0x89: return f(a, b, c, d, 0x89); \
+        case 0x8a: return f(a, b, c, d, 0x8a); \
+        case 0x8b: return f(a, b, c, d, 0x8b); \
+        case 0x8c: return f(a, b, c, d, 0x8c); \
+        case 0x8d: return f(a, b, c, d, 0x8d); \
+        case 0x8e: return f(a, b, c, d, 0x8e); \
+        case 0x8f: return f(a, b, c, d, 0x8f); \
+        case 0x90: return f(a, b, c, d, 0x90); \
+        case 0x91: return f(a, b, c, d, 0x91); \
+        case 0x92: return f(a, b, c, d, 0x92); \
+        case 0x93: return f(a, b, c, d, 0x93); \
+        case 0x94: return f(a, b, c, d, 0x94); \
+        case 0x95: return f(a, b, c, d, 0x95); \
+        case 0x96: return f(a, b, c, d, 0x96); \
+        case 0x97: return f(a, b, c, d, 0x97); \
+        case 0x98: return f(a, b, c, d, 0x98); \
+        case 0x99: return f(a, b, c, d, 0x99); \
+        case 0x9a: return f(a, b, c, d, 0x9a); \
+        case 0x9b: return f(a, b, c, d, 0x9b); \
+        case 0x9c: return f(a, b, c, d, 0x9c); \
+        case 0x9d: return f(a, b, c, d, 0x9d); \
+        case 0x9e: return f(a, b, c, d, 0x9e); \
+        case 0x9f: return f(a, b, c, d, 0x9f); \
+        case 0xa0: return f(a, b, c, d, 0xa0); \
+        case 0xa1: return f(a, b, c, d, 0xa1); \
+        case 0xa2: return f(a, b, c, d, 0xa2); \
+        case 0xa3: return f(a, b, c, d, 0xa3); \
+        case 0xa4: return f(a, b, c, d, 0xa4); \
+        case 0xa5: return f(a, b, c, d, 0xa5); \
+        case 0xa6: return f(a, b, c, d, 0xa6); \
+        case 0xa7: return f(a, b, c, d, 0xa7); \
+        case 0xa8: return f(a, b, c, d, 0xa8); \
+        case 0xa9: return f(a, b, c, d, 0xa9); \
+        case 0xaa: return f(a, b, c, d, 0xaa); \
+        case 0xab: return f(a, b, c, d, 0xab); \
+        case 0xac: return f(a, b, c, d, 0xac); \
+        case 0xad: return f(a, b, c, d, 0xad); \
+        case 0xae: return f(a, b, c, d, 0xae); \
+        case 0xaf: return f(a, b, c, d, 0xaf); \
+        case 0xb0: return f(a, b, c, d, 0xb0); \
+        case 0xb1: return f(a, b, c, d, 0xb1); \
+        case 0xb2: return f(a, b, c, d, 0xb2); \
+        case 0xb3: return f(a, b, c, d, 0xb3); \
+        case 0xb4: return f(a, b, c, d, 0xb4); \
+        case 0xb5: return f(a, b, c, d, 0xb5); \
+        case 0xb6: return f(a, b, c, d, 0xb6); \
+        case 0xb7: return f(a, b, c, d, 0xb7); \
+        case 0xb8: return f(a, b, c, d, 0xb8); \
+        case 0xb9: return f(a, b, c, d, 0xb9); \
+        case 0xba: return f(a, b, c, d, 0xba); \
+        case 0xbb: return f(a, b, c, d, 0xbb); \
+        case 0xbc: return f(a, b, c, d, 0xbc); \
+        case 0xbd: return f(a, b, c, d, 0xbd); \
+        case 0xbe: return f(a, b, c, d, 0xbe); \
+        case 0xbf: return f(a, b, c, d, 0xbf); \
+        case 0xc0: return f(a, b, c, d, 0xc0); \
+        case 0xc1: return f(a, b, c, d, 0xc1); \
+        case 0xc2: return f(a, b, c, d, 0xc2); \
+        case 0xc3: return f(a, b, c, d, 0xc3); \
+        case 0xc4: return f(a, b, c, d, 0xc4); \
+        case 0xc5: return f(a, b, c, d, 0xc5); \
+        case 0xc6: return f(a, b, c, d, 0xc6); \
+        case 0xc7: return f(a, b, c, d, 0xc7); \
+        case 0xc8: return f(a, b, c, d, 0xc8); \
+        case 0xc9: return f(a, b, c, d, 0xc9); \
+        case 0xca: return f(a, b, c, d, 0xca); \
+        case 0xcb: return f(a, b, c, d, 0xcb); \
+        case 0xcc: return f(a, b, c, d, 0xcc); \
+        case 0xcd: return f(a, b, c, d, 0xcd); \
+        case 0xce: return f(a, b, c, d, 0xce); \
+        case 0xcf: return f(a, b, c, d, 0xcf); \
+        case 0xd0: return f(a, b, c, d, 0xd0); \
+        case 0xd1: return f(a, b, c, d, 0xd1); \
+        case 0xd2: return f(a, b, c, d, 0xd2); \
+        case 0xd3: return f(a, b, c, d, 0xd3); \
+        case 0xd4: return f(a, b, c, d, 0xd4); \
+        case 0xd5: return f(a, b, c, d, 0xd5); \
+        case 0xd6: return f(a, b, c, d, 0xd6); \
+        case 0xd7: return f(a, b, c, d, 0xd7); \
+        case 0xd8: return f(a, b, c, d, 0xd8); \
+        case 0xd9: return f(a, b, c, d, 0xd9); \
+        case 0xda: return f(a, b, c, d, 0xda); \
+        case 0xdb: return f(a, b, c, d, 0xdb); \
+        case 0xdc: return f(a, b, c, d, 0xdc); \
+        case 0xdd: return f(a, b, c, d, 0xdd); \
+        case 0xde: return f(a, b, c, d, 0xde); \
+        case 0xdf: return f(a, b, c, d, 0xdf); \
+        case 0xe0: return f(a, b, c, d, 0xe0); \
+        case 0xe1: return f(a, b, c, d, 0xe1); \
+        case 0xe2: return f(a, b, c, d, 0xe2); \
+        case 0xe3: return f(a, b, c, d, 0xe3); \
+        case 0xe4: return f(a, b, c, d, 0xe4); \
+        case 0xe5: return f(a, b, c, d, 0xe5); \
+        case 0xe6: return f(a, b, c, d, 0xe6); \
+        case 0xe7: return f(a, b, c, d, 0xe7); \
+        case 0xe8: return f(a, b, c, d, 0xe8); \
+        case 0xe9: return f(a, b, c, d, 0xe9); \
+        case 0xea: return f(a, b, c, d, 0xea); \
+        case 0xeb: return f(a, b, c, d, 0xeb); \
+        case 0xec: return f(a, b, c, d, 0xec); \
+        case 0xed: return f(a, b, c, d, 0xed); \
+        case 0xee: return f(a, b, c, d, 0xee); \
+        case 0xef: return f(a, b, c, d, 0xef); \
+        case 0xf0: return f(a, b, c, d, 0xf0); \
+        case 0xf1: return f(a, b, c, d, 0xf1); \
+        case 0xf2: return f(a, b, c, d, 0xf2); \
+        case 0xf3: return f(a, b, c, d, 0xf3); \
+        case 0xf4: return f(a, b, c, d, 0xf4); \
+        case 0xf5: return f(a, b, c, d, 0xf5); \
+        case 0xf6: return f(a, b, c, d, 0xf6); \
+        case 0xf7: return f(a, b, c, d, 0xf7); \
+        case 0xf8: return f(a, b, c, d, 0xf8); \
+        case 0xf9: return f(a, b, c, d, 0xf9); \
+        case 0xfa: return f(a, b, c, d, 0xfa); \
+        case 0xfb: return f(a, b, c, d, 0xfb); \
+        case 0xfc: return f(a, b, c, d, 0xfc); \
+        case 0xfd: return f(a, b, c, d, 0xfd); \
+        case 0xfe: return f(a, b, c, d, 0xfe); \
+        case 0xff: return f(a, b, c, d, 0xff); \
+        default: __builtin_unreachable(); \
+    }
+
 namespace x64 {
     static Flags fromRflags(u64 rflags) {
         static constexpr u64 CARRY_MASK = 0x1;
@@ -3047,6 +3308,42 @@ namespace x64 {
         return res;
 #else
         assert(!"pcmpistri not defined");
+        return 0; // dummy value
+#endif
+    }
+
+    u32 NativeCpuImpl::pcmpestri(u128 dst, i32 lendst, u128 src, i32 lensrc, u8 control, Flags* flags) {
+#ifdef SSE42
+        __m128i mdst;
+        __m128i msrc;
+        std::memcpy(&mdst, &dst, sizeof(dst));
+        std::memcpy(&msrc, &src, sizeof(src));
+        u32 res = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_4_WITH_IMM8(_mm_cmpestri, mdst, lendst, msrc, lensrc);
+        }(control);
+
+        flags->carry = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_4_WITH_IMM8(_mm_cmpestrc, mdst, lendst, msrc, lensrc);
+        }(control);
+        flags->overflow = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_4_WITH_IMM8(_mm_cmpestro, mdst, lendst, msrc, lensrc);
+        }(control);
+        flags->sign = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_4_WITH_IMM8(_mm_cmpestrs, mdst, lendst, msrc, lensrc);
+        }(control);
+        flags->zero = [&](u8 imm) -> u32 {
+            u8 order = imm;
+            CALL_4_WITH_IMM8(_mm_cmpestrz, mdst, lendst, msrc, lensrc);
+        }(control);
+        flags->setParity(false);
+        
+        return res;
+#else
+        assert(!"pcmpestri not defined");
         return 0; // dummy value
 #endif
     }

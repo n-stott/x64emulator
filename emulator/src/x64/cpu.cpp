@@ -999,6 +999,7 @@ namespace x64 {
     DEFINE_STANDALONE(PBLENDVB_XMM_XMMM128, execPblendvbXMMXMMM128)
     DEFINE_STANDALONE(PBLENDW_XMM_XMMM128_IMM, execPblendwXMMM128Imm)
     DEFINE_STANDALONE(PCMPISTRI_XMM_XMMM128_IMM, execPcmpistriXMMXMMM128Imm)
+    DEFINE_STANDALONE(PCMPESTRI_XMM_XMMM128_IMM, execPcmpestriXMMXMMM128Imm)
     DEFINE_STANDALONE(CRC32_R32_RM8, execCrc32R32RM8)
     DEFINE_STANDALONE(CRC32_R32_RM16, execCrc32R32RM16)
     DEFINE_STANDALONE(CRC32_R32_RM32, execCrc32R32RM32)
@@ -1815,6 +1816,7 @@ namespace x64 {
         STANDALONE_NAME(PBLENDVB_XMM_XMMM128),
         STANDALONE_NAME(PBLENDW_XMM_XMMM128_IMM),
         STANDALONE_NAME(PCMPISTRI_XMM_XMMM128_IMM),
+        STANDALONE_NAME(PCMPESTRI_XMM_XMMM128_IMM),
         STANDALONE_NAME(CRC32_R32_RM8),
         STANDALONE_NAME(CRC32_R32_RM16),
         STANDALONE_NAME(CRC32_R32_RM32),
@@ -6610,6 +6612,16 @@ namespace x64 {
         const auto& src = ins.op1<XMMM128>();
         const auto& control = ins.op2<Imm>();
         u32 res = Impl::pcmpistri(get(dst), get(src), get<u8>(control), &flags_);
+        set(R32::ECX, res);
+    }
+
+    void Cpu::execPcmpestriXMMXMMM128Imm(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMMM128>();
+        const auto& control = ins.op2<Imm>();
+        i32 lendst = get(R32::EAX);
+        i32 lensrc = get(R32::EDX);
+        u32 res = Impl::pcmpestri(get(dst), lendst, get(src), lensrc, get<u8>(control), &flags_);
         set(R32::ECX, res);
     }
 
