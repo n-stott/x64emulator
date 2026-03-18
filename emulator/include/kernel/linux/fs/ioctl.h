@@ -13,6 +13,7 @@ namespace kernel::gnulinux {
         tiocgwinsz,
         tiocswinsz,
         tiocgpgrp,
+        tiocspgrp,
     };
 }
 

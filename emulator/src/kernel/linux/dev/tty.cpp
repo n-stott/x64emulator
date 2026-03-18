@@ -131,6 +131,11 @@ namespace kernel::gnulinux {
                 if(ret < 0) return ErrnoOrBuffer(-errno);
                 return ErrnoOrBuffer(std::move(buffer));
             }
+            case Ioctl::tiocspgrp: {
+                verify(buffer.size() == sizeof(pid_t));
+                warn("Tty::ioctl(tiocspgrp) not implemented, returning bogus 0");
+                return ErrnoOrBuffer(0);
+            }
             default: break;
         }
         verify(false, fmt::format("Tty::ioctl({:#x}) not implemented", (int)request));

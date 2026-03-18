@@ -271,6 +271,7 @@ namespace kernel::gnulinux {
             static bool isTIOCGWINSZ(unsigned long request);
             static bool isTIOCSWINSZ(unsigned long request);
             static bool isTIOCGPGRP(unsigned long request);
+            static bool isTIOCSPGRP(unsigned long request);
         };
 
         struct Prctl {

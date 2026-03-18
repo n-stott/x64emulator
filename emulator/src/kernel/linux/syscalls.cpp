@@ -531,6 +531,7 @@ namespace kernel::gnulinux {
             if(Host::Ioctl::isTIOCGWINSZ(hostRequest)) return Ioctl::tiocgwinsz;
             if(Host::Ioctl::isTIOCSWINSZ(hostRequest)) return Ioctl::tiocswinsz;
             if(Host::Ioctl::isTIOCGPGRP(hostRequest)) return Ioctl::tiocgpgrp;
+            if(Host::Ioctl::isTIOCSPGRP(hostRequest)) return Ioctl::tiocspgrp;
             return {};
         }(request);
         verify(!!fsrequest, "Unknown request");

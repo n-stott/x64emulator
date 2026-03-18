@@ -332,6 +332,9 @@ namespace kernel::gnulinux {
     bool Host::Ioctl::isTIOCGPGRP(unsigned long request) {
         return request == TIOCGPGRP;
     }
+    bool Host::Ioctl::isTIOCSPGRP(unsigned long request) {
+        return request == TIOCSPGRP;
+    }
 
     bool Host::Prctl::isSetName(int option) {
         return option == PR_SET_NAME;
@@ -642,6 +645,7 @@ namespace kernel::gnulinux {
             case TIOCSWINSZ: return sizeof(winsize);
             case TCSETSW: return sizeof(termios);
             case TIOCGPGRP: return sizeof(pid_t);
+            case TIOCSPGRP: return sizeof(pid_t);
             default: break;
         }
         return {};
