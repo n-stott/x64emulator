@@ -287,6 +287,8 @@ namespace kernel::gnulinux {
         int geteuid();
         // 0x6c
         int getegid();
+        // 0x6d
+        int setpgid(pid_t pid, pid_t pgid);
         // 0x6e
         int getppid();
         // 0x6f
@@ -297,6 +299,8 @@ namespace kernel::gnulinux {
         int getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid);
         // 0x78
         int getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid);
+        // 0x79
+        pid_t getpgid(pid_t pid);
         // 0x80
         int rt_sigtimedwait(x64::Ptr set, x64::Ptr info, x64::Ptr timeout);
         // 0x83

@@ -21,8 +21,9 @@ namespace kernel::gnulinux {
         }
 
         struct Description {
-            int pid { 0xface };
-            int tid { 0xfeed };
+            int pid { -1 };
+            int tid { -1 };
+            int pgid { -1 };
         };
 
         const Description& description() const { return description_; }

@@ -153,11 +153,13 @@ namespace kernel::gnulinux {
             case 0x68: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getgid, regs));
             case 0x6b: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::geteuid, regs));
             case 0x6c: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getegid, regs));
+            case 0x6d: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::setpgid, regs));
             case 0x6e: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getppid, regs));
             case 0x6f: return threadRegs.set(x64::R64::RAX, invoke_syscall_0(&Sys::getpgrp, regs));
             case 0x73: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::getgroups, regs));
             case 0x76: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresuid, regs));
             case 0x78: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::getresgid, regs));
+            case 0x79: return threadRegs.set(x64::R64::RAX, invoke_syscall_1(&Sys::getpgid, regs));
             case 0x80: return threadRegs.set(x64::R64::RAX, invoke_syscall_3(&Sys::rt_sigtimedwait, regs));
             case 0x83: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::sigaltstack, regs));
             case 0x84: return threadRegs.set(x64::R64::RAX, invoke_syscall_2(&Sys::utime, regs));
@@ -1450,6 +1452,22 @@ namespace kernel::gnulinux {
         return Host::getegid();
     }
 
+    int Sys::setpgid(pid_t pid, pid_t pgid) {
+        verify(!!currentThread_);
+        if(pid == 0 || pid == currentThread_->description().pid) {
+            verify(pgid == currentThread_->description().pid, "setpgid non-process pgid not supported");
+            // nothing to do
+        }
+        if(Process* child = currentProcess_->tryGetChild(pid)) {
+            warn("setpgid of child not implemented");
+            (void)child;
+        }
+        if(kernel_.logSyscalls()) {
+            print("Sys::setpgid(pid={}, pgid={}) = {}", pid, pgid, 0);
+        }
+        return 0;
+    }
+
     int Sys::getppid() { // NOLINT(readability-convert-member-functions-to-static)
         return Host::getppid();
     }
@@ -1486,6 +1504,16 @@ namespace kernel::gnulinux {
         mmu_->write32(egid, (u32)creds.egid);
         mmu_->write32(sgid, (u32)creds.sgid);
         return 0;
+    }
+
+    pid_t Sys::getpgid(pid_t pid) {
+        verify(!!currentThread_);
+        verify(pid == 0 || pid == currentThread_->description().pid, "getpgid with nonzero or non-process pid not supported");
+        int pgid = currentThread_->description().pgid;
+        if(kernel_.logSyscalls()) {
+            print("Sys::getpgid(pid={}) = {})", pid, pgid);
+        }
+        return pgid;
     }
 
     int Sys::rt_sigtimedwait(x64::Ptr set, x64::Ptr info, x64::Ptr timeout) {

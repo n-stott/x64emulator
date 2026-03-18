@@ -4,7 +4,7 @@
 
 namespace kernel::gnulinux {
 
-    Thread::Thread(Process* process, int tid) : process_(process), description_{process->pid(), tid} {
+    Thread::Thread(Process* process, int tid) : process_(process), description_{process->pid(), tid, process->pid()} {
         verify(!!process_, "Thread's process is null");
     }
 
