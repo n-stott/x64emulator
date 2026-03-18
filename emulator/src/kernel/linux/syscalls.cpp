@@ -1099,12 +1099,12 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fork() {
-        print("Sys::fork => Sys::clone");
+        warn("Sys::fork => Sys::clone");
         return (int)clone(CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID, x64::Ptr::null(), x64::Ptr32::null(), x64::Ptr32::null(), 0);
     }
 
     int Sys::vfork() {
-        print("Sys::vfork => Sys::fork");
+        warn("Sys::vfork => Sys::fork");
         return fork();
     }
 
