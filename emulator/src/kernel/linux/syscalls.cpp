@@ -2320,8 +2320,11 @@ namespace kernel::gnulinux {
     }
 
     int Sys::utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags) {
-        if(kernel_.logSyscalls()) print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP",
-                                                          dirfd, mmu_->readString(pathname), times.address(), flags);
+        if(kernel_.logSyscalls()) {
+            std::string path = !!pathname ? mmu_->readString(pathname) : "NULL";
+            print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP",
+                                                          dirfd, path, times.address(), flags);
+        }
         warn("utimensat not implemented");
         return -ENOTSUP;
     }
