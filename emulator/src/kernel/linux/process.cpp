@@ -228,11 +228,12 @@ namespace kernel::gnulinux {
     }
 
     void Process::notifyChildCreated(Process* process) {
-        children_.insert(process->pid());
+        children_.push_back(process);
     }
 
     void Process::notifyChildExited(Process* process, int status, std::optional<int> signal) {
-        verify(children_.find(process->pid()) != children_.end(), "Cannot find child process");
+        Process* child = tryGetChild(process->pid());
+        verify(!!child, "Cannot find child process");
         exitedChildren_.push_back(ExitedChild {
             process->pid(),
             status,
@@ -241,12 +242,13 @@ namespace kernel::gnulinux {
     }
 
     std::optional<Process::ExitedChild> Process::tryRetrieveExitedChild(int pid) {
-        verify(children_.find(pid) != children_.end(), "Cannot find child process");
+        Process* child = tryGetChild(pid);
+        verify(!!child, "Cannot find child process");
         auto it = std::find_if(exitedChildren_.begin(), exitedChildren_.end(), [&](const auto& ec) {
             return ec.pid == pid;
         });
         if(it != exitedChildren_.end()) {
-            children_.erase(pid);
+            children_.erase(std::remove(children_.begin(), children_.end(), child), children_.end());
             auto ec = *it;
             exitedChildren_.erase(it);
             return ec;
@@ -258,7 +260,9 @@ namespace kernel::gnulinux {
     std::optional<Process::ExitedChild> Process::tryRetrieveExitedChild() {
         if(!exitedChildren_.empty()) {
             auto ec = exitedChildren_.front();
-            children_.erase(ec.pid);
+            Process* child = tryGetChild(ec.pid);
+            verify(!!child, "Cannot find exited child process");
+            children_.erase(std::remove(children_.begin(), children_.end(), child), children_.end());
             exitedChildren_.erase(exitedChildren_.begin());
             return ec;
         } else {

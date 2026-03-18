@@ -86,6 +86,17 @@ namespace kernel::gnulinux {
             if(!!jit_) jit_->setOptimizationLevel(level);
         }
 
+        Process* tryGetChild(int pid) const {
+            auto it = std::find_if(children_.begin(), children_.end(), [&](Process* process) {
+                return process->pid() == pid;
+            });
+            if(it != children_.end()) {
+                return *it;
+            } else {
+                return nullptr;
+            }
+        }
+
         void notifyExit(int status, std::optional<int> signal);
         size_t nbChildren() const { return children_.size(); }
         size_t nbExitedChildren() const { return exitedChildren_.size(); }
@@ -159,7 +170,7 @@ namespace kernel::gnulinux {
 
         // Hierarchy
         Process* parent_ { nullptr };
-        std::set<int> children_;
+        std::vector<Process*> children_;
         std::vector<ExitedChild> exitedChildren_;
     };
 
