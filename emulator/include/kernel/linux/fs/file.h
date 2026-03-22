@@ -2,6 +2,7 @@
 #define FILE_H
 
 #include "kernel/linux/fs/fsobject.h"
+#include "kernel/linux/fs/fcntl.h"
 #include "kernel/linux/fs/ioctl.h"
 #include "kernel/linux/fs/path.h"
 #include "kernel/utils/blockor.h"
@@ -81,7 +82,7 @@ namespace kernel::gnulinux {
 
         // Return a value if we need to run the fcntl on the host side
         // or empty otherwise
-        virtual std::optional<int> fcntl(int cmd, int arg) = 0;
+        virtual std::optional<int> fcntl(FcntlCommand cmd, int arg) = 0;
 
         virtual ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) = 0;
 

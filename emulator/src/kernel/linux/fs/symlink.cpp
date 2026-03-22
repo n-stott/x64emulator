@@ -69,7 +69,7 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTSUP);
     }
 
-    std::optional<int> Symlink::fcntl(int, int) {
+    std::optional<int> Symlink::fcntl(FcntlCommand, int) {
         verify(false, "Symlink::fcntl not implemented");
         return {};
     }

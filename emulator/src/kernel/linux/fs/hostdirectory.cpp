@@ -76,9 +76,10 @@ namespace kernel::gnulinux {
         return handle_->getdents64(count); // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    std::optional<int> HostDirectory::fcntl(int cmd, int arg) {
+    std::optional<int> HostDirectory::fcntl(FcntlCommand cmd, int arg) {
         verify(!!handle_, "Directory must be opened first");
-        return Host::fcntl(handle_->fd(), cmd, arg); // NOLINT(bugprone-unchecked-optional-access)
+        int hostcmd = Host::Fcntl::fromCommand(cmd);
+        return Host::fcntl(handle_->fd(), hostcmd, arg); // NOLINT(bugprone-unchecked-optional-access)
     }
 
 }

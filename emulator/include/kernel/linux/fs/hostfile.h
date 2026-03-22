@@ -41,7 +41,7 @@ namespace kernel::gnulinux {
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
-        std::optional<int> fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(FcntlCommand cmd, int arg) override;
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {

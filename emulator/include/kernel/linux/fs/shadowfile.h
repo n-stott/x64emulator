@@ -46,7 +46,7 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer statx(unsigned int mask) override;
 
         ErrnoOrBuffer getdents64(size_t count) override;
-        std::optional<int> fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(FcntlCommand cmd, int arg) override;
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         int fallocate(int mode, off_t offset, off_t len);

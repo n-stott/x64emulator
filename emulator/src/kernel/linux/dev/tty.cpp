@@ -67,9 +67,10 @@ namespace kernel::gnulinux {
         return -ESPIPE;
     }
 
-    std::optional<int> Tty::fcntl(int cmd, int arg) {
+    std::optional<int> Tty::fcntl(FcntlCommand cmd, int arg) {
         if(!hostFd_) return -EBADF;
-        int ret = ::fcntl(hostFd_.value(), cmd, arg);
+        int hostcmd = Host::Fcntl::fromCommand(cmd);
+        int ret = ::fcntl(hostFd_.value(), hostcmd, arg);
         return ret;
     }
 

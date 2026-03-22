@@ -74,18 +74,18 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int FileDescriptors::fcntl(FD fd, int cmd, int arg) {
+    int FileDescriptors::fcntl(FD fd, FcntlCommand cmd, int arg) {
         auto descriptor = findFileDescriptor(fd);
         if(!descriptor) return -EBADF;
         OpenFileDescription* openFileDescription = descriptor->openFiledescription.get();
         if(!openFileDescription) return -EBADF;
-        switch(Host::Fcntl::toCommand(cmd)) {
-            case Host::Fcntl::DUPFD: {
+        switch(cmd) {
+            case FcntlCommand::DUPFD: {
                 verify("cannot do dupfd in FS::fcntl");
                 FD newfd = dup(fd);
                 return newfd.fd;
             }
-            case Host::Fcntl::DUPFD_CLOEXEC: {
+            case FcntlCommand::DUPFD_CLOEXEC: {
                 verify("cannot do dupfd_cloexec in FS::fcntl");
                 FD newfd = dup(fd);
                 FileDescriptor* desc = findFileDescriptor(newfd);
@@ -835,27 +835,27 @@ namespace kernel::gnulinux {
         return file->getdents64(count);
     }
 
-    int FS::fcntl(FileDescriptor& descriptor, int cmd, int arg) {
+    int FS::fcntl(FileDescriptor& descriptor, FcntlCommand cmd, int arg) {
         OpenFileDescription* openFileDescription = descriptor.openFiledescription.get();
         if(!openFileDescription) return -EBADF;
         std::optional<int> emulatedRet;
         // If we can do it in FS alone, do it here
         // and check if we need to do it on the file as well
         bool callFcntlOnFile = true;
-        switch(Host::Fcntl::toCommand(cmd)) {
-            case Host::Fcntl::DUPFD: {
+        switch(cmd) {
+            case FcntlCommand::DUPFD: {
                 verify(false, "cannot do dupfd in FS::fcntl");
                 break;
             }
-            case Host::Fcntl::DUPFD_CLOEXEC: {
+            case FcntlCommand::DUPFD_CLOEXEC: {
                 verify(false, "cannot do dupfd_cloexec in FS::fcntl");
                 break;
             }
-            case Host::Fcntl::GETFD: {
+            case FcntlCommand::GETFD: {
                 emulatedRet = descriptor.closeOnExec ? Host::Fcntl::fdCloExec() : 0;
                 break;
             }
-            case Host::Fcntl::SETFD: {
+            case FcntlCommand::SETFD: {
                 bool currentFlag = descriptor.closeOnExec;
                 if(Host::Open::isCloseOnExec(arg) && !currentFlag) descriptor.closeOnExec = true;
                 if(!Host::Open::isCloseOnExec(arg) && currentFlag) descriptor.closeOnExec = false;
@@ -863,12 +863,12 @@ namespace kernel::gnulinux {
                 break;
             }
             // If the open file description is sufficient, do it there
-            case Host::Fcntl::GETFL: {
+            case FcntlCommand::GETFL: {
                 emulatedRet = assembleAccessModeAndFileStatusFlags(openFileDescription->accessMode(), openFileDescription->statusFlags());
                 callFcntlOnFile = false;
                 break;
             }
-            case Host::Fcntl::SETFL: {
+            case FcntlCommand::SETFL: {
                 // File access mode and file creation flags in arg are ignored
                 verify(!Host::Open::isAppending(arg), "changing append flag is not supported");
                 auto currentFlags = openFileDescription->statusFlags();

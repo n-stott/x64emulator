@@ -119,8 +119,9 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTDIR);
     }
 
-    std::optional<int> PipeEndpoint::fcntl(int, int) {
+    std::optional<int> PipeEndpoint::fcntl(FcntlCommand, int) {
         // nothing to do ?
+        warn("fcntl not implemented on PipeEndoint");
         return {};
     }
 

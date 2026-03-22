@@ -36,7 +36,7 @@ namespace kernel::gnulinux {
         void advanceInternalOffset(off_t offset) override;
         off_t lseek(OpenFileDescription&, off_t offset, int whence) override;
         
-        std::optional<int> fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(FcntlCommand cmd, int arg) override;
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {

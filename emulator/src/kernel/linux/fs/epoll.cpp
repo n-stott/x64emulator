@@ -42,8 +42,8 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTDIR);
     }
 
-    std::optional<int> Epoll::fcntl(int cmd, int arg) {
-        verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on epoll", cmd, arg));
+    std::optional<int> Epoll::fcntl(FcntlCommand cmd, int arg) {
+        verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on epoll", toString(cmd), arg));
         return -ENOTSUP;
     }
 

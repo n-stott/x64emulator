@@ -81,8 +81,8 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-ENOTDIR);
     }
 
-    std::optional<int> Event::fcntl(int cmd, int arg) {
-        verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on event", cmd, arg));
+    std::optional<int> Event::fcntl(FcntlCommand cmd, int arg) {
+        verify(false, fmt::format("fcntl(cmd={}, arg={}) not implemented on event", toString(cmd), arg));
         return -ENOTSUP;
     }
 

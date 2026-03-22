@@ -109,7 +109,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    std::optional<int> ShadowDevice::fcntl(int, int) {
+    std::optional<int> ShadowDevice::fcntl(FcntlCommand, int) {
         verify(false, "ShadowDevice::fcntl not implemented");
         return -ENOTSUP;
     }

@@ -96,8 +96,9 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(std::move(buf));
     }
 
-    std::optional<int> HostFile::fcntl(int cmd, int arg) {
-        return Host::fcntl(handle_->fd(), cmd, arg);
+    std::optional<int> HostFile::fcntl(FcntlCommand cmd, int arg) {
+        int hostcmd = Host::Fcntl::fromCommand(cmd);
+        return Host::fcntl(handle_->fd(), hostcmd, arg);
     }
 
     ErrnoOrBuffer HostFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {

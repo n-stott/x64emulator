@@ -69,8 +69,9 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    std::optional<int> HostDevice::fcntl(int cmd, int arg) {
-        return Host::fcntl(handle_->fd(), cmd, arg);
+    std::optional<int> HostDevice::fcntl(FcntlCommand cmd, int arg) {
+        int hostcmd = Host::Fcntl::fromCommand(cmd);
+        return Host::fcntl(handle_->fd(), hostcmd, arg);
     }
 
     ErrnoOrBuffer HostDevice::ioctl(OpenFileDescription&, Ioctl, const Buffer&) {

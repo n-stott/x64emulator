@@ -63,8 +63,9 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    std::optional<int> Socket::fcntl(int cmd, int arg) {
-        return Host::fcntl(Host::FD{hostFd_}, cmd, arg);
+    std::optional<int> Socket::fcntl(FcntlCommand cmd, int arg) {
+        int hostcmd = Host::Fcntl::fromCommand(cmd);
+        return Host::fcntl(Host::FD{hostFd_}, hostcmd, arg);
     }
 
     int Socket::shutdown(int how) const {

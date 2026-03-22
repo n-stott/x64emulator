@@ -1213,9 +1213,20 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fcntl(int fd, int cmd, int arg) {
-        int ret = currentProcess_->fds().fcntl(FD{fd}, cmd, arg);
-        if(kernel_.logSyscalls()) print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}", fd, Host::fcntlName(cmd), arg, ret);
-        return ret;
+        auto command = Host::Fcntl::toCommand(cmd);
+        if(command) {
+            int ret = currentProcess_->fds().fcntl(FD{fd}, *command, arg);
+            if(kernel_.logSyscalls()) {
+                print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}", fd, toString(*command), arg, ret);
+            }
+            return ret;
+        } else {
+            warn("fcntl(cmd={}) not supported", cmd);
+            if(kernel_.logSyscalls()) {
+                print("Sys::fcntl(fd={}, cmd={}, arg={}) = {}", fd, cmd, arg, -ENOTSUP);
+            }
+            return -ENOTSUP;
+        }
     }
 
     int Sys::flock(int fd, int operation) {

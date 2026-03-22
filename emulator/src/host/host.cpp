@@ -107,16 +107,32 @@ namespace kernel::gnulinux {
         return flag & O_NONBLOCK;
     }
 
-    Host::Fcntl::Command Host::Fcntl::toCommand(int cmd) {
+    std::optional<FcntlCommand> Host::Fcntl::toCommand(int cmd) {
         switch(cmd) {
-            case F_DUPFD: return Command::DUPFD;
-            case F_DUPFD_CLOEXEC: return Command::DUPFD_CLOEXEC;
-            case F_GETFD: return Command::GETFD;
-            case F_SETFD: return Command::SETFD;
-            case F_GETFL: return Command::GETFL;
-            case F_SETFL: return Command::SETFL;
-            default: return Command::UNSUPPORTED;
+            case F_DUPFD: return FcntlCommand::DUPFD;
+            case F_DUPFD_CLOEXEC: return FcntlCommand::DUPFD_CLOEXEC;
+            case F_GETFD: return FcntlCommand::GETFD;
+            case F_SETFD: return FcntlCommand::SETFD;
+            case F_GETFL: return FcntlCommand::GETFL;
+            case F_SETFL: return FcntlCommand::SETFL;
+            case F_SETLK: return FcntlCommand::SETLK;
+            case F_ADD_SEALS: return FcntlCommand::ADD_SEALS;
+            default: return {};
         }
+    }
+
+    int Host::Fcntl::fromCommand(FcntlCommand cmd) {
+        switch(cmd) {
+            case FcntlCommand::DUPFD: return F_DUPFD;
+            case FcntlCommand::DUPFD_CLOEXEC: return F_DUPFD_CLOEXEC;
+            case FcntlCommand::GETFD: return F_GETFD;
+            case FcntlCommand::SETFD: return F_SETFD;
+            case FcntlCommand::GETFL: return F_GETFL;
+            case FcntlCommand::SETFL: return F_SETFL;
+            case FcntlCommand::SETLK: return F_SETLK;
+            case FcntlCommand::ADD_SEALS: return F_ADD_SEALS;
+        }
+        UNREACHABLE();
     }
 
     int Host::Fcntl::fdCloExec() {

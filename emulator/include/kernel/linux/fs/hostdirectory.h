@@ -29,7 +29,7 @@ namespace kernel::gnulinux {
 
         ErrnoOrBuffer getdents64(size_t count) override;
 
-        std::optional<int> fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(FcntlCommand cmd, int arg) override;
 
         std::string className() const override { return "HostDirectory"; }
     private:

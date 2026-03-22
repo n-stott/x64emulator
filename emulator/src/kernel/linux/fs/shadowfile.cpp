@@ -174,25 +174,25 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(-EINVAL);
     }
 
-    std::optional<int> ShadowFile::fcntl(int cmd, int arg) {
-        if(cmd == F_DUPFD
-            || cmd == F_GETFD
-            || cmd == F_SETFD
-            || cmd == F_DUPFD_CLOEXEC)
+    std::optional<int> ShadowFile::fcntl(FcntlCommand cmd, int arg) {
+        if(cmd == FcntlCommand::DUPFD
+            || cmd == FcntlCommand::GETFD
+            || cmd == FcntlCommand::SETFD
+            || cmd == FcntlCommand::DUPFD_CLOEXEC)
             return {}; // nothing to do here
-        if(cmd == F_SETLK) {
-            warn(fmt::format("ShadowFile::fcntl(F_SETLK, {}) not implemented", arg));
+        if(cmd == FcntlCommand::SETLK) {
+            warn(fmt::format("ShadowFile::fcntl(FcntlCommand::SETLK, {}) not implemented", arg));
             return 0;
         }
-        if(cmd == F_GETFL) {
-            warn(fmt::format("ShadowFile::fcntl(F_GETFL, {}) not implemented", arg));
+        if(cmd == FcntlCommand::GETFL) {
+            warn(fmt::format("ShadowFile::fcntl(FcntlCommand::GETFL, {}) not implemented", arg));
             return {}; // trust the open file description
         }
-        if(cmd == F_ADD_SEALS) {
-            warn(fmt::format("ShadowFile::fcntl(F_ADD_SEALS, {}) not implemented", arg));
+        if(cmd == FcntlCommand::ADD_SEALS) {
+            warn(fmt::format("ShadowFile::fcntl(FcntlCommand::ADD_SEALS, {}) not implemented", arg));
             return 0;
         }
-        verify(false, [&]() { fmt::print("ShadowFile::fcntl({}, {}) not implemented\n", cmd, arg); });
+        verify(false, [&]() { fmt::print("ShadowFile::fcntl({}, {}) not implemented\n", toString(cmd), arg); });
         return -EINVAL;
     }
 

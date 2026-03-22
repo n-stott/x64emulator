@@ -2,6 +2,7 @@
 #define FS_H
 
 #include "kernel/linux/fs/fsflags.h"
+#include "kernel/linux/fs/fcntl.h"
 #include "kernel/linux/fs/ioctl.h"
 #include "kernel/linux/fs/path.h"
 #include "kernel/utils/blockor.h"
@@ -76,7 +77,7 @@ namespace kernel::gnulinux {
         int close(FD);
         void closeAll();
 
-        int fcntl(FD fd, int cmd, int arg);
+        int fcntl(FD fd, FcntlCommand cmd, int arg);
 
         FD dup(FD fd);
         FD dup2(FD oldfd, FD newfd);
@@ -161,7 +162,7 @@ namespace kernel::gnulinux {
         off_t lseek(FileDescriptor fd, off_t offset, int whence);
 
         ErrnoOrBuffer getdents64(FileDescriptor fd, size_t count);
-        int fcntl(FileDescriptor& fd, int cmd, int arg);
+        int fcntl(FileDescriptor& fd, FcntlCommand cmd, int arg);
 
         ErrnoOrBuffer ioctl(FileDescriptor fd, Ioctl request, const Buffer& buffer);
 

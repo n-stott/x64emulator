@@ -1,6 +1,7 @@
 #ifndef HOST_H
 #define HOST_H
 
+#include "kernel/linux/fs/fcntl.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
 #include "kernel/timers.h"
@@ -108,19 +109,12 @@ namespace kernel::gnulinux {
         static std::optional<FileHandle> tryOpen(const char* pathname, FileType type, CloseOnExec cloexec = CloseOnExec::YES);
 
         struct Fcntl {
-            enum Command {
-                DUPFD,
-                DUPFD_CLOEXEC,
-                GETFD,
-                SETFD,
-                GETFL,
-                SETFL,
-                UNSUPPORTED,
-            };
-
-            static Command toCommand(int cmd);
+            static std::optional<FcntlCommand> toCommand(int cmd);
+            static int fromCommand(FcntlCommand cmd);
             static int fdCloExec();
         };
+
+
 
         struct Mode {
             static bool isUserReadable(unsigned int mode);

@@ -71,7 +71,7 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer statfs() override;
         ErrnoOrBuffer statx(unsigned int) override;
         
-        std::optional<int> fcntl(int cmd, int arg) override;
+        std::optional<int> fcntl(FcntlCommand cmd, int arg) override;
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
