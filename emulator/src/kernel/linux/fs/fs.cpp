@@ -853,6 +853,7 @@ namespace kernel::gnulinux {
             }
             case FcntlCommand::GETFD: {
                 emulatedRet = descriptor.closeOnExec ? Host::Fcntl::fdCloExec() : 0;
+                callFcntlOnFile = false;
                 break;
             }
             case FcntlCommand::SETFD: {
