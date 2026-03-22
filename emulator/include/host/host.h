@@ -67,6 +67,7 @@ namespace kernel::gnulinux {
         enum class FileType {
             REGULAR_FILE,
             DEVICE,
+            DIRECTORY,
         };
 
         enum class CloseOnExec {
@@ -79,6 +80,7 @@ namespace kernel::gnulinux {
             explicit FileHandle(FD fd);
             ~FileHandle();
             FileHandle(FileHandle&&);
+            FileHandle& operator=(FileHandle&&);
 
             FD fd() const { return fd_; }
 
@@ -93,7 +95,10 @@ namespace kernel::gnulinux {
             off_t lseek(off_t offset, SEEK) const;
 
             ErrnoOrBuffer stat() const;
+            ErrnoOrBuffer statx(unsigned int mask) const;
             ErrnoOrBuffer statfs() const;
+
+            ErrnoOrBuffer getdents64(size_t count) const;
 
         private:
             FD fd_;

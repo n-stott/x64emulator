@@ -3,6 +3,7 @@
 
 #include "kernel/linux/fs/directory.h"
 #include "kernel/linux/fs/file.h"
+#include "host/host.h"
 #include <memory>
 #include <string>
 
@@ -33,7 +34,7 @@ namespace kernel::gnulinux {
         std::string className() const override { return "HostDirectory"; }
     private:
         HostDirectory(std::string name) : Directory(std::move(name)) { }
-        std::optional<int> hostFd_; // the host fd when the folder is opened
+        std::optional<Host::FileHandle> handle_;
     };
 
 }

@@ -901,6 +901,12 @@ namespace kernel::gnulinux {
         other.fd_.fd = -1;
     }
 
+    Host::FileHandle& Host::FileHandle::operator=(FileHandle&& other) {
+        fd_ = other.fd_;
+        other.fd_.fd = -1;
+        return *this;
+    }
+
     std::optional<Host::FileHandle> Host::tryOpen(const char* pathname, FileType type, CloseOnExec cloexec) {
         int flags = O_RDONLY;
         if(cloexec == CloseOnExec::YES) flags |= O_CLOEXEC;
@@ -926,6 +932,10 @@ namespace kernel::gnulinux {
             }
             case FileType::REGULAR_FILE: {
                 if (fileType != S_IFREG) return {};
+                break;
+            }
+            case FileType::DIRECTORY: {
+                if (fileType != S_IFDIR) return {};
                 break;
             }
         }
@@ -960,6 +970,15 @@ namespace kernel::gnulinux {
         return ErrnoOrBuffer(std::move(buf));
     }
 
+    ErrnoOrBuffer Host::FileHandle::statx(unsigned int mask) const {
+        struct statx stx;
+        int rc = ::statx(fd_.fd, "", AT_EMPTY_PATH, mask, &stx);
+        if(rc < 0) return ErrnoOrBuffer(-errno);
+        Buffer buf(sizeof(stx), 0x0);
+        std::memcpy(buf.data(), &stx, sizeof(stx));
+        return ErrnoOrBuffer(std::move(buf));
+    }
+
     ErrnoOrBuffer Host::FileHandle::statfs() const {
         struct statfs stfs;
         int rc = ::fstatfs(fd_.fd, &stfs);
@@ -967,6 +986,10 @@ namespace kernel::gnulinux {
         Buffer buf(sizeof(stfs), 0x0);
         std::memcpy(buf.data(), &stfs, sizeof(stfs));
         return ErrnoOrBuffer(std::move(buf));
+    }
+
+    ErrnoOrBuffer Host::FileHandle::getdents64(size_t count) const {
+        return Host::getdents64(fd_, count); // NOLINT(bugprone-unchecked-optional-access)
     }
 
 }

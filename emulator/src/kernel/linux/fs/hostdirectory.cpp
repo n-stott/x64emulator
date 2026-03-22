@@ -1,4 +1,5 @@
 #include "kernel/linux/fs/hostdirectory.h"
+#include "kernel/linux/fs/openfiledescription.h"
 #include "kernel/linux/fs/path.h"
 #include "host/host.h"
 #include "scopeguard.h"
@@ -16,50 +17,40 @@ namespace kernel::gnulinux {
 
     std::unique_ptr<HostDirectory> HostDirectory::tryCreate(const Path& path) {
         std::string pathname = path.absolute();
-
-        int flags = O_RDONLY | O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-        if(fd < 0) return {};
-
-        ScopeGuard guard([=]() {
-            if(fd >= 0) ::close(fd);
-        });
-
-        // check that the file is a directory
-        struct stat s;
-        if(::fstat(fd, &s) < 0) {
-            return {};
-        }
-        
-        mode_t fileType = (s.st_mode & S_IFMT);
-        if (fileType != S_IFDIR) {
-            // not a directory
-            return {};
-        }
-
+        auto handle = Host::tryOpen(pathname.c_str(),
+                Host::FileType::DIRECTORY,
+                Host::CloseOnExec::YES);
+        if(!handle) return {};
         return std::unique_ptr<HostDirectory>(new HostDirectory(path.last()));
     }
 
     void HostDirectory::open() {
-        if(!hostFd_) {
+        if(!handle_) {
             std::string pathname = path().absolute();
-            int flags = O_RDONLY | O_CLOEXEC;
-            int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
-            verify(fd >= 0, "Unable to open directory \"" + pathname + "\"");
-            hostFd_ = fd;
+            handle_ = Host::tryOpen(pathname.c_str(),
+                    Host::FileType::DIRECTORY,
+                    Host::CloseOnExec::YES);
+            verify(handle_.has_value(), "Unable to open directory \"" + pathname + "\"");
         }
     }
 
     void HostDirectory::close() {
-        verify(!!hostFd_, "Trying to close un-opened directory");
-        int ret = ::close(hostFd_.value()); // NOLINT(bugprone-unchecked-optional-access)
-        verify(ret == 0, "Closing directory failed");
-        hostFd_.reset();
+        verify(!!handle_, "Trying to close un-opened directory");
+        handle_.reset();
     }
 
-    off_t HostDirectory::lseek(OpenFileDescription&, off_t offset, int whence) {
-        verify(!!hostFd_, "Trying to close un-opened directory");
-        off_t ret = ::lseek(hostFd_.value(), offset, whence); // NOLINT(bugprone-unchecked-optional-access)
+    off_t HostDirectory::lseek(OpenFileDescription& ofd, off_t offset, int whence) {
+        verify(!!handle_, "Trying to close un-opened directory");
+        off_t ret = [&]() {
+            if(whence == SEEK_CUR) {
+                return handle_->lseek(ofd.offset() + offset, Host::FileHandle::SEEK::SET);
+            } else if(whence == SEEK_SET) {
+                return handle_->lseek(offset, Host::FileHandle::SEEK::SET);
+            } else {
+                verify(whence == SEEK_END);
+                return handle_->lseek(offset, Host::FileHandle::SEEK::END);
+            }
+        }();
         if(ret < 0) return -errno;
         return ret;
     }
@@ -75,19 +66,19 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostDirectory::statx(unsigned int mask) {
-        if(!hostFd_) open();
-        verify(!!hostFd_, "Directory must be opened first");
-        return Host::statx(Host::FD{hostFd_.value()}, "", AT_EMPTY_PATH, mask); // NOLINT(bugprone-unchecked-optional-access)
+        if(!handle_) open();
+        verify(!!handle_, "Directory must be opened first");
+        return handle_->statx(mask); // NOLINT(bugprone-unchecked-optional-access)
     }
 
     ErrnoOrBuffer HostDirectory::getdents64(size_t count) {
-        verify(!!hostFd_, "Directory must be opened first");
-        return Host::getdents64(Host::FD{hostFd_.value()}, count); // NOLINT(bugprone-unchecked-optional-access)
+        verify(!!handle_, "Directory must be opened first");
+        return handle_->getdents64(count); // NOLINT(bugprone-unchecked-optional-access)
     }
 
     std::optional<int> HostDirectory::fcntl(int cmd, int arg) {
-        verify(!!hostFd_, "Directory must be opened first");
-        return Host::fcntl(Host::FD{hostFd_.value()}, cmd, arg); // NOLINT(bugprone-unchecked-optional-access)
+        verify(!!handle_, "Directory must be opened first");
+        return Host::fcntl(handle_->fd(), cmd, arg); // NOLINT(bugprone-unchecked-optional-access)
     }
 
 }
