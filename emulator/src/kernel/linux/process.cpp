@@ -381,4 +381,11 @@ namespace kernel::gnulinux {
         }
     }
 
+    Directory* Process::chdir(const Path& path) {
+        Directory* newcwd = fs_.findCurrentWorkDirectory(path);
+        if(!newcwd) return nullptr;
+        currentWorkDirectory_ = newcwd;
+        return currentWorkDirectory_;
+    }
+
 }

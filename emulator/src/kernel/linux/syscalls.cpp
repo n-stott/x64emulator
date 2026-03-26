@@ -1281,12 +1281,18 @@ namespace kernel::gnulinux {
     }
 
     int Sys::chdir(x64::Ptr pathname) {
-        auto path = mmu_->readString(pathname);
-        int ret = Host::chdir(path);
-        if(kernel_.logSyscalls()) {
-            print("Sys::chdir(path={}) = {}", path, ret);
+        auto newpath = mmu_->readString(pathname);
+        auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), newpath);
+        int ret = 0;
+        if(!path) {
+            ret = -ENOENT;
+        } else {
+            auto* cwd = currentProcess_->chdir(*path);
+            ret = !!cwd ? 0 : -ENOENT;
         }
-        warn("chdir not implemented");
+        if(kernel_.logSyscalls()) {
+            print("Sys::chdir(path={}) = {}", newpath, ret);
+        }
         return ret;
     }
 

@@ -47,6 +47,7 @@ namespace kernel::gnulinux {
 
         FileDescriptors& fds() { return *fds_; }
         Directory* cwd() { return currentWorkDirectory_; }
+        Directory* chdir(const Path& path);
 
         void setProfiling(bool profiling) { profiling_ = profiling; }
         bool isProfiling() const { return profiling_; }
