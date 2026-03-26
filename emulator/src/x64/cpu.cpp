@@ -976,6 +976,18 @@ namespace x64 {
     DEFINE_STANDALONE(PMOVZXWD_XMM_M64, execPmovzxwdXMMM64)
     DEFINE_STANDALONE(PMOVZXWQ_XMM_M32, execPmovzxwqXMMM32)
     DEFINE_STANDALONE(PMOVZXDQ_XMM_M64, execPmovzxdqXMMM64)
+    DEFINE_STANDALONE(PMOVSXBW_XMM_XMM, execPmovsxbwXMMXMM)
+    DEFINE_STANDALONE(PMOVSXBD_XMM_XMM, execPmovsxbdXMMXMM)
+    DEFINE_STANDALONE(PMOVSXBQ_XMM_XMM, execPmovsxbqXMMXMM)
+    DEFINE_STANDALONE(PMOVSXWD_XMM_XMM, execPmovsxwdXMMXMM)
+    DEFINE_STANDALONE(PMOVSXWQ_XMM_XMM, execPmovsxwqXMMXMM)
+    DEFINE_STANDALONE(PMOVSXDQ_XMM_XMM, execPmovsxdqXMMXMM)
+    DEFINE_STANDALONE(PMOVSXBW_XMM_M64, execPmovsxbwXMMM64)
+    DEFINE_STANDALONE(PMOVSXBD_XMM_M32, execPmovsxbdXMMM32)
+    DEFINE_STANDALONE(PMOVSXBQ_XMM_M16, execPmovsxbqXMMM16)
+    DEFINE_STANDALONE(PMOVSXWD_XMM_M64, execPmovsxwdXMMM64)
+    DEFINE_STANDALONE(PMOVSXWQ_XMM_M32, execPmovsxwqXMMM32)
+    DEFINE_STANDALONE(PMOVSXDQ_XMM_M64, execPmovsxdqXMMM64)
     DEFINE_STANDALONE(ROUNDSS_XMM_XMM_IMM, execRoundssXMMXMMImm)
     DEFINE_STANDALONE(ROUNDSS_XMM_M32_IMM, execRoundssXMMM32Imm)
     DEFINE_STANDALONE(ROUNDSD_XMM_XMM_IMM, execRoundsdXMMXMMImm)
@@ -1793,6 +1805,18 @@ namespace x64 {
         STANDALONE_NAME(PMOVZXWD_XMM_M64),
         STANDALONE_NAME(PMOVZXWQ_XMM_M32),
         STANDALONE_NAME(PMOVZXDQ_XMM_M64),
+        STANDALONE_NAME(PMOVSXBW_XMM_XMM),
+        STANDALONE_NAME(PMOVSXBD_XMM_XMM),
+        STANDALONE_NAME(PMOVSXBQ_XMM_XMM),
+        STANDALONE_NAME(PMOVSXWD_XMM_XMM),
+        STANDALONE_NAME(PMOVSXWQ_XMM_XMM),
+        STANDALONE_NAME(PMOVSXDQ_XMM_XMM),
+        STANDALONE_NAME(PMOVSXBW_XMM_M64),
+        STANDALONE_NAME(PMOVSXBD_XMM_M32),
+        STANDALONE_NAME(PMOVSXBQ_XMM_M16),
+        STANDALONE_NAME(PMOVSXWD_XMM_M64),
+        STANDALONE_NAME(PMOVSXWQ_XMM_M32),
+        STANDALONE_NAME(PMOVSXDQ_XMM_M64),
         STANDALONE_NAME(ROUNDSS_XMM_XMM_IMM),
         STANDALONE_NAME(ROUNDSS_XMM_M32_IMM),
         STANDALONE_NAME(ROUNDSD_XMM_XMM_IMM),
@@ -7016,6 +7040,78 @@ namespace x64 {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovzxdq(get(resolve(src))));
+    }
+
+    void Cpu::execPmovsxbwXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::pmovsxbw(narrow<u64>(get(src))));
+    }
+
+    void Cpu::execPmovsxbdXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::pmovsxbd(narrow<u32>(get(src))));
+    }
+
+    void Cpu::execPmovsxbqXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::pmovsxbq(narrow<u16>(get(src))));
+    }
+
+    void Cpu::execPmovsxwdXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::pmovsxwd(narrow<u64>(get(src))));
+    }
+
+    void Cpu::execPmovsxwqXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::pmovsxwq(narrow<u32>(get(src))));
+    }
+
+    void Cpu::execPmovsxdqXMMXMM(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<XMM>();
+        set(dst, Impl::pmovsxdq(narrow<u64>(get(src))));
+    }
+
+    void Cpu::execPmovsxbwXMMM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::pmovsxbw(get(resolve(src))));
+    }
+
+    void Cpu::execPmovsxbdXMMM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::pmovsxbd(get(resolve(src))));
+    }
+
+    void Cpu::execPmovsxbqXMMM16(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<M16>();
+        set(dst, Impl::pmovsxbq(get(resolve(src))));
+    }
+
+    void Cpu::execPmovsxwdXMMM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::pmovsxwd(get(resolve(src))));
+    }
+
+    void Cpu::execPmovsxwqXMMM32(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<M32>();
+        set(dst, Impl::pmovsxwq(get(resolve(src))));
+    }
+
+    void Cpu::execPmovsxdqXMMM64(const X64Instruction& ins) {
+        const auto& dst = ins.op0<XMM>();
+        const auto& src = ins.op1<M64>();
+        set(dst, Impl::pmovsxdq(get(resolve(src))));
     }
 
     void Cpu::execRoundssXMMXMMImm(const X64Instruction& ins) {

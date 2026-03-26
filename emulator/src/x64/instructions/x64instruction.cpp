@@ -807,6 +807,18 @@ namespace x64 {
             case Insn::PMOVZXWD_XMM_M64: return toString<XMM, M64>("pmovzxwd");
             case Insn::PMOVZXWQ_XMM_M32: return toString<XMM, M32>("pmovzxwq");
             case Insn::PMOVZXDQ_XMM_M64: return toString<XMM, M64>("pmovzxdq");
+            case Insn::PMOVSXBW_XMM_XMM: return toString<XMM, XMM>("pmovsxbw");
+            case Insn::PMOVSXBD_XMM_XMM: return toString<XMM, XMM>("pmovsxbd");
+            case Insn::PMOVSXBQ_XMM_XMM: return toString<XMM, XMM>("pmovsxbq");
+            case Insn::PMOVSXWD_XMM_XMM: return toString<XMM, XMM>("pmovsxwd");
+            case Insn::PMOVSXWQ_XMM_XMM: return toString<XMM, XMM>("pmovsxwq");
+            case Insn::PMOVSXDQ_XMM_XMM: return toString<XMM, XMM>("pmovsxdq");
+            case Insn::PMOVSXBW_XMM_M64: return toString<XMM, M64>("pmovsxbw");
+            case Insn::PMOVSXBD_XMM_M32: return toString<XMM, M32>("pmovsxbd");
+            case Insn::PMOVSXBQ_XMM_M16: return toString<XMM, M16>("pmovsxbq");
+            case Insn::PMOVSXWD_XMM_M64: return toString<XMM, M64>("pmovsxwd");
+            case Insn::PMOVSXWQ_XMM_M32: return toString<XMM, M32>("pmovsxwq");
+            case Insn::PMOVSXDQ_XMM_M64: return toString<XMM, M64>("pmovsxdq");
             case Insn::ROUNDSS_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundss");
             case Insn::ROUNDSS_XMM_M32_IMM: return toString<XMM, M32, Imm>("roundss");
             case Insn::ROUNDSD_XMM_XMM_IMM: return toString<XMM, XMM, Imm>("roundsd");

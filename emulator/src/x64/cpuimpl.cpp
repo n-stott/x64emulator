@@ -3987,6 +3987,90 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::pmovsxbw(u64 src) {
+        std::array<i8, 8> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<i16, 8> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (i16)SRC[i];
+        }
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovsxbd(u32 src) {
+        std::array<i8, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<i32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (i32)SRC[i];
+        }
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovsxbq(u16 src) {
+        std::array<i8, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<i64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (i64)SRC[i];
+        }
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovsxwd(u64 src) {
+        std::array<i16, 4> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<i32, 4> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (i32)SRC[i];
+        }
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovsxwq(u32 src) {
+        std::array<i16, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<i64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (i64)SRC[i];
+        }
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    u128 CpuImpl::pmovsxdq(u64 src) {
+        std::array<i32, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(src));
+        std::memcpy(SRC.data(), &src, sizeof(src));
+        std::array<i64, 2> DST;
+        static_assert(sizeof(DST) == sizeof(u128));
+        for(size_t i = 0; i < SRC.size(); ++i) {
+            DST[i] = (i64)SRC[i];
+        }
+        u128 dst;
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
     u128 CpuImpl::roundss32(u128 dst, u32 src, u8 imm, SIMD_ROUNDING) {
         (void)src;
         (void)imm;
