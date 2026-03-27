@@ -4,7 +4,7 @@ A toy x86-64 userspace emulator, for educational purposes. Everything is very ex
 
 ## Features
 
-* Emulation of most common x86-64 instructions (ring-3 and 64bit context only), including SSE2, (S)SSE3 and SSE4.1.
+* Emulation of most common x86-64 instructions (ring-3 and 64bit context only), including SSE2, (S)SSE3, SSE4.1 and SSE4.2.
 * A simple optimizing JIT compiler.
 * A thin (linux) kernel/filesystem emulation layer, with a focus on keeping the host machine clean.
 * A prototype timeline profiler.
@@ -18,7 +18,7 @@ Clone this repository and build the emulator, profileviewer and tests with
     $ cmake --build build
 
 Here are the options that can be given to cmake:
-* `-DSSE3=ON`, `-DSSSE3=ON`, `-DSSE41=ON` to enable SSE3, SSSE3 and SSE4.1 support respectively
+* `-DSSE3=ON`, `-DSSSE3=ON`, `-DSSE41=ON`, `-DSSE42=ON` to enable SSE3, SSSE3, SSE4.1 and SSE4.2 support respectively
 * `-DMULTIPROCESSING=ON` to enable multi-core support (extremely experimental)
 
 ## How to use
