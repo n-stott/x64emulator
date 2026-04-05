@@ -162,6 +162,8 @@ namespace x64 {
         static std::unique_ptr<Jit> tryCreate();
         ~Jit();
 
+        std::unique_ptr<Jit> clone() const;
+
         void setEnableJitChaining(bool enable) { jitChainingEnabled_ = enable; }
         bool jitChainingEnabled() const { return jitChainingEnabled_; }
 

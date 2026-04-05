@@ -25,6 +25,15 @@ namespace x64 {
 #endif
     }
 
+    std::unique_ptr<Jit> Jit::clone() const {
+        auto jit = Jit::tryCreate();
+        if(!jit) return {};
+        jit->callstackSize_ = callstackSize_;
+        jit->jitChainingEnabled_ = jitChainingEnabled_;
+        jit->optimizationLevel_ = optimizationLevel_;
+        return jit;
+    }
+
     void Jit::tryCreateJitTrampoline() {
         if(!!jitTrampoline_) return;
         auto jitBlock = compiler_->tryCompileJitTrampoline();
@@ -80,13 +89,13 @@ namespace x64 {
 
     void Jit::notifyCall() {
         ++callstackSize_;
-        // assert(callstackSize_+2 < callstack_.size());
+        assert(callstackSize_+2 < callstack_.size());
         // callstack_[callstackSize_++] = nullptr;
     }
 
     void Jit::notifyRet() {
+        assert(callstackSize_ > 0);
         --callstackSize_;
-        // assert(callstackSize_ > 0);
         // callstack_[callstackSize_--] = nullptr;
     }
 

@@ -1044,7 +1044,6 @@ namespace kernel::gnulinux {
                 return kernel_.processTable().addProcess(std::move(process));
             }();
             newProcess->setEnableJit(currentProcess_->jitEnabled());
-            newProcess->setEnableJitChaining(currentProcess_->jitChainingEnabled());
             bool flagsOk = checkCloneFlagsFork(cloneFlags);
             if(!flagsOk) {
                 if(kernel_.logSyscalls()) {
@@ -2530,7 +2529,6 @@ namespace kernel::gnulinux {
                 return kernel_.processTable().addProcess(std::move(process));
             }();
             newProcess->setEnableJit(currentProcess_->jitEnabled());
-            newProcess->setEnableJitChaining(currentProcess_->jitChainingEnabled());
             bool flagsOk = checkCloneFlagsFork(cloneFlags);
             if(!flagsOk) {
                 if(kernel_.logSyscalls()) {

@@ -99,6 +99,9 @@ namespace kernel::gnulinux {
             process->addressSpace().clone(mmu, *addressSpace_);
         }
         process->parent_ = this;
+        if(jit_) {
+            process->jit_ = jit_->clone();
+        }
         notifyChildCreated(process.get());
         return process;
     }
