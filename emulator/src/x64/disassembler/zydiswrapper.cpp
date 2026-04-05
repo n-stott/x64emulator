@@ -2216,8 +2216,7 @@ namespace x64 {
             auto stdst = asST(dst);
             auto stsrc = asST(src);
             if(stdst && stsrc) {
-                assert(stdst == ST::ST0);
-                return X64Instruction::make<Insn::FMUL_ST_ST>(insn.runtime_address, insn.info.length, ST::ST0, stsrc.value());
+                return X64Instruction::make<Insn::FMUL_ST_ST>(insn.runtime_address, insn.info.length, stdst.value(), stsrc.value());
             }
         }
         return make_failed(insn);
