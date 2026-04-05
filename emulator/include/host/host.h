@@ -1,6 +1,7 @@
 #ifndef HOST_H
 #define HOST_H
 
+#include "kernel/linux/fs/ioctl.h"
 #include "kernel/linux/fs/fcntl.h"
 #include "kernel/utils/buffer.h"
 #include "kernel/utils/erroror.h"
@@ -100,6 +101,8 @@ namespace kernel::gnulinux {
             ErrnoOrBuffer statfs() const;
 
             ErrnoOrBuffer getdents64(size_t count) const;
+
+            ErrnoOrBuffer ioctl(kernel::gnulinux::Ioctl request, const Buffer& arg);
 
         private:
             FD fd_;

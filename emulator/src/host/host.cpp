@@ -1,5 +1,6 @@
 #include "host/host.h"
 #include "scopeguard.h"
+#include "verify.h"
 #include <cassert>
 #include <cstring>
 #include <sstream>
@@ -1006,6 +1007,78 @@ namespace kernel::gnulinux {
 
     ErrnoOrBuffer Host::FileHandle::getdents64(size_t count) const {
         return Host::getdents64(fd_, count); // NOLINT(bugprone-unchecked-optional-access)
+    }
+
+    ErrnoOrBuffer Host::FileHandle::ioctl(kernel::gnulinux::Ioctl request, const Buffer& arg) {
+        switch(request) {
+            case kernel::gnulinux::Ioctl::tcgets: {
+                struct termios ts;
+                int ret = ::ioctl(fd_.fd, TCGETS, &ts);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                Buffer buffer(sizeof(ts), 0x0);
+                std::memcpy(buffer.data(), &ts, sizeof(ts));
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case kernel::gnulinux::Ioctl::fioclex: {
+                int ret = ::ioctl(fd_.fd, FIOCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case kernel::gnulinux::Ioctl::fionclex: {
+                int ret = ::ioctl(fd_.fd, FIONCLEX, nullptr);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case kernel::gnulinux::Ioctl::tiocgwinsz: {
+                struct winsize ws;
+                int ret = ::ioctl(fd_.fd, TIOCGWINSZ, &ws);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                Buffer buffer(sizeof(ws), 0x0);
+                std::memcpy(buffer.data(), &ws, sizeof(ws));
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case kernel::gnulinux::Ioctl::tiocswinsz: {
+                struct winsize ws;
+                std::memcpy(&ws, arg.data(), sizeof(ws));
+                int ret = ::ioctl(fd_.fd, TIOCSWINSZ, &ws);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case kernel::gnulinux::Ioctl::tcsetsw: {
+                struct termios ts;
+                std::memcpy(&ts, arg.data(), sizeof(ts));
+                int ret = ::ioctl(fd_.fd, TCSETSW, &ts);
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(Buffer{});
+            }
+            case kernel::gnulinux::Ioctl::fionbio: {
+                Buffer buffer(arg);
+                int ret = ::ioctl(fd_.fd, FIONBIO, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case kernel::gnulinux::Ioctl::tcsets: {
+                Buffer buffer(arg);
+                assert(buffer.size() == sizeof(struct termios));
+                int ret = ::ioctl(fd_.fd, TCSETS, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case kernel::gnulinux::Ioctl::tiocgpgrp: {
+                Buffer buffer(arg);
+                assert(buffer.size() == sizeof(pid_t));
+                int ret = ::ioctl(fd_.fd, TIOCGPGRP, buffer.data());
+                if(ret < 0) return ErrnoOrBuffer(-errno);
+                return ErrnoOrBuffer(std::move(buffer));
+            }
+            case kernel::gnulinux::Ioctl::tiocspgrp: {
+                Buffer buffer(arg);
+                assert(buffer.size() == sizeof(pid_t));
+                warn("Tty::ioctl(tiocspgrp) not implemented, returning bogus 0");
+                return ErrnoOrBuffer(0);
+            }
+        }
+        return ErrnoOrBuffer(-ENOTSUP);
     }
 
 }

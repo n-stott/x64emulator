@@ -102,53 +102,11 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostFile::ioctl(OpenFileDescription&, Ioctl request, const Buffer& inputBuffer) {
-        switch(request) {
-            case Ioctl::tcgets: {
-                struct termios ts;
-                int ret = ::ioctl(handle_->fd().fd, TCGETS, &ts);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                Buffer buffer(sizeof(ts), 0x0);
-                std::memcpy(buffer.data(), &ts, sizeof(ts));
-                return ErrnoOrBuffer(std::move(buffer));
-            }
-            case Ioctl::fioclex: {
-                int ret = ::ioctl(handle_->fd().fd, FIOCLEX, nullptr);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            case Ioctl::fionclex: {
-                int ret = ::ioctl(handle_->fd().fd, FIONCLEX, nullptr);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            case Ioctl::tiocgwinsz: {
-                struct winsize ws;
-                int ret = ::ioctl(handle_->fd().fd, TIOCGWINSZ, &ws);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                Buffer buffer(sizeof(ws), 0x0);
-                std::memcpy(buffer.data(), &ws, sizeof(ws));
-                return ErrnoOrBuffer(std::move(buffer));
-            }
-            case Ioctl::tiocswinsz: {
-                struct winsize ws;
-                std::memcpy(&ws, inputBuffer.data(), sizeof(ws));
-                int ret = ::ioctl(handle_->fd().fd, TIOCSWINSZ, &ws);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            case Ioctl::tcsetsw: {
-                struct termios ts;
-                std::memcpy(&ts, inputBuffer.data(), sizeof(ts));
-                int ret = ::ioctl(handle_->fd().fd, TCSETSW, &ts);
-                if(ret < 0) return ErrnoOrBuffer(-errno);
-                return ErrnoOrBuffer(Buffer{});
-            }
-            default: break;
-        }
-        verify(false, [&]() {
+        auto res = handle_->ioctl(request, inputBuffer);
+        verify(res.errorOr(0) != -ENOTSUP, [&]() {
             fmt::print("implement ioctl {:#x} on HostFile\n", (int)request);
         });
-        return ErrnoOrBuffer(-ENOTSUP);
+        return res;
     }
 
 }
