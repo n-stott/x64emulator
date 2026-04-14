@@ -30,6 +30,7 @@ namespace x64 {
         CodeSegment* findNext(u64 address);
 
         void addSuccessor(CodeSegment* other);
+        void addReturn(CodeSegment* other);
         void removeFromCaches();
 
         size_t size() const;
@@ -69,6 +70,12 @@ namespace x64 {
             void addSuccessor(CodeSegment* other);
             void removeSuccessor(CodeSegment* other);
         } variableDestinationInfo_;
+
+        struct ReturnDestinationInfo {
+            CodeSegment* ret { nullptr };
+
+            void addReturn(CodeSegment* other);
+        } returnDestinationInfo_;
 
         void syncBlockLookupTable();
         

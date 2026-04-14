@@ -105,6 +105,7 @@ add_library(x64jit ${LIB_KIND}
     src/x64/compiler/optimizer.cpp
     src/x64/disassembler/zydiswrapper.cpp
     src/x64/disassembler/disassemblycache.cpp
+    src/x64/codesegment.cpp
 )
 target_compile_options(x64jit PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64jit PUBLIC
@@ -172,7 +173,6 @@ add_library(x64emulator ${LIB_KIND}
     src/kernel/linux/thread.cpp
     src/kernel/linux/threadblocker.cpp
     src/kernel/timers.cpp
-    src/x64/codesegment.cpp
 )
 target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64emulator PUBLIC

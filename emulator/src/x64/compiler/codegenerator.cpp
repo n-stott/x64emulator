@@ -22,7 +22,7 @@ namespace x64 {
         std::optional<size_t> offsetOfJumpLandingPad;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
-        std::optional<size_t> offsetOfReplaceableCallstackPush;
+        std::optional<std::pair<size_t, u64>> offsetOfReplaceableCallstackPush;
         std::optional<size_t> offsetOfReplaceableCallstackPop;
         std::vector<Assembler::Label*> labels;
         for(size_t l = 0; l < ir.labels.size(); ++l) {
@@ -45,8 +45,8 @@ namespace x64 {
             if(ir.jumpToOther == i) {
                 offsetOfReplaceableJumpToConditionalBlock = assembler_->code().size();
             }
-            if(ir.pushCallstack == i) {
-                offsetOfReplaceableCallstackPush = assembler_->code().size();
+            if(ir.pushCallstack && ir.pushCallstack->first == i) {
+                offsetOfReplaceableCallstackPush = std::make_pair(assembler_->code().size(), ir.pushCallstack->second);
             }
             if(ir.popCallstack == i) {
                 offsetOfReplaceableCallstackPop = assembler_->code().size();

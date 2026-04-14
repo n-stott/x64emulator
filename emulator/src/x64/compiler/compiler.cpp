@@ -107,15 +107,16 @@ namespace x64 {
         if(!bb) return {};
         
         if(!!bb->offsetOfReplaceableCallstackPush) {
-            auto* replacementLocation = bb->nativecode.data() + bb->offsetOfReplaceableCallstackPush.value();
-            auto replacementCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
-            assert(bb->offsetOfReplaceableCallstackPush.value() + replacementCode.size() <= bb->nativecode.size());
+            size_t offset = bb->offsetOfReplaceableCallstackPush->first;
+            auto* replacementLocation = bb->nativecode.data() + offset;
+            const auto& replacementCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+            assert(offset + replacementCode.size() <= bb->nativecode.size());
             memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
         }
         
         if(!!bb->offsetOfReplaceableCallstackPop) {
             auto* replacementLocation = bb->nativecode.data() + bb->offsetOfReplaceableCallstackPop.value();
-            auto replacementCode = popCallstackCode(TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+            const auto& replacementCode = popCallstackCode(Reg::GPR0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
             assert(bb->offsetOfReplaceableCallstackPop.value() + replacementCode.size() <= bb->nativecode.size());
             memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
         }
@@ -251,17 +252,6 @@ namespace x64 {
         generator_->pop64(R64::R15);
         generator_->pop64(R64::R14);
         generator_->pop64(R64::R13);
-    }
-
-    void Compiler::writeJumpTo(u64 address, u8* ptr, size_t size) {
-        TmpReg tmp {Reg::GPR0};
-        assembler_->clear();
-        assembler_->mov(get(tmp.reg), address);
-        assembler_->jump(get(tmp.reg));
-        const auto& code = assembler_->code();
-        (void)size;
-        assert(code.size() <= size);
-        memcpy(ptr, code.data(), code.size());
     }
 
     bool Compiler::tryCompile(const X64Instruction& ins) {
@@ -737,13 +727,13 @@ namespace x64 {
     bool Compiler::tryCompileLastInstruction(const X64Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return {};
         switch(ins.insn()) {
-            case Insn::CALLDIRECT: return tryCompileCall(ins.op0<u64>());
+            case Insn::CALLDIRECT: return tryCompileCall(ins.op0<u64>(), ins.nextAddress());
             case Insn::RET: return tryCompileRet();
             case Insn::JE: return tryCompileJe(ins.op0<u64>());
             case Insn::JNE: return tryCompileJne(ins.op0<u64>());
             case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
             case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
-            case Insn::CALLINDIRECT_RM64: return tryCompileCall(ins.op0<RM64>());
+            case Insn::CALLINDIRECT_RM64: return tryCompileCall(ins.op0<RM64>(), ins.nextAddress());
             case Insn::JMP_RM64: return tryCompileJmp(ins.op0<RM64>());
             default: break;
         }
@@ -1945,7 +1935,7 @@ namespace x64 {
         }
     }
 
-    bool Compiler::tryCompileCall(u64 dst) {
+    bool Compiler::tryCompileCall(u64 dst, u64 retAddress) {
         // Push the instruction pointer on the VM stack
         readReg64(Reg::GPR0, R64::RIP);
         push64(Reg::GPR0, TmpReg{Reg::GPR1});
@@ -1958,8 +1948,8 @@ namespace x64 {
         writeReg64(R64::RIP, Reg::GPR0);
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE PUSH TO THE CALLSTACK
-        generator_->reportPushCallstack();
-        auto dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+        generator_->reportPushCallstack(retAddress);
+        const auto& dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
         generator_->uds(dummyPushCallstackCode.size());
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
@@ -1977,11 +1967,27 @@ namespace x64 {
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE RET FROM THE CALLSTACK
         generator_->reportPopCallstack();
-        auto dummyPopCallstackCode = popCallstackCode(TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+        const auto& dummyPopCallstackCode = popCallstackCode(Reg::GPR0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
         generator_->uds(dummyPopCallstackCode.size());
+        // GPR0 contains the pointer to the return segment or nullptr
 
-        // Call cpu callbacks
-        // warn("Need to call cpu callbacks in Compiler::tryCompileRet");
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        ir::IrGenerator::Label& lookupFail = generator_->label();
+        generator_->jumpCondition(x64::Cond::E, &lookupFail);
+
+        // if we succeed lookup:
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // jump !
+        generator_->jump(get(Reg::GPR0));
+
+        generator_->putLabel(lookupFail);
+        // if we fail lookup
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // keep going and we will exit the JIT
         
         return true;
     }
@@ -2065,7 +2071,7 @@ namespace x64 {
         return true;
     }
 
-    bool Compiler::tryCompileCall(const RM64& dst) {
+    bool Compiler::tryCompileCall(const RM64& dst, u64 retAddress) {
         // Push the instruction pointer
         readReg64(Reg::GPR0, R64::RIP);
         push64(Reg::GPR0, TmpReg{Reg::GPR1});
@@ -2093,9 +2099,9 @@ namespace x64 {
         }
 
         // INSERT NOPs HERE TO BE REPLACED WITH THE PUSH TO THE CALLSTACK
-        generator_->reportPushCallstack();
-        auto dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
-        generator_->nops(dummyPushCallstackCode.size());
+        generator_->reportPushCallstack(retAddress);
+        const auto& dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+        generator_->uds(dummyPushCallstackCode.size());
 
         return true;
     }
@@ -5840,9 +5846,9 @@ namespace x64 {
     }
 
     void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
-        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingBasicBlockPtr);
-        static_assert(BBPTR_OFFSET == 0x50);
-        M64 bbPtrPtr = make64(R64::RDI, BBPTR_OFFSET);
+        constexpr size_t SEGMENTPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingSegmentPtr);
+        static_assert(SEGMENTPTR_OFFSET == 0x50);
+        M64 bbPtrPtr = make64(R64::RDI, SEGMENTPTR_OFFSET);
         generator_->mov(get(Reg::GPR1), bbPtrPtr);
         M64 bbPtr = make64(get(Reg::GPR1), 0);
         loadImm64(Reg::GPR0, basicBlockPtr);
@@ -5857,14 +5863,27 @@ namespace x64 {
         generator_->mov(bbPtr, get(Reg::GPR0));
     }
 
-    size_t Compiler::jmpCodeSize(u64 dst, TmpReg tmp) {
+    const std::vector<u8>& Compiler::jmpCode(const void* dst, TmpReg tmp) {
         assembler_->clear();
-        assembler_->mov(get(tmp.reg), dst);
+        assembler_->mov(get(tmp.reg), (u64)dst);
         assembler_->jump(get(tmp.reg));
-        return assembler_->code().size();
+        const auto& code = assembler_->code();
+        return code;
     }
 
-    std::vector<u8> Compiler::pushCallstackCode(u64 dst, TmpReg tmp1, TmpReg tmp2) {
+    void Compiler::writeJumpTo(const void* address, u8* ptr, size_t size) {
+        TmpReg tmp {Reg::GPR0};
+        const auto& code = jmpCode(address, tmp);
+        (void)size;
+        assert(code.size() <= size);
+        memcpy(ptr, code.data(), code.size());
+    }
+
+    size_t Compiler::jmpCodeSize(const void* dst, TmpReg tmp) {
+        return jmpCode(dst, tmp).size();
+    }
+
+    const std::vector<u8>& Compiler::pushCallstackCode(const void* dst, TmpReg tmp1, TmpReg tmp2) {
         assembler_->clear();
         // increment the size
         constexpr size_t JITCALLSTACKIZEPTR_OFFSET = offsetof(NativeArguments, callstackSize);
@@ -5875,21 +5894,28 @@ namespace x64 {
         assembler_->lea(get(tmp1.reg), make64(get(tmp1.reg), 1)); // increment the u64
         assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // write the u64 back
         // tmp1.reg holds the new size
-
-        (void)dst;
         
-        // constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
-        // static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
-        // M64 callstackPtrPtr = make64(R64::RDI, JITCALLSTACKPTR_OFFSET); // address of the void**
-        // assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
-        // assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, 0)); // tmp2.reg holds the new entry
-        // assembler_->mov(get(tmp1.reg), dst); // load the dst
-        // assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // write the dst
+        constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
+        static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
+        M64 callstackPtrPtr = make64(R64::RDI, JITCALLSTACKPTR_OFFSET); // address of the void**
+        assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
+        assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, -8)); // tmp2.reg holds the new entry
+        assembler_->mov(get(tmp1.reg), (u64)dst); // load the dst
+        assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // write the dst
 
         return assembler_->code();
     }
 
-    std::vector<u8> Compiler::popCallstackCode(TmpReg tmp1, TmpReg tmp2) {
+    void Compiler::writePushCallstackTo(const void* address, u8* ptr, size_t size) {
+        TmpReg tmp1 {Reg::GPR0};
+        TmpReg tmp2 {Reg::GPR1};
+        const auto& code = pushCallstackCode(address, tmp1, tmp2);
+        (void)size;
+        assert(code.size() <= size);
+        memcpy(ptr, code.data(), code.size());
+    }
+
+    const std::vector<u8>& Compiler::popCallstackCode(Reg dst, TmpReg tmp1, TmpReg tmp2) {
         assembler_->clear();
         // decrement the size
         constexpr size_t JITCALLSTACKIZEPTR_OFFSET = offsetof(NativeArguments, callstackSize);
@@ -5901,6 +5927,16 @@ namespace x64 {
         assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // *callstackSizePtr = tmp1.reg
         
         // TODO read the value and use it after
+        constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
+        static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
+        M64 callstackPtrPtr = make64(R64::RDI, JITCALLSTACKPTR_OFFSET); // address of the void**
+        assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
+        assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, 0)); // tmp2.reg holds the entry
+        assembler_->mov(get(dst), make64(get(tmp2.reg), 0)); // load the dst
+        assembler_->push64(get(dst));
+        assembler_->mov(get(tmp1.reg), (u64)0);
+        assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // zero out the entry
+        assembler_->pop64(get(dst));
 
         return assembler_->code();
     }

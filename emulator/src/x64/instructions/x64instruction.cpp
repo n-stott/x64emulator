@@ -911,7 +911,25 @@ namespace x64 {
             case Insn::JNE:
             case Insn::JCC:
             case Insn::JRCXZ:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool X64Instruction::isDirectCall() const {
+        switch(insn()) {
             case Insn::CALLDIRECT:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool X64Instruction::isIndirectCall() const {
+        switch(insn()) {
+            case Insn::CALLINDIRECT_RM32:
+            case Insn::CALLINDIRECT_RM64:
                 return true;
             default:
                 return false;

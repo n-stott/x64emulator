@@ -68,6 +68,10 @@ namespace emulator {
             cpuState.mxcsr = currentThreadState.mxcsr;
             cpuState.segmentBase[(u8)x64::Segment::FS] = currentThreadState.fsBase;
             cpu_.load(cpuState);
+
+            if(auto* jit = currentThread_->process()->jit()) {
+                jit->nukeCallstack();
+            }
         } else {
             currentThread_ = nullptr;
             x64::Cpu::State cpuState {};
@@ -145,12 +149,24 @@ namespace emulator {
                 time.tick(currentSegment->basicBlock().instructions().size());
             }
             nextSegment = findNextSegment();
-            if(!!jit
-            && !!currentSegment->jitBasicBlock()
-            && currentSegment->basicBlock().endsWithFixedDestinationJump()
-            && !!nextSegment->jitBasicBlock()) {
-                if(jit->jitChainingEnabled()) currentSegment->tryPatch(*jit);
-                if(stats_) ++stats_->avoidableExits_;
+
+            if(jit) {
+                if(!!currentSegment->jitBasicBlock()
+                && currentSegment->basicBlock().endsWithFixedDestinationJump()
+                && !!nextSegment->jitBasicBlock()) {
+                    if(jit->jitChainingEnabled()) currentSegment->tryPatch(*jit);
+                    if(stats_) ++stats_->avoidableExits_;
+                }
+                if(currentSegment->basicBlock().endsWithDirectCall()) {
+                    const auto& callins = currentSegment->basicBlock().instructions().back().first;
+                    verify(callins.isCall());
+                    u64 retrip = callins.nextAddress();
+                    x64::CodeSegment* retsegment = process->fetchSegment(mmu_, retrip);
+                    if(jit->jitCallChainingEnabled()) {
+                        currentSegment->addReturn(retsegment);
+                        currentSegment->tryPatch(*jit);
+                    }
+                }
             }
         }
         assert(!!currentThread_);
@@ -174,8 +190,8 @@ namespace emulator {
     }
 
     void VM::notifyStackChange(u64 stackptr) {
-        if([[maybe_unused]] auto* jit = currentThread_->process()->jit()) {
-            // TODO
+        if(auto* jit = currentThread_->process()->jit()) {
+            jit->nukeCallstack();
         } else {
             currentThread_->popCallstackUntil(stackptr);
         }

@@ -335,7 +335,7 @@ namespace x64::ir {
         }
         if(other.pushCallstack) {
             verify(!pushCallstack, "Cannot merge blocks with push to callstack");
-            pushCallstack = instructions.size() + other.pushCallstack.value();
+            pushCallstack = std::make_pair(instructions.size() + other.pushCallstack->first, other.pushCallstack->second);
         }
         if(other.popCallstack) {
             verify(!popCallstack, "Cannot merge blocks with pop from callstack");
@@ -363,6 +363,12 @@ namespace x64::ir {
             }
             if(jumpToOther && jumpToOther.value() > position) {
                 --jumpToOther.value();
+            }
+            if(pushCallstack && pushCallstack->first > position) {
+                --pushCallstack->first;
+            }
+            if(popCallstack && popCallstack.value() > position) {
+                --popCallstack.value();
             }
             instructions.erase(instructions.begin() + (ptrdiff_t)position);
         };

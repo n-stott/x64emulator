@@ -438,7 +438,7 @@ namespace x64::ir {
         std::optional<size_t> jumpLanding;
         std::optional<size_t> jumpToNext;
         std::optional<size_t> jumpToOther;
-        std::optional<size_t> pushCallstack;
+        std::optional<std::pair<size_t, u64>> pushCallstack;
         std::optional<size_t> popCallstack;
 
         IR& add(const IR& other);

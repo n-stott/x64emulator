@@ -29,7 +29,8 @@ namespace x64 {
 
         std::optional<NativeBasicBlock> tryCompileJitTrampoline();
 
-        void writeJumpTo(u64 address, u8* ptr, size_t size);
+        void writeJumpTo(const void* address, u8* ptr, size_t size);
+        void writePushCallstackTo(const void* address, u8* ptr, size_t size);
 
         std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
     private:
@@ -515,7 +516,7 @@ namespace x64 {
 
 
         // exits
-        bool tryCompileCall(u64 dst);
+        bool tryCompileCall(u64 dst, u64 retAddress);
         bool tryCompileRet();
         bool tryCompileJe(u64 dst);
         bool tryCompileJne(u64 dst);
@@ -523,7 +524,7 @@ namespace x64 {
         bool tryCompileJmp(u64 dst);
 
         // non-patchable exits
-        bool tryCompileCall(const RM64&);
+        bool tryCompileCall(const RM64&, u64 retAddress);
         bool tryCompileJmp(const RM64&);
 
         enum class Reg {
@@ -626,9 +627,11 @@ namespace x64 {
         void writeBasicBlockPtr(u64 basicBlockPtr);
         void writeJitBasicBlockPtr(u64 jitBasicBlockPtr);
 
-        size_t jmpCodeSize(u64 dst, TmpReg tmp);
-        std::vector<u8> pushCallstackCode(u64 dst, TmpReg tmp1, TmpReg tmp2);
-        std::vector<u8> popCallstackCode(TmpReg tmp1, TmpReg tmp2);
+        const std::vector<u8>& jmpCode(const void* dst, TmpReg tmp);
+        size_t jmpCodeSize(const void* dst, TmpReg tmp);
+
+        const std::vector<u8>& pushCallstackCode(const void* dst, TmpReg tmp1, TmpReg tmp2);
+        const std::vector<u8>& popCallstackCode(Reg dst, TmpReg tmp1, TmpReg tmp2);
 
         template<Size size>
         Mem getAddress(Reg dst, TmpReg tmp, const M<size>& mem);

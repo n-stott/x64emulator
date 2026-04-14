@@ -2,13 +2,14 @@
 #include "verify.h"
 #include <ostream>
 
-#define JIT_THRESHOLD 1024
+#define JIT_THRESHOLD 0
 
 namespace x64 {
 
     CodeSegment::CodeSegment(BasicBlock cpuBasicBlock) : cpuBasicBlock_(std::move(cpuBasicBlock)) {
         verify(!cpuBasicBlock_.instructions().empty(), "Basic block is empty");
-        endsWithFixedDestinationJump_ = cpuBasicBlock_.endsWithFixedDestinationJump();
+        endsWithFixedDestinationJump_ = cpuBasicBlock_.endsWithFixedDestinationJump()
+                || cpuBasicBlock_.endsWithDirectCall();
         std::fill(fixedDestinationInfo_.next.begin(), fixedDestinationInfo_.next.end(), nullptr);
         std::fill(fixedDestinationInfo_.nextCount.begin(), fixedDestinationInfo_.nextCount.end(), 0);
         callsForCompilation_ = JIT_THRESHOLD;
@@ -94,6 +95,15 @@ namespace x64 {
             syncBlockLookupTable();
         }
         other->predecessors_.insert(std::make_pair(start(), this));
+    }
+
+    void CodeSegment::addReturn(CodeSegment* other) {
+        returnDestinationInfo_.addReturn(other);
+    }
+
+    void CodeSegment::ReturnDestinationInfo::addReturn(CodeSegment* other) {
+        verify(!ret || ret == other);
+        ret = other;
     }
 
     void CodeSegment::removePredecessor(CodeSegment* other) {
@@ -182,15 +192,26 @@ namespace x64 {
         if(jitBasicBlock_->needsPatching()) {
             u64 continuingBlockAddress = end();
 
-            auto tryPatch = [&](CodeSegment* next) {
+            auto tryPatchCallstack = [&](CodeSegment* next) {
                 if(!next) return;
                 if(!next->jitBasicBlock()) return;
-                jitBasicBlock_->forAllPendingPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
-                    jitBasicBlock_->tryPatch(pendingPatch, next->jitBasicBlock(), jit.compiler());
+                jitBasicBlock_->forAllPendingCallstackPatches([&](std::optional<std::pair<size_t, u64>>* pendingPatch) {
+                    jitBasicBlock_->tryPatchPushCallstack(pendingPatch, next->jitBasicBlock(), jit.compiler());
                 });
             };
-            tryPatch(fixedDestinationInfo_.next[0]);
-            tryPatch(fixedDestinationInfo_.next[1]);
+            tryPatchCallstack(returnDestinationInfo_.ret);
+
+            auto tryPatchJump = [&](CodeSegment* next) {
+                if(!next) return;
+                if(!next->jitBasicBlock()) return;
+                // We patch calls before patching jumps because otherwise we will never patch the calls !
+                if(jitBasicBlock_->needsCallPatching()) return;
+                jitBasicBlock_->forAllPendingJumpPatches(next->start() == continuingBlockAddress, [&](std::optional<size_t>* pendingPatch) {
+                    jitBasicBlock_->tryPatchJump(pendingPatch, next->jitBasicBlock(), jit.compiler());
+                });
+            };
+            tryPatchJump(fixedDestinationInfo_.next[0]);
+            tryPatchJump(fixedDestinationInfo_.next[1]);
         }
         syncBlockLookupTable();
     }

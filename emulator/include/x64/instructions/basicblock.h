@@ -18,6 +18,8 @@ namespace x64 {
                 : instructions_(std::move(instructions)) {
             assert(!instructions_.empty());
             endsWithFixedDestinationJump_ = instructions_.back().first.isFixedDestinationJump();
+            endsWithDirectCall_ = instructions_.back().first.isDirectCall();
+            endsWithIndirectCall_ = instructions_.back().first.isIndirectCall();
             hasAtomic_ = std::any_of(instructions_.begin(), instructions_.end(), [](const auto& p) {
                 return p.first.lock();
             });
@@ -31,6 +33,14 @@ namespace x64 {
             return endsWithFixedDestinationJump_;
         }
 
+        bool endsWithDirectCall() const {
+            return endsWithDirectCall_;
+        }
+
+        bool endsWithIndirectCall() const {
+            return endsWithIndirectCall_;
+        }
+
         bool hasAtomicInstruction() const {
             return hasAtomic_;
         }
@@ -38,6 +48,8 @@ namespace x64 {
     private:
         std::vector<std::pair<X64Instruction, CpuExecPtr>> instructions_;
         bool endsWithFixedDestinationJump_ { false };
+        bool endsWithDirectCall_ { false };
+        bool endsWithIndirectCall_ { false };
         bool hasAtomic_ { false };
     };
 
@@ -46,7 +58,7 @@ namespace x64 {
         std::optional<size_t> offsetOfJumpLandingPad;
         std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
         std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
-        std::optional<size_t> offsetOfReplaceableCallstackPush;
+        std::optional<std::pair<size_t, u64>> offsetOfReplaceableCallstackPush;
         std::optional<size_t> offsetOfReplaceableCallstackPop;
     };
 

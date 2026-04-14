@@ -942,6 +942,8 @@ namespace x64 {
 
         bool isBranch() const;
         bool isFixedDestinationJump() const;
+        bool isDirectCall() const;
+        bool isIndirectCall() const;
         bool isCall() const;
         bool isSSE() const;
         bool isX87() const;

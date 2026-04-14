@@ -39,6 +39,11 @@ int main(int argc, char* argv[], char* envp[]) {
            .default_value(false)
            .implicit_value(true);
 
+    parser.add_argument("--nojitcallchaining")
+           .help("disable chaining call/ret blocks in the JIT")
+           .default_value(false)
+           .implicit_value(true);
+
     parser.add_argument("--jitstats")
            .help("dump JIT statistics")
             .default_value<int>(0)
@@ -125,6 +130,7 @@ int main(int argc, char* argv[], char* envp[]) {
                        && (parser["--profile"] == false);
         emulator.setEnableJit(jitEnabled);
         emulator.setEnableJitChaining(parser["--nojitchaining"] == false);
+        emulator.setEnableJitCallChaining(parser["--nojitcallchaining"] == false);
         emulator.setJitStatsLevel(parser.get<int>("--jitstats"));
         if(parser["-O0"] == true) {
             emulator.setOptimizationLevel(0);

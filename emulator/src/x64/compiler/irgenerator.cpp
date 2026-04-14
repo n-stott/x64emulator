@@ -589,9 +589,9 @@ namespace x64::ir {
         jumpLanding_ = instructions_.size();
     }
 
-    void IrGenerator::reportPushCallstack() {
+    void IrGenerator::reportPushCallstack(u64 retAddress) {
         verify(!pushCallstacks_, "Cannot push to callstack twice");
-        pushCallstacks_ = instructions_.size();
+        pushCallstacks_ = std::make_pair(instructions_.size(), retAddress);
     }
 
     void IrGenerator::reportPopCallstack() {

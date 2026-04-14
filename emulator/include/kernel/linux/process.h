@@ -74,6 +74,10 @@ namespace kernel::gnulinux {
             if(!!jit_) jit_->setEnableJitChaining(enable);
         }
 
+        void setEnableJitCallChaining(bool enable) {
+            if(!!jit_) jit_->setEnableJitCallChaining(enable);
+        }
+
         bool jitChainingEnabled() const {
             if(!!jit_) return jit_->jitChainingEnabled();
             return false;

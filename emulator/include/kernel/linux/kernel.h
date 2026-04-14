@@ -37,6 +37,7 @@ namespace kernel::gnulinux {
         void setLogSyscalls(bool logSyscalls);
         void setEnableJit(bool enableJit);
         void setEnableJitChaining(bool enableJitChaining);
+        void setEnableJitCallChaining(bool enableJitCallChaining);
         void setJitStatsLevel(int jitStatsLevel);
         void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
@@ -47,6 +48,7 @@ namespace kernel::gnulinux {
         bool logSyscalls() const { return logSyscalls_; }
         bool isJitEnabled() const { return enableJit_; }
         bool isJitChainingEnabled() const { return enableJitChaining_; }
+        bool isJitCallChainingEnabled() const { return enableJitCallChaining_; }
         int jitStatsLevel() const { return jitStatsLevel_; }
         int optimizationLevel() const { return optimizationLevel_; }
         bool isShmEnabled() const { return enableShm_; }
@@ -94,6 +96,7 @@ namespace kernel::gnulinux {
         bool isProfiling_ { false };
         bool enableJit_ { false };
         bool enableJitChaining_ { false };
+        bool enableJitCallChaining_ { false };
         int jitStatsLevel_ { 0 };
         int optimizationLevel_ { 0 };
         bool enableShm_ { false };

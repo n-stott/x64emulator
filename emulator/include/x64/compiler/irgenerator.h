@@ -502,7 +502,7 @@ namespace x64::ir {
 
         void reportJumpLanding();
 
-        void reportPushCallstack();
+        void reportPushCallstack(u64 retAddress);
         void reportPopCallstack();
 
     private:
@@ -515,7 +515,7 @@ namespace x64::ir {
         std::deque<Label> labels_;
         std::vector<std::pair<size_t, JumpKind>> jumpKinds_;
         std::optional<size_t> jumpLanding_;
-        std::optional<size_t> pushCallstacks_;
+        std::optional<std::pair<size_t, u64>> pushCallstacks_;
         std::optional<size_t> popCallstacks_;
     };
 

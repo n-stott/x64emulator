@@ -58,11 +58,11 @@ namespace x64 {
     }
 
     void Jit::exec(Cpu* cpu, Mmu* mmu, NativeExecPtr nativeBasicBlock, u64* ticks,
-            void** currentlyExecutingBasicBlockPtr, const void* currentlyExecutingJitBasicBlock) {
+            void** currentlyExecutingSegmentPtr, const void* currentlyExecutingJitBasicBlock) {
         assert(!!cpu);
         assert(!!mmu);
         assert(!!ticks);
-        assert(!!currentlyExecutingBasicBlockPtr);
+        assert(!!currentlyExecutingSegmentPtr);
         assert(!!nativeBasicBlock);
         u64 rflags = cpu->flags_.toRflags();
         u32 mxcsr = cpu->mxcsr_.asDoubleWord();
@@ -77,7 +77,7 @@ namespace x64 {
             ticks,
             (void**)callstack_.data(),
             &callstackSize_,
-            currentlyExecutingBasicBlockPtr,
+            currentlyExecutingSegmentPtr,
             currentlyExecutingJitBasicBlock,
             (const void*)nativeBasicBlock,
             FlaglessCompareBuffer{}
@@ -88,15 +88,20 @@ namespace x64 {
     }
 
     void Jit::notifyCall() {
-        ++callstackSize_;
         assert(callstackSize_+2 < callstack_.size());
-        // callstack_[callstackSize_++] = nullptr;
+        callstack_[callstackSize_] = nullptr;
+        ++callstackSize_;
     }
 
     void Jit::notifyRet() {
         assert(callstackSize_ > 0);
+        callstack_[callstackSize_] = nullptr;
         --callstackSize_;
-        // callstack_[callstackSize_--] = nullptr;
+    }
+
+    void Jit::nukeCallstack() {
+        assert(callstackSize_ < callstack_.size());
+        std::fill(callstack_.begin(), callstack_.begin() + callstackSize_, nullptr);
     }
 
     JitBasicBlock::JitBasicBlock() = default;
@@ -135,6 +140,9 @@ namespace x64 {
         if(!!nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock) {
             dst->setPendingPatchToConditionalBlock(nativeBasicBlock->offsetOfReplaceableJumpToConditionalBlock.value());
         }
+        if(!!nativeBasicBlock->offsetOfReplaceableCallstackPush) {
+            dst->setPendingPatchToCallstackPush(nativeBasicBlock->offsetOfReplaceableCallstackPush.value());
+        }
         if(!!nativeBasicBlock->offsetOfJumpLandingPad) {
             dst->setJumpLandingOffset(nativeBasicBlock->offsetOfJumpLandingPad.value());
         }
@@ -148,7 +156,7 @@ namespace x64 {
         variableDestinationTable_.hitCounts = hitCounts;
     }
 
-    void JitBasicBlock::tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler) {
+    void JitBasicBlock::tryPatchJump(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler) {
         assert(!!pendingPatch);
         assert(!!next);
         assert(!!compiler);
@@ -157,7 +165,20 @@ namespace x64 {
         assert(offset <= executableMemory_.size);
         size_t replacementSize = executableMemory_.size - offset;
         const u8* jumpLocation = next->jumpEntrypoint();
-        compiler->writeJumpTo((u64)jumpLocation, replacementLocation, replacementSize);
+        compiler->writeJumpTo(jumpLocation, replacementLocation, replacementSize);
+        pendingPatch->reset();
+    }
+
+    void JitBasicBlock::tryPatchPushCallstack(std::optional<std::pair<size_t, u64>>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler) {
+        assert(!!pendingPatch);
+        assert(!!next);
+        assert(!!compiler);
+        size_t offset = pendingPatch->value().first;
+        u8* replacementLocation = mutableExecutableMemory() + offset;
+        assert(offset <= executableMemory_.size);
+        size_t replacementSize = executableMemory_.size - offset;
+        const u8* jumpLocation = next->jumpEntrypoint();
+        compiler->writePushCallstackTo(jumpLocation, replacementLocation, replacementSize);
         pendingPatch->reset();
     }
 }

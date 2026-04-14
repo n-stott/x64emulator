@@ -63,7 +63,7 @@ namespace x64 {
         u64* ticks;
         void** callstack;
         u64* callstackSize;
-        void** currentlyExecutingBasicBlockPtr;
+        void** currentlyExecutingSegmentPtr;
         const void* currentlyExecutingJitBasicBlock;
         const void* executableCode;
         FlaglessCompareBuffer flaglessCompareBuffer;
@@ -81,7 +81,12 @@ namespace x64 {
 
         bool needsPatching() const {
             return !!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock
-                || !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock;
+                || !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock
+                || !!pendingPatches_.offsetOfCallstackPush;
+        }
+
+        bool needsCallPatching() const {
+            return !!pendingPatches_.offsetOfCallstackPush;
         }
 
         const u8* callEntrypoint() const {
@@ -94,15 +99,23 @@ namespace x64 {
 
         void syncBlockLookupTable(u64 size, const u64* addresses, const JitBasicBlock** blocks, u64* hitCounts);
 
-        void tryPatch(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler);
+        void tryPatchJump(std::optional<size_t>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler);
+        void tryPatchPushCallstack(std::optional<std::pair<size_t, u64>>* pendingPatch, const JitBasicBlock* next, x64::Compiler* compiler);
 
         template<typename Functor>
-        void forAllPendingPatches(bool continuing, Functor&& functor) {
+        void forAllPendingJumpPatches(bool continuing, Functor&& functor) {
             if(continuing && !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock) {
                 functor(&pendingPatches_.offsetOfReplaceableJumpToContinuingBlock);
             }
             if(!continuing && !!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock) {
                 functor(&pendingPatches_.offsetOfReplaceableJumpToConditionalBlock);
+            }
+        }
+
+        template<typename Functor>
+        void forAllPendingCallstackPatches(Functor&& functor) {
+            if(!!pendingPatches_.offsetOfCallstackPush) {
+                functor(&pendingPatches_.offsetOfCallstackPush);
             }
         }
 
@@ -132,6 +145,11 @@ namespace x64 {
             pendingPatches_.offsetOfReplaceableJumpToContinuingBlock = offset;
         }
 
+        void setPendingPatchToCallstackPush(std::pair<size_t, u64> offset) {
+            assert(!pendingPatches_.offsetOfCallstackPush);
+            pendingPatches_.offsetOfCallstackPush = offset;
+        }
+
         u8* mutableExecutableMemory() {
             return executableMemory_.ptr;
         }
@@ -147,6 +165,7 @@ namespace x64 {
         struct PendingPatches {
             std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
             std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
+            std::optional<std::pair<size_t, u64>> offsetOfCallstackPush;
         } pendingPatches_;
         std::optional<size_t> jumpLandingOffset_;
     };
@@ -167,6 +186,9 @@ namespace x64 {
         void setEnableJitChaining(bool enable) { jitChainingEnabled_ = enable; }
         bool jitChainingEnabled() const { return jitChainingEnabled_; }
 
+        void setEnableJitCallChaining(bool enable) { jitCallChainingEnabled_ = enable; }
+        bool jitCallChainingEnabled() const { return jitCallChainingEnabled_; }
+
         void setOptimizationLevel(int level) { optimizationLevel_ = level; }
         int optimizationLevel() const { return optimizationLevel_; }
 
@@ -179,6 +201,10 @@ namespace x64 {
 
         void notifyCall();
         void notifyRet();
+
+        x64::JitBasicBlock* const* callstack() const { return callstack_.data(); }
+        u64 callstackSize() const { return callstackSize_; }
+        void nukeCallstack();
             
     private:
         Jit();
@@ -191,6 +217,7 @@ namespace x64 {
 
         std::vector<std::unique_ptr<JitBasicBlock>> blocks_;
         bool jitChainingEnabled_ { false };
+        bool jitCallChainingEnabled_ { false };
 
         std::array<JitBasicBlock*, 0x1000> callstack_;
         u64 callstackSize_ { 0 };

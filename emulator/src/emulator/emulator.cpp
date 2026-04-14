@@ -35,6 +35,10 @@ namespace emulator {
         enableJitChaining_ = enableJitChaining;
     }
 
+    void Emulator::setEnableJitCallChaining(bool enableJitCallChaining) {
+        enableJitCallChaining_ = enableJitCallChaining;
+    }
+
     void Emulator::setJitStatsLevel(int jitStatsLevel) {
         jitStatsLevel_ = jitStatsLevel;
     }
@@ -62,6 +66,7 @@ namespace emulator {
         kernel.setProfiling(isProfiling_);
         kernel.setEnableJit(enableJit_);
         kernel.setEnableJitChaining(enableJitChaining_);
+        kernel.setEnableJitCallChaining(enableJitCallChaining_);
         kernel.setJitStatsLevel(jitStatsLevel_);
         kernel.setOptimizationLevel(optimizationLevel_);
         kernel.setEnableShm(enableShm_);

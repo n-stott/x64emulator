@@ -46,6 +46,10 @@ namespace kernel::gnulinux {
         enableJitChaining_ = enableJitChaining;
     }
 
+    void Kernel::setEnableJitCallChaining(bool enableJitCallChaining) {
+        enableJitCallChaining_ = enableJitCallChaining;
+    }
+
     void Kernel::setJitStatsLevel(int jitStatsLevel) {
         jitStatsLevel_ = jitStatsLevel;
     }
@@ -83,6 +87,7 @@ namespace kernel::gnulinux {
             verify(mainThread, fmt::format("Unable to exec \"{}\"", programFilePath));
             mainProcess->setEnableJit(isJitEnabled());
             mainProcess->setEnableJitChaining(isJitChainingEnabled());
+            mainProcess->setEnableJitCallChaining(isJitCallChainingEnabled());
             mainProcess->setOptimizationLevel(optimizationLevel());
             mainProcess->setJitStatsLevel(jitStatsLevel());
             scheduler().run();
