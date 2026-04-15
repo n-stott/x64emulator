@@ -157,7 +157,8 @@ namespace emulator {
                     if(jit->jitChainingEnabled()) currentSegment->tryPatch(*jit);
                     if(stats_) ++stats_->avoidableExits_;
                 }
-                if(currentSegment->basicBlock().endsWithDirectCall()) {
+                if(currentSegment->basicBlock().endsWithDirectCall()
+                    || currentSegment->basicBlock().endsWithIndirectCall()) {
                     const auto& callins = currentSegment->basicBlock().instructions().back().first;
                     verify(callins.isCall());
                     u64 retrip = callins.nextAddress();
