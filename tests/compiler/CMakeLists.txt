@@ -291,3 +291,10 @@ target_include_directories(test_compiler_ret PUBLIC include ${CMAKE_SOURCE_DIR}/
 target_link_libraries(test_compiler_ret PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_ret PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_ret COMMAND test_compiler_ret)
+
+add_executable(test_compiler_repstos src/test_repstos.cpp)
+target_compile_options(test_compiler_repstos PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_repstos PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_repstos PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_repstos PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_repstos COMMAND test_compiler_repstos)
