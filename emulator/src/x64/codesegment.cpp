@@ -2,7 +2,7 @@
 #include "verify.h"
 #include <ostream>
 
-#define JIT_THRESHOLD 0
+#define JIT_THRESHOLD 1024
 
 namespace x64 {
 
