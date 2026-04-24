@@ -156,6 +156,12 @@ namespace kernel::gnulinux {
         // Flags;
         bool profiling_ { false };
 
+        // Jit
+        std::unique_ptr<x64::Jit> jit_;
+        x64::CompilationQueue compilationQueue_;
+        x64::JitStats jitStats_;
+        int jitStatsLevel_ { 0 };
+
         // Cpu
         x64::DisassemblyCache disassemblyCache_;
 
@@ -166,12 +172,6 @@ namespace kernel::gnulinux {
 
         SymbolProvider symbolProvider_;
         std::unordered_map<u64, std::string> functionNameCache_;
-
-        // Jit
-        std::unique_ptr<x64::Jit> jit_;
-        x64::CompilationQueue compilationQueue_;
-        x64::JitStats jitStats_;
-        int jitStatsLevel_ { 0 };
 
         // Hierarchy
         Process* parent_ { nullptr };

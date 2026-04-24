@@ -44,6 +44,14 @@ namespace emulator {
             state.x87fpu = cpuState.x87fpu;
             state.mxcsr = cpuState.mxcsr;
             state.fsBase = cpuState.segmentBase[(u8)x64::Segment::FS];
+
+            if(auto* jit = currentThread_->process()->jit()) {
+                VMThread::SavedJitState& jitState = currentThread_->savedJitState();
+                jitState.callstack.resize(VMThread::SavedJitState::MAX_SIZE);
+                verify(jit->callstackSize() <= jitState.callstack.size());
+                std::copy(jit->callstack(), jit->callstack() + jit->callstackSize(), jitState.callstack.begin());
+                jitState.size = jit->callstackSize();
+            }
         }
     }
 
@@ -70,7 +78,8 @@ namespace emulator {
             cpu_.load(cpuState);
 
             if(auto* jit = currentThread_->process()->jit()) {
-                jit->nukeCallstack();
+                VMThread::SavedJitState& jitState = currentThread_->savedJitState();
+                jit->setCallstack(jitState.callstack.data(), jitState.size);
             }
         } else {
             currentThread_ = nullptr;
@@ -223,23 +232,48 @@ namespace emulator {
     }
 
     void VM::updateJitStats(const x64::CodeSegment& seg) {
+        if(!stats_) return;
         auto lastInsn = seg.basicBlock().instructions().back().first.insn();
-        if(lastInsn == x64::Insn::RET) {
-            if(stats_) stats_->jitExitRet_ += 1;
+        if(lastInsn == x64::Insn::JMP_U32) {
+            stats_->jitExitJmp_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
+            stats_->distinctJitExitJmp_.insert(cpu_.get(x64::R64::RIP));
+#endif
+        }
+        if(lastInsn == x64::Insn::JCC || lastInsn == x64::Insn::JE || lastInsn == x64::Insn::JNE) {
+            stats_->jitExitJcc_ += 1;
+#ifdef VM_JIT_TELEMETRY
+            stats_->distinctJitExitJcc_.insert(cpu_.get(x64::R64::RIP));
+#endif
+        }
+        if(lastInsn == x64::Insn::CALLDIRECT) {
+            stats_->jitExitCall_ += 1;
+#ifdef VM_JIT_TELEMETRY
+            stats_->distinctJitExitCall_.insert(cpu_.get(x64::R64::RIP));
+#endif
+        }
+        if(lastInsn == x64::Insn::SYSCALL) {
+            stats_->jitExitSyscall_ += 1;
+#ifdef VM_JIT_TELEMETRY
+            stats_->distinctJitExitSyscall_.insert(cpu_.get(x64::R64::RIP));
+#endif
+        }
+        if(lastInsn == x64::Insn::RET) {
+            stats_->jitExitRet_ += 1;
+#ifdef VM_JIT_TELEMETRY
+            stats_->distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::CALLINDIRECT_RM64) {
-            if(stats_) stats_->jitExitCallRM64_ += 1;
+            stats_->jitExitCallRM64_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
+            stats_->distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::JMP_RM64) {
-            if(stats_) stats_->jitExitJmpRM64_ += 1;
+            stats_->jitExitJmpRM64_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
+            stats_->distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
     }

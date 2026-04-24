@@ -2098,10 +2098,33 @@ namespace x64 {
             writeReg64(R64::RIP, Reg::GPR0);
         }
 
+        generator_->push64(get(Reg::GPR0));
+
         // INSERT NOPs HERE TO BE REPLACED WITH THE PUSH TO THE CALLSTACK
         generator_->reportPushCallstack(retAddress);
         const auto& dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
         generator_->uds(dummyPushCallstackCode.size());
+
+        generator_->pop64(get(Reg::GPR0));
+
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        tryCompileBlockLookup();
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        ir::IrGenerator::Label& lookupFail = generator_->label();
+        generator_->jumpCondition(x64::Cond::E, &lookupFail);
+
+        // if we succeed lookup:
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // jump !
+        generator_->jump(get(Reg::GPR0));
+
+        generator_->putLabel(lookupFail);
+        // if we fail lookup
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // keep going and we will exit the JIT
 
         return true;
     }

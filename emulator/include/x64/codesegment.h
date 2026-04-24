@@ -47,6 +47,7 @@ namespace x64 {
     private:
         void removePredecessor(CodeSegment* other);
         void removeSucessor(CodeSegment* other);
+        void removeCallPredecessor(CodeSegment* other);
 
         BasicBlock cpuBasicBlock_;
         JitBasicBlock* jitBasicBlock_ { nullptr };
@@ -87,6 +88,7 @@ namespace x64 {
         bool endsWithFixedDestinationJump_ { false };
         std::unordered_map<u64, CodeSegment*> successors_;
         std::unordered_map<u64, CodeSegment*> predecessors_;
+        std::unordered_map<u64, CodeSegment*> callPredecessors_;
 
         friend class CodeSegmentTest;
     };

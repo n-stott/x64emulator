@@ -104,6 +104,13 @@ namespace x64 {
         std::fill(callstack_.begin(), callstack_.begin() + callstackSize_, nullptr);
     }
 
+    void Jit::setCallstack(void** blocks, u64 size) {
+        verify(size < callstack_.size());
+        JitBasicBlock** ptr = (JitBasicBlock**)blocks;
+        std::copy(ptr, ptr+size, callstack_.data());
+        callstackSize_ = size;
+    }
+
     JitBasicBlock::JitBasicBlock() = default;
 
     JitBasicBlock::~JitBasicBlock() {

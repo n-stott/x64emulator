@@ -1061,21 +1061,16 @@ namespace kernel::gnulinux {
 
         verify(!!newThread);
         x64::Mmu childMmu(newThread->process()->addressSpace());
-        const Thread::SavedCpuState& oldCpuState = currentThread_->savedCpuState();
-        Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
         newThread->reportInfoFrom(*currentThread_);
-        newCpuState.regs.set(x64::R64::RAX, 0);
-        newCpuState.regs.rip() = oldCpuState.regs.rip();
+        newThread->savedCpuState().regs.set(x64::R64::RAX, 0);
         if(stack.address() != 0) { // using nullptr for stack means keeping the same stack
-            newCpuState.regs.rsp() = stack.address();
+            newThread->savedCpuState().regs.rsp() = stack.address();
         } else {
             verify(!cloneFlags.cloneVm, "Danger, copying stack in child in same addresspace");
         }
         childMmu.setRegionName(stack.address(), fmt::format("Stack of thread {}", newThread->description().tid));
         if(cloneFlags.setTls) {
-            newCpuState.fsBase = tls;
-        } else {
-            newCpuState.fsBase = oldCpuState.fsBase;
+            newThread->savedCpuState().fsBase = tls;
         }
         if(cloneFlags.childClearTid) {
             newThread->setClearChildTid(child_tid);
@@ -2545,17 +2540,12 @@ namespace kernel::gnulinux {
 
         verify(!!newThread);
         x64::Mmu childMmu(newThread->process()->addressSpace());
-        const Thread::SavedCpuState& oldCpuState = currentThread_->savedCpuState();
-        Thread::SavedCpuState& newCpuState = newThread->savedCpuState();
-        newCpuState.regs = oldCpuState.regs;
-        newCpuState.regs.set(x64::R64::RAX, 0);
-        newCpuState.regs.rip() = oldCpuState.regs.rip();
-        newCpuState.regs.rsp() = stackAddress;
+        newThread->reportInfoFrom(*currentThread_);
+        newThread->savedCpuState().regs.set(x64::R64::RAX, 0);
+        newThread->savedCpuState().regs.rsp() = stackAddress;
         mmu_->setRegionName(stackAddress-0x8, fmt::format("Stack of thread {}", newThread->description().tid));
         if(cloneFlags.setTls) {
-            newCpuState.fsBase = tls;
-        } else {
-            newCpuState.fsBase = oldCpuState.fsBase;
+            newThread->savedCpuState().fsBase = tls;
         }
         if(cloneFlags.childClearTid) {
             newThread->setClearChildTid(child_tid);

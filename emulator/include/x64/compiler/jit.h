@@ -80,9 +80,12 @@ namespace x64 {
         ~JitBasicBlock();
 
         bool needsPatching() const {
+            return needsJumpPatching() || needsCallPatching();
+        }
+
+        bool needsJumpPatching() const {
             return !!pendingPatches_.offsetOfReplaceableJumpToConditionalBlock
-                || !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock
-                || !!pendingPatches_.offsetOfCallstackPush;
+                || !!pendingPatches_.offsetOfReplaceableJumpToContinuingBlock;
         }
 
         bool needsCallPatching() const {
@@ -205,6 +208,7 @@ namespace x64 {
         x64::JitBasicBlock* const* callstack() const { return callstack_.data(); }
         u64 callstackSize() const { return callstackSize_; }
         void nukeCallstack();
+        void setCallstack(void** blocks, u64 size);
             
     private:
         Jit();

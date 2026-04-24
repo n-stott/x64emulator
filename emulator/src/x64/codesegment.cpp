@@ -99,6 +99,8 @@ namespace x64 {
 
     void CodeSegment::addReturn(CodeSegment* other) {
         returnDestinationInfo_.addReturn(other);
+        verify(other->start() == end());
+        other->callPredecessors_.insert(std::make_pair(start(), this));
     }
 
     void CodeSegment::ReturnDestinationInfo::addReturn(CodeSegment* other) {
@@ -108,6 +110,10 @@ namespace x64 {
 
     void CodeSegment::removePredecessor(CodeSegment* other) {
         predecessors_.erase(other->start());
+    }
+
+    void CodeSegment::removeCallPredecessor(CodeSegment* other) {
+        callPredecessors_.erase(other->start());
     }
 
     void CodeSegment::FixedDestinationInfo::removeSuccessor(CodeSegment* other) {
@@ -142,11 +148,13 @@ namespace x64 {
         predecessors_.clear();
         for(auto succ : successors_) succ.second->removePredecessor(this);
         successors_.clear();
+        for(auto prev : callPredecessors_) prev.second->removeCallPredecessor(this);
+        callPredecessors_.clear();
         jitBasicBlock_ = nullptr;
     }
 
     size_t CodeSegment::size() const {
-        return successors_.size() + predecessors_.size();
+        return successors_.size() + predecessors_.size() + callPredecessors_.size();
     }
 
     void CodeSegment::onCall(Jit* jit, CompilationQueue& compilationQueue) {
@@ -176,6 +184,9 @@ namespace x64 {
                     for(auto prev : predecessors_) {
                         prev.second->tryPatch(jit);
                     }
+                    for(auto prev : callPredecessors_) {
+                        prev.second->tryPatch(jit);
+                    }
                 }
             }
             compilationAttempted_ = true;
@@ -184,6 +195,7 @@ namespace x64 {
             for(CodeSegment* next : variableDestinationInfo_.next) {
                 queue.push(next);
             }
+            if(!!returnDestinationInfo_.ret) queue.push(returnDestinationInfo_.ret);
         }
     }
 

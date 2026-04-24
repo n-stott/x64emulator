@@ -167,6 +167,12 @@ namespace emulator {
             u64 fsBase { 0 };
         };
 
+        struct SavedJitState {
+            std::vector<void*> callstack;
+            size_t size { 0 };
+            static constexpr size_t MAX_SIZE = 0x1000;
+        };
+
         struct Stats {
             size_t syscalls { 0 };
             size_t functionCalls { 0 };
@@ -184,6 +190,7 @@ namespace emulator {
         void yield() { time_.yield(); }
 
         SavedCpuState& savedCpuState() { return savedCpuState_; }
+        SavedJitState& savedJitState() { return savedJitState_; }
 
         Stats& stats() { return stats_; }
         const Stats& stats() const { return stats_; }
@@ -232,6 +239,7 @@ namespace emulator {
 
     protected:
         SavedCpuState savedCpuState_;
+        SavedJitState savedJitState_;
         ThreadTime time_;
         Stats stats_;
 

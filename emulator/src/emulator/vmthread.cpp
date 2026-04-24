@@ -59,5 +59,7 @@ namespace emulator {
         callpoint_ = other.callpoint_;
         callstack_ = other.callstack_;
         savedCpuState_ = other.savedCpuState_;
+        savedJitState_ = other.savedJitState_;
+        std::fill(savedJitState_.callstack.begin(), savedJitState_.callstack.end(), nullptr);
     }
 }
