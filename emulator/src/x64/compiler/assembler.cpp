@@ -2503,7 +2503,7 @@ namespace x64 {
         }
         write8((u8)(0x0f));
         write8((u8)(0x7e));
-        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
     void Assembler::movd(MMX dst, const M32& src) {
