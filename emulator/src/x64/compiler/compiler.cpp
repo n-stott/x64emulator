@@ -3461,8 +3461,8 @@ namespace x64 {
 
     bool Compiler::tryCompileMovdMmxRM32(MMX dst, const RM32& src) {
         if(src.isReg) {
-            M32 s = make32(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
-            generator_->movd(get(RegMM::GPR0), s);
+            readReg32(Reg::GPR0, src.reg);
+            generator_->movd(get(RegMM::GPR0), get32(Reg::GPR0));
             writeRegMM(dst, RegMM::GPR0);
             return true;
         } else {

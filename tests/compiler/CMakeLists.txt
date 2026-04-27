@@ -298,3 +298,10 @@ target_include_directories(test_compiler_repstos PUBLIC include ${CMAKE_SOURCE_D
 target_link_libraries(test_compiler_repstos PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_repstos PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_repstos COMMAND test_compiler_repstos)
+
+add_executable(test_compiler_movd src/test_movd.cpp)
+target_compile_options(test_compiler_movd PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_movd PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_movd PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_movd PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_movd COMMAND test_compiler_movd)
