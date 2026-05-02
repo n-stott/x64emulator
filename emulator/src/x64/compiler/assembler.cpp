@@ -260,7 +260,7 @@ namespace x64 {
     }
 
     void Assembler::mov(R8 dst, u8 imm) {
-        if((u8)dst >= 8) {
+        if((u8)dst >= 4 && (u8)dst < 16) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0)));
         }
         write8((u8)(0xb0 + encodeRegister(dst)));
@@ -3695,7 +3695,7 @@ namespace x64 {
         write8((u8)(0x48 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
         write8(0x0f);
         write8(0x7e);
-        write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
+        write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
     void Assembler::movlps(XMM dst, M64 src) {
