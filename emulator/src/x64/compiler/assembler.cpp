@@ -2163,29 +2163,42 @@ namespace x64 {
     }
 
     void Assembler::lea(R64 dst, const M64& src) {
-        verify(src.encoding.base != R64::RSP, "rsp as base requires an SIB byte");
-        verify(src.encoding.base != R64::R12, "r12 as base requires an SIB byte");
-        verify(dst != R64::RSP, "rsp as base requires an SIB byte");
-        verify(dst != R64::R12, "r12 as base requires an SIB byte");
         if(src.encoding.index == R64::ZERO) {
             if(src.encoding.displacement == 0) {
-                verify(src.encoding.base != R64::RBP, "rbp as base without displacement requires an SIB byte");
-                verify(src.encoding.base != R64::R13, "r13 as base without displacement requires an SIB byte");
                 write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
                 write8((u8)(0x8d));
-                write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                if(src.encoding.base == R64::RSP || src.encoding.base == R64::R12) {
+                    write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | 4));
+                    write8((u8)(0b00000000 | (encodeRegister(src.encoding.base) << 3) | 4));
+                } else if(src.encoding.base == R64::RBP || src.encoding.base == R64::R13) {
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                    write8((u8)0);
+                } else {
+                    write8((u8)(0b00000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                }
             } else if((i8)src.encoding.displacement == src.encoding.displacement) {
                 write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
                 write8((u8)(0x8d));
-                write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                if(src.encoding.base == R64::RSP || src.encoding.base == R64::R12) {
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | 4));
+                    write8((u8)(0b00000000 | (encodeRegister(src.encoding.base) << 3) | 4));
+                } else {
+                    write8((u8)(0b01000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                }
                 write8((u8)src.encoding.displacement);
             } else {
                 write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src.encoding.base >= 8) ? 1 : 0)));
                 write8((u8)(0x8d));
-                write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                if(src.encoding.base == R64::RSP || src.encoding.base == R64::R12) {
+                    write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | 4));
+                    write8((u8)(0b00000000 | (encodeRegister(src.encoding.base) << 3) | 4));
+                } else {
+                    write8((u8)(0b10000000 | (encodeRegister(dst) << 3) | (encodeRegister(src.encoding.base))));
+                }
                 write32((u32)src.encoding.displacement);
             }
         } else {
+            verify(src.encoding.index != R64::RSP, "RSP cannot be used as an index");
             if((i8)src.encoding.displacement == src.encoding.displacement) {
                 write8((u8)(0x48
                          | (((u8)dst >= 8) ? 4 : 0)
