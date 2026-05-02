@@ -433,7 +433,7 @@ namespace x64 {
     using M4096 = M<Size::FPUSTATE>;
 
     template<Size size>
-    bool operator==(const M<size>& a, const M<size>& b) {
+    inline bool operator==(const M<size>& a, const M<size>& b) {
         return a.segment == b.segment
             && a.encoding.base == b.encoding.base
             && a.encoding.displacement == b.encoding.displacement
