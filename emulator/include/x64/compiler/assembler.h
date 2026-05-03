@@ -517,6 +517,16 @@ namespace x64 {
         void write32(u32 value);
         void write64(u64 value);
 
+        void writerex(u8 value);
+
+        enum class REX {
+            NONE,
+            W,
+        };
+
+        template<typename Reg, typename Mem>
+        void opRegMem(std::initializer_list<u8> inss, Reg reg, const Mem& mem, REX);
+
         std::vector<u8> code_;
         std::deque<Label> labels_;
 
