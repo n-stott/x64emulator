@@ -730,6 +730,18 @@ namespace x64 {
         bool forMmxMmxM64(MMX dst, const MMXM64& src, Func&& func, bool writeResultBack = true);
 
         template<typename Func>
+        bool forXmmM32(XMM dst, const M32& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forXmmRM32(XMM dst, const RM32& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forXmmM64(XMM dst, const M64& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
+        bool forXmmRM64(XMM dst, const RM64& src, Func&& func, bool writeResultBack = true);
+
+        template<typename Func>
         bool forXmmXmmM128(XMM dst, const XMMM128& src, Func&& func, bool writeResultBack = true);
     };
 

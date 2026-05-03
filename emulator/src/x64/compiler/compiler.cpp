@@ -4757,16 +4757,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileAddssXmmM32(XMM dst, const M32& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->addss(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->addss(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileSubssXmmXmm(XMM dst, XMM src) {
@@ -4778,16 +4772,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileSubssXmmM32(XMM dst, const M32& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->subss(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->subss(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileMulssXmmXmm(XMM dst, XMM src) {
@@ -4799,16 +4787,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMulssXmmM32(XMM dst, const M32& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->mulss(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->mulss(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileDivssXmmXmm(XMM dst, XMM src) {
@@ -4820,16 +4802,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileDivssXmmM32(XMM dst, const M32& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->divss(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->divss(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileComissXmmXmm(XMM dst, XMM src) {
@@ -4848,56 +4824,22 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileCvtss2sdXmmM32(XMM dst, const M32& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movss(get(Reg128::GPR1), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->cvtss2sd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->cvtss2sd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileCvtsi2ssXmmRM32(XMM dst, const RM32& src) {
-        if(src.isReg) {
-            // get the src value
-            readReg32(Reg::GPR1, src.reg);
-            generator_->cvtsi2ss(get(Reg128::GPR0), get32(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        } else {
-            // fetch src address
-            if(src.mem.segment == Segment::FS) return false;
-            if(src.mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
-            readMem32(Reg::GPR1, addr);
-            generator_->cvtsi2ss(get(Reg128::GPR0), get32(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        }
+        return forXmmRM32(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2ss(get(dst), get32(src));
+        });
     }
 
     bool Compiler::tryCompileCvtsi2ssXmmRM64(XMM dst, const RM64& src) {
-        if(src.isReg) {
-            // get the src value
-            readReg64(Reg::GPR1, src.reg);
-            generator_->cvtsi2ss(get(Reg128::GPR0), get(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        } else {
-            // fetch src address
-            if(src.mem.segment == Segment::FS) return false;
-            if(src.mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
-            readMem64(Reg::GPR1, addr);
-            generator_->cvtsi2ss(get(Reg128::GPR0), get(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        }
+        return forXmmRM64(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2ss(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileAddsdXmmXmm(XMM dst, XMM src) {
@@ -4909,16 +4851,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileAddsdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->addsd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->addsd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileSubsdXmmXmm(XMM dst, XMM src) {
@@ -4930,16 +4866,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileSubsdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->subsd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->subsd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileMulsdXmmXmm(XMM dst, XMM src) {
@@ -4951,16 +4881,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMulsdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->mulsd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->mulsd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileDivsdXmmXmm(XMM dst, XMM src) {
@@ -4972,16 +4896,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileDivsdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->divsd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->divsd(get(dst), get(src));
+        });
     }
 
     static_assert((u8)FCond::EQ == 0);
@@ -5002,16 +4920,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileCmpsdXmmM64Fcond(XMM dst, const M64& src, FCond cond) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->cmpsd(get(Reg128::GPR0), get(Reg128::GPR1), cond);
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->cmpsd(get(dst), get(src), cond);
+        });
     }
 
     bool Compiler::tryCompileComisdXmmXmm(XMM dst, XMM src) {
@@ -5022,16 +4934,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileComisdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->comisd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->comisd(get(dst), get(src));
+        }, false);
     }
 
     bool Compiler::tryCompileUcomisdXmmXmm(XMM dst, XMM src) {
@@ -5042,15 +4948,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileUcomisdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->ucomisd(get(Reg128::GPR0), get(Reg128::GPR1));
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->ucomisd(get(dst), get(src));
+        }, false);
     }
 
     bool Compiler::tryCompileMaxsdXmmXmm(XMM dst, XMM src) {
@@ -5070,16 +4971,10 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMinsdXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->minsd(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->minsd(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileSqrtsdXmmXmm(XMM dst, XMM src) {
@@ -5099,60 +4994,22 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileCvtsd2ssXmmM64(XMM dst, const M64& src) {
-        // fetch src address
-        if(src.segment == Segment::FS) return false;
-        if(src.encoding.index == R64::RIP) return false;
-        // get the address
-        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
-        readReg128(Reg128::GPR0, dst);
-        generator_->movsd(get(Reg128::GPR1), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
-        generator_->cvtsd2ss(get(Reg128::GPR0), get(Reg128::GPR1));
-        writeReg128(dst, Reg128::GPR0);
-        return true;
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->cvtsd2ss(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileCvtsi2sdXmmRM32(XMM dst, const RM32& src) {
-        if(src.isReg) {
-            // get the src value
-            readReg32(Reg::GPR1, src.reg);
-            readReg128(Reg128::GPR0, dst);
-            generator_->cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        } else {
-            // fetch src address
-            if(src.mem.segment == Segment::FS) return false;
-            if(src.mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
-            readMem32(Reg::GPR1, addr);
-            readReg128(Reg128::GPR0, dst);
-            generator_->cvtsi2sd32(get(Reg128::GPR0), get32(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        }
+        return forXmmRM32(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2sd32(get(dst), get32(src));
+        });
     }
 
     bool Compiler::tryCompileCvtsi2sdXmmRM64(XMM dst, const RM64& src) {
-        if(src.isReg) {
-            // get the src value
-            readReg64(Reg::GPR1, src.reg);
-            readReg128(Reg128::GPR0, dst);
-            generator_->cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        } else {
-            // fetch src address
-            if(src.mem.segment == Segment::FS) return false;
-            if(src.mem.encoding.index == R64::RIP) return false;
-            // get the address
-            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
-            readMem64(Reg::GPR1, addr);
-            readReg128(Reg128::GPR0, dst);
-            generator_->cvtsi2sd64(get(Reg128::GPR0), get(Reg::GPR1));
-            writeReg128(dst, Reg128::GPR0);
-            return true;
-        }
+        return forXmmRM64(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2sd64(get(dst), get(src));
+        });
     }
 
     bool Compiler::tryCompileCvttsd2siR32Xmm(R32 dst, XMM src) {
@@ -6975,6 +6832,114 @@ namespace x64 {
             if(writeResultBack) {
                 // write back to the register
                 writeRegMM(dst, RegMM::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmM32(XMM dst, const M32& src, Func&& func, bool writeResultBack) {
+        // fetch address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // read the dst register
+        readReg128(Reg128::GPR0, dst);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the op
+        // Reg128::GPR1 is provided as a scratch register
+        func(Reg128::GPR0, addr, Reg128::GPR1);
+        if(writeResultBack) {
+            // write back to the register
+            writeReg128(dst, Reg128::GPR0);
+        }
+        return true;
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmRM32(XMM dst, const RM32& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // read the src register
+            readReg32(Reg::GPR0, src.reg);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            readMem32(Reg::GPR0, addr);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmM64(XMM dst, const M64& src, Func&& func, bool writeResultBack) {
+        // fetch address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // read the dst register
+        readReg128(Reg128::GPR0, dst);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the op
+        // Reg128::GPR1 is provided as a scratch register
+        func(Reg128::GPR0, addr, Reg128::GPR1);
+        if(writeResultBack) {
+            // write back to the register
+            writeReg128(dst, Reg128::GPR0);
+        }
+        return true;
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmRM64(XMM dst, const RM64& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // read the src register
+            readReg64(Reg::GPR0, src.reg);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
             }
             return true;
         }
