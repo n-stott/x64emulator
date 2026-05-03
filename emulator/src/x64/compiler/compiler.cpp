@@ -4,6 +4,7 @@
 #include "x64/compiler/irgenerator.h"
 #include "x64/compiler/jit.h"
 #include "x64/compiler/optimizer.h"
+#include "x64/disassembler/zydiswrapper.h"
 #include "verify.h"
 #include <fmt/format.h>
 #include <algorithm>
@@ -805,7 +806,81 @@ namespace x64 {
         return true;
     }
 
+#ifndef NDEBUG
+    namespace {
+        template<typename What, typename ... Args>
+        struct is_present {
+            static constexpr bool value {(std::is_same_v<What, Args> || ...)};
+        };
+
+        template<typename What, typename ... Args>
+        inline constexpr bool is_present_v = is_present<What, Args...>::value;
+    }
+
+    template<typename T>
+    static bool isSameArg(const T& a, const T& b) {
+        if constexpr(std::is_same_v<T, u8>) {
+            return a == b;
+        } else if constexpr(std::is_same_v<T, Imm>) {
+            return a.immediate == b.immediate;
+        } else if constexpr(is_present_v<T, R8, R16, R32, R64, MMX, XMM>) {
+            return a == b;
+        } else if constexpr(is_present_v<T, M8, M16, M32, M64, M128>) {
+            return a == b;
+        } else if constexpr(is_present_v<T, RM8, RM16, RM32, RM64, XMMM128>) {
+            if(a.isReg != b.isReg) return false;
+            if(a.isReg) return a.reg == b.reg;
+            return a.mem == b.mem;
+        } else {
+            assert(false && "generic isSameArg called");
+            return false;
+        }
+    }
+
+    template<typename T>
+    static bool doCheckWithArg(const T& a) {
+        if constexpr(is_present_v<T, M8, M16, M32, M64, M128>) {
+            if(a.encoding.base == R64::RIP) return false;
+            if(a.encoding.base == R64::RSP) return false;
+            if(a.encoding.base == R64::RBP) return false;
+            if(a.encoding.base == R64::R13) return false;
+            if(a.encoding.base == R64::R14) return false;
+        }
+        if constexpr(is_present_v<T, RM8, RM16, RM32, RM64, XMMM128>) {
+            if(!a.isReg && a.mem.encoding.base == R64::RIP) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::RSP) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::RBP) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::R13) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::R14) return false;
+        }
+        return true;
+    }
+#endif
+
+    template<typename Func, typename OpArg0, typename OpArg1, typename AsArg0, typename AsArg1>
+    static void checkCompilation([[maybe_unused]] Insn insn, [[maybe_unused]] Func&& func,
+            [[maybe_unused]] OpArg0 oparg0, [[maybe_unused]] OpArg1 oparg1,
+            [[maybe_unused]] AsArg0 asarg0, [[maybe_unused]] AsArg1 asarg1) {
+#ifndef NDEBUG
+        if(!doCheckWithArg(oparg0)) return;
+        if(!doCheckWithArg(oparg1)) return;
+        Assembler assembler;
+        (assembler.*func)(asarg0, asarg1);
+        std::vector<u8> code = assembler.code();
+        ZydisWrapper disassembler;
+        auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
+        assert(disassembly.instructions.size() == 1);
+        const auto& ins = disassembly.instructions[0];
+        assert(ins.insn() == insn);
+        const OpArg0& op0 = ins.op0<OpArg0>();
+        const OpArg1& op1 = ins.op1<OpArg1>();
+        assert(isSameArg<OpArg0>(oparg0, op0));
+        assert(isSameArg<OpArg1>(oparg1, op1));
+#endif
+    }
+
     bool Compiler::tryCompileMovR8Imm(R8 dst, Imm imm) {
+        checkCompilation(Insn::MOV_R8_IMM, static_cast<void(Assembler::*)(R8, u8)>(&Assembler::mov), dst, imm, dst, imm.as<u8>());
         // load the immediate
         loadImm8(Reg::GPR0, imm.as<u8>());
         // write to the destination register
@@ -825,6 +900,7 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR8R8(R8 dst, R8 src) {
+        checkCompilation(Insn::MOV_R8_R8, static_cast<void(Assembler::*)(R8, R8)>(&Assembler::mov), dst, src, dst, src);
         // read from the source register
         readReg8(Reg::GPR0, src);
         // write to the destination register
@@ -872,6 +948,7 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR16R16(R16 dst, R16 src) {
+        checkCompilation(Insn::MOV_R16_R16, static_cast<void(Assembler::*)(R16, R16)>(&Assembler::mov), dst, src, dst, src);
         // read from the source register
         readReg16(Reg::GPR0, src);
         // write to the destination register
@@ -918,6 +995,7 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR32R32(R32 dst, R32 src) {
+        checkCompilation(Insn::MOV_R32_R32, static_cast<void(Assembler::*)(R32, R32)>(&Assembler::mov), dst, src, dst, src);
         // read from the source register
         readReg32(Reg::GPR0, src);
         // write to the destination register
@@ -964,6 +1042,7 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR64R64(R64 dst, R64 src) {
+        checkCompilation(Insn::MOV_R64_R64, static_cast<void(Assembler::*)(R64, R64)>(&Assembler::mov), dst, src, dst, src);
         // don't jit "unusual" writes to RSP (longjmp)
         if(dst == R64::RSP && src != R64::RBP) return false;
         // read from the source register
