@@ -3936,7 +3936,8 @@ namespace x64 {
 
     bool Compiler::tryCompileMovXmmXmm(XMM dst, XMM src) {
         checkCompilation(Insn::MOV_XMM_XMM, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::mov), dst, src, dst, src);
-        readReg128(toGpr(dst), src);
+        readReg128(toGpr(src), src);
+        generator_->mov(get(toGpr(dst)), get(toGpr(src)));
         writeReg128(dst, toGpr(dst));
         return true;
     }
@@ -6335,6 +6336,16 @@ namespace x64 {
         writeReg64(R64::RSP, tmp.reg);
     }
 
+    void Compiler::push(Reg128 reg) {
+        generator_->lea(R64::RSP, make64(R64::RSP, -16));
+        generator_->movu(make128(R64::RSP, 0), get(reg));
+    }
+
+    void Compiler::pop(Reg128 reg) {
+        generator_->movu(get(reg), make128(R64::RSP, 0));
+        generator_->lea(R64::RSP, make64(R64::RSP, +16));
+    }
+
     template<typename Func>
     bool Compiler::forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack) {
         if(dst.isReg) {
@@ -6837,22 +6848,37 @@ namespace x64 {
         }
     }
 
+    XMM Compiler::scratchXmmRegister(std::initializer_list<XMM> usedRegisters) {
+        for(XMM xmm : { XMM::XMM0, XMM::XMM1, XMM::XMM2 }) {
+            if(std::find(usedRegisters.begin(), usedRegisters.end(), xmm) == usedRegisters.end()) {
+                return xmm;
+            }
+        }
+        verify(false, "Unable to find scratch register");
+        UNREACHABLE();
+    }
+
     template<typename Func>
     bool Compiler::forXmmM32(XMM dst, const M32& src, Func&& func, bool writeResultBack) {
         // fetch address
         if(src.segment == Segment::FS) return false;
         if(src.encoding.index == R64::RIP) return false;
+        // save the scratch register
+        Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
+        push(gpr);
         // read the dst register
-        readReg128(Reg128::GPR0, dst);
+        readReg128(toGpr(dst), dst);
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the op
-        // Reg128::GPR1 is provided as a scratch register
-        func(Reg128::GPR0, addr, Reg128::GPR1);
+        // gpr is provided as a scratch register
+        func(toGpr(dst), addr, gpr);
         if(writeResultBack) {
             // write back to the register
-            writeReg128(dst, Reg128::GPR0);
+            writeReg128(dst, toGpr(dst));
         }
+        // restore gpr
+        pop(gpr);
         return true;
     }
 
@@ -6896,17 +6922,22 @@ namespace x64 {
         // fetch address
         if(src.segment == Segment::FS) return false;
         if(src.encoding.index == R64::RIP) return false;
+        // save the scratch register
+        Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
+        push(gpr);
         // read the dst register
-        readReg128(Reg128::GPR0, dst);
+        readReg128(toGpr(dst), dst);
         // get the address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
         // do the op
-        // Reg128::GPR1 is provided as a scratch register
-        func(Reg128::GPR0, addr, Reg128::GPR1);
+        // gpr is provided as a scratch register
+        func(toGpr(dst), addr, gpr);
         if(writeResultBack) {
             // write back to the register
-            writeReg128(dst, Reg128::GPR0);
+            writeReg128(dst, toGpr(dst));
         }
+        // restore gpr
+        pop(gpr);
         return true;
     }
 
@@ -6964,18 +6995,23 @@ namespace x64 {
             const M128& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            // save the scratch register
+            Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
+            push(gpr);
             // read the dst register
-            readReg128(Reg128::GPR0, dst);
+            readReg128(toGpr(dst), dst);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
             // read the value at the address
-            readMem128(Reg128::GPR1, addr);
+            readMem128(gpr, addr);
             // do the op
-            func(Reg128::GPR0, Reg128::GPR1);
+            func(toGpr(dst), gpr);
             if(writeResultBack) {
                 // write back to the register
-                writeReg128(dst, Reg128::GPR0);
+                writeReg128(dst, toGpr(dst));
             }
+            // restore gpr
+            pop(gpr);
             return true;
         }
     }

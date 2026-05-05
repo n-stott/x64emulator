@@ -67,6 +67,7 @@ namespace x64 {
                     auto r64dst = ins.out().as<R64>();
                     auto m64dst = ins.out().as<M64>();
                     auto mmxdst = ins.out().as<MMX>();
+                    auto xmmdst = ins.out().as<XMM>();
                     auto r8src = ins.in1().as<R8>();
                     auto m8src = ins.in1().as<M8>();
                     auto r16src = ins.in1().as<R16>();
@@ -76,6 +77,7 @@ namespace x64 {
                     auto r64src = ins.in1().as<R64>();
                     auto m64src = ins.in1().as<M64>();
                     auto mmxsrc = ins.in1().as<MMX>();
+                    auto xmmsrc = ins.in1().as<XMM>();
                     auto imm8src = ins.in1().as<u8>();
                     auto imm16src = ins.in1().as<u16>();
                     auto imm32src = ins.in1().as<u32>();
@@ -127,6 +129,8 @@ namespace x64 {
                         assembler_->movq(mmxdst.value(), m64src.value());
                     } else if(m64dst && mmxsrc) {
                         assembler_->movq(m64dst.value(), mmxsrc.value());
+                    } else if(xmmdst && xmmsrc) {
+                        assembler_->mov(xmmdst.value(), xmmsrc.value());
                     } else {
                         return fail();
                     }

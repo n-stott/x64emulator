@@ -688,7 +688,12 @@ namespace x64 {
         void saveStack();
         void restoreStack();
 
+        void push(Reg128);
+        void pop(Reg128);
+
         void tryCompileBlockLookup();
+
+        static XMM scratchXmmRegister(std::initializer_list<XMM> usedRegisters);
 
         template<typename Func>
         bool forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack = true);
