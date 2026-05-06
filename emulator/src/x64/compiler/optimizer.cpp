@@ -91,17 +91,37 @@ namespace x64::ir {
         }
     };
 
-    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis) {
+    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis, bool xmmAlwaysLive) {
         assert(!!analysis);
         LivenessAnalysis a;
         std::swap(a, *analysis);
         a.clear();
 
         // RSP, RAX and RDX are always live, no other register is live
-        std::array<R64, 3> alwaysLiveGprs {{
+        static constexpr std::array<R64, 3> alwaysLiveGprs {{
             R64::RSP,
             R64::RAX,
             R64::RDX,
+        }};
+
+        // XMMs may be always live
+        static constexpr std::array<XMM, 16> alwaysLiveXmms {{
+            XMM::XMM0,
+            XMM::XMM1,
+            XMM::XMM2,
+            XMM::XMM3,
+            XMM::XMM4,
+            XMM::XMM5,
+            XMM::XMM6,
+            XMM::XMM7,
+            XMM::XMM8,
+            XMM::XMM9,
+            XMM::XMM10,
+            XMM::XMM11,
+            XMM::XMM12,
+            XMM::XMM13,
+            XMM::XMM14,
+            XMM::XMM15,
         }};
 
         // All addresses written to are live at the end of the block
@@ -156,6 +176,11 @@ namespace x64::ir {
         }
         a.mmxs.resize(ir.instructions.size()+1);
         a.xmms.resize(ir.instructions.size()+1);
+        if(xmmAlwaysLive) {
+            for(XMM alwaysLive : alwaysLiveXmms) {
+                a.xmms.back().set((u32)alwaysLive);
+            }
+        }
 
         a.addresses64.clear();
         a.addresses64.resize(ir.instructions.size()+1, (u32)a.allAddresses64.size());
@@ -368,13 +393,13 @@ namespace x64::ir {
         std::swap(a, *analysis);
     }
 
-    DeadCodeElimination::DeadCodeElimination() = default;
+    DeadCodeElimination::DeadCodeElimination(XMM_ALWAYS_LIVE xmmLiveness) : xmmLiveness_(xmmLiveness) { }
     DeadCodeElimination::~DeadCodeElimination() = default;
 
     bool DeadCodeElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
         if(!analysis_) analysis_ = std::make_unique<LivenessAnalysis>();
-        computeLiveRegistersAndAddresses(*ir, analysis_.get());
+        computeLiveRegistersAndAddresses(*ir, analysis_.get(), xmmLiveness_ == XMM_ALWAYS_LIVE::YES);
 
         auto address64Index = [&](const M64& address) -> u32 {
             auto it = std::find(analysis_->allAddresses64.begin(), analysis_->allAddresses64.end(), address);

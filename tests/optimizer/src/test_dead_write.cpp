@@ -78,13 +78,13 @@ IR testE() {
 
 Optimizer deadCodeOnly() {
     Optimizer optimizer;
-    optimizer.addPass<DeadCodeElimination>();
+    optimizer.addPass<DeadCodeElimination>(DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
     return optimizer;
 }
 
 Optimizer deadCodeAndDelayedReadback() {
     Optimizer optimizer;
-    optimizer.addPass<DeadCodeElimination>();
+    optimizer.addPass<DeadCodeElimination>(DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
     optimizer.addPass<DelayedReadBackElimination>();
     return optimizer;
 }

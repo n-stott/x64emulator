@@ -13,10 +13,10 @@ namespace x64::ir {
 
     class Optimizer {
     public:
-        template<typename Pass>
-        void addPass() {
+        template<typename Pass, typename ...Args>
+        void addPass(Args... args) {
             static_assert(std::is_base_of_v<OptimizationPass, Pass>);
-            passes_.push_back(std::make_unique<Pass>());
+            passes_.push_back(std::make_unique<Pass>(args...));
         }
 
         struct Stats {
@@ -41,11 +41,13 @@ namespace x64::ir {
     
     class DeadCodeElimination : public OptimizationPass {
     public:
-        DeadCodeElimination();
+        enum class XMM_ALWAYS_LIVE { NO, YES };
+        explicit DeadCodeElimination(XMM_ALWAYS_LIVE);
         ~DeadCodeElimination();
         bool optimize(IR*, Optimizer::Stats*) override;
 
     private:
+        XMM_ALWAYS_LIVE xmmLiveness_ { XMM_ALWAYS_LIVE::NO };
         std::unique_ptr<LivenessAnalysis> analysis_;
         std::vector<size_t> removableInstructions_;
     };

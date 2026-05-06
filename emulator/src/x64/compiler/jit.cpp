@@ -13,7 +13,7 @@ namespace x64 {
     }
 
     Jit::Jit() {
-        compiler_ = std::make_unique<x64::Compiler>();
+        compiler_ = std::make_unique<x64::Compiler>(x64::CompilerOptions { optimizationLevel_ });
         std::fill(callstack_.begin(), callstack_.end(), nullptr);
     }
 
@@ -34,6 +34,14 @@ namespace x64 {
         return jit;
     }
 
+    void Jit::setOptimizationLevel(int level) {
+        optimizationLevel_ = level;
+        compiler_ = std::make_unique<x64::Compiler>(x64::CompilerOptions { optimizationLevel_ });
+        blocks_.clear();
+        jitTrampoline_.reset();
+        tryCreateJitTrampoline();
+    }
+
     void Jit::tryCreateJitTrampoline() {
         if(!!jitTrampoline_) return;
         auto jitBlock = compiler_->tryCompileJitTrampoline();
@@ -46,7 +54,7 @@ namespace x64 {
 
     JitBasicBlock* Jit::tryCompile(const x64::BasicBlock& bb, void* currentBb) {
         ++compilationAttempts_;
-        auto jbb = JitBasicBlock::tryCreate(bb, currentBb, compiler_.get(), optimizationLevel_, &allocator_);
+        auto jbb = JitBasicBlock::tryCreate(bb, currentBb, compiler_.get(), &allocator_);
         if(!jbb) {
             ++failedCompilationAttempts_;
             return nullptr;
@@ -120,11 +128,11 @@ namespace x64 {
         }
     }
 
-    std::unique_ptr<JitBasicBlock> JitBasicBlock::tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator) {
+    std::unique_ptr<JitBasicBlock> JitBasicBlock::tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, ExecutableMemoryAllocator* allocator) {
         assert(!!compiler);
         assert(!!allocator);
         auto dst = std::make_unique<JitBasicBlock>();
-        auto nativeBasicBlock = compiler->tryCompile(bb, optimizationLevel, currentBb, (void*)dst.get());
+        auto nativeBasicBlock = compiler->tryCompile(bb, currentBb, (void*)dst.get());
         if(!nativeBasicBlock) {
             return {};
         }

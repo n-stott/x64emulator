@@ -18,7 +18,7 @@ int main(int, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    Compiler compiler;
+    Compiler compiler(CompilerOptions{0});
     auto nativebb = compiler.tryCompile(bb);
     if(!nativebb) {
         fmt::print(stderr, "failed to compile\n");

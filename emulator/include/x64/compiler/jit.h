@@ -74,7 +74,7 @@ namespace x64 {
     class JitBasicBlock {
         friend class BasicBlockTest;
     public:
-        static std::unique_ptr<JitBasicBlock> tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, int optimizationLevel, ExecutableMemoryAllocator* allocator);
+        static std::unique_ptr<JitBasicBlock> tryCreate(const x64::BasicBlock& bb, const void* currentBb, x64::Compiler* compiler, ExecutableMemoryAllocator* allocator);
 
         JitBasicBlock();
         ~JitBasicBlock();
@@ -192,7 +192,7 @@ namespace x64 {
         void setEnableJitCallChaining(bool enable) { jitCallChainingEnabled_ = enable; }
         bool jitCallChainingEnabled() const { return jitCallChainingEnabled_; }
 
-        void setOptimizationLevel(int level) { optimizationLevel_ = level; }
+        void setOptimizationLevel(int level);
         int optimizationLevel() const { return optimizationLevel_; }
 
         JitBasicBlock* tryCompile(const x64::BasicBlock& bb, void* currentBb);

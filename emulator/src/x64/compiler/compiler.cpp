@@ -18,10 +18,12 @@ namespace x64 {
     M64 make64(R64 base, i32 disp);
     M64 make64(R64 base, R64 index, u8 scale, i32 disp);
 
-    Compiler::Compiler() {
+    Compiler::Compiler(CompilerOptions options) : options_(options) {
         generator_ = std::make_unique<ir::IrGenerator>();
         optimizer_ = std::make_unique<ir::Optimizer>();
-        optimizer_->addPass<ir::DeadCodeElimination>();
+        optimizer_->addPass<ir::DeadCodeElimination>(directXmm()
+                ? ir::DeadCodeElimination::XMM_ALWAYS_LIVE::YES
+                : ir::DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
         optimizer_->addPass<ir::ImmediateReadBackElimination>();
         optimizer_->addPass<ir::DelayedReadBackElimination>();
         optimizer_->addPass<ir::DuplicateInstructionElimination>();
@@ -31,7 +33,7 @@ namespace x64 {
 
     Compiler::~Compiler() = default;
 
-    std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, int optimizationLevel, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
+    std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
 #ifdef COMPILER_DEBUG
     std::vector<Insn> must {{
         Insn::REP_MOVS_M8_M8
@@ -52,7 +54,7 @@ namespace x64 {
             auto body = basicBlockBody(basicBlock, diagnose);
             if(!body) return {};
 
-            if(optimizationLevel >= 1) {
+            if(options_.optimizationLevel >= 1) {
                 ir::Optimizer::Stats stats;
                 optimizer_->optimize(body.value(), &stats);
             }
@@ -89,8 +91,8 @@ namespace x64 {
         }
     }
 
-    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, int optimizationLevel, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
-        auto wholeIr = tryCompileIR(basicBlock, optimizationLevel, basicBlockPtr, jitBasicBlockPtr, diagnose);
+    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
+        auto wholeIr = tryCompileIR(basicBlock, basicBlockPtr, jitBasicBlockPtr, diagnose);
         if(!wholeIr) return {};
         auto bb = codeGenerator_->tryGenerate(wholeIr.value());
         
@@ -745,6 +747,7 @@ namespace x64 {
         generator_->clear();
         saveStack();
         loadArguments(TmpReg{Reg::GPR1});
+        loadRegistersFromEmulator();
         loadFlagsFromEmulator(TmpReg{Reg::GPR1});
         callNativeBasicBlock(TmpReg{Reg::GPR1});
         return generator_->generateIR();
@@ -796,6 +799,7 @@ namespace x64 {
     std::optional<ir::IR> Compiler::jitExit() {
         generator_->clear();
         storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        storeRegistersToEmulator();
         restoreStack();
         generator_->ret();
         return generator_->generateIR();
@@ -5785,13 +5789,15 @@ namespace x64 {
         generator_->movq(d, s);
     }
 
-    void Compiler::readReg128(Reg128 dst, XMM src) {
+    void Compiler::readReg128([[maybe_unused]] Reg128 dst, [[maybe_unused]] XMM src) {
+        if(directXmm() && dst == toGpr(src)) return;
         XMM d = get(dst);
         M128 s = make128(get(Reg::XMM_BASE), registerOffset(src));
         generator_->mova(d, s);
     }
 
-    void Compiler::writeReg128(XMM dst, Reg128 src) {
+    void Compiler::writeReg128([[maybe_unused]] XMM dst, [[maybe_unused]] Reg128 src) {
+        if(directXmm() && src == toGpr(dst)) return;
         M128 d = make128(get(Reg::XMM_BASE), registerOffset(dst));
         XMM s = get(src);
         generator_->mova(d, s);
@@ -6273,6 +6279,86 @@ namespace x64 {
         generator_->mov(get(Reg::MMX_BASE), mmxs);
         generator_->mov(get(Reg::XMM_BASE), xmms);
         generator_->mov(get(Reg::REG_BASE), gprs);
+    }
+
+    void Compiler::storeRegistersToEmulator() {
+        if(directXmm()) {
+            // Store the values of xmm
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM0)), XMM::XMM0);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM1)), XMM::XMM1);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM2)), XMM::XMM2);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM3)), XMM::XMM3);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM4)), XMM::XMM4);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM5)), XMM::XMM5);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM6)), XMM::XMM6);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM7)), XMM::XMM7);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM8)), XMM::XMM8);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM9)), XMM::XMM9);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM10)), XMM::XMM10);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM11)), XMM::XMM11);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM12)), XMM::XMM12);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM13)), XMM::XMM13);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM14)), XMM::XMM14);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM15)), XMM::XMM15);
+            // Pop xmm from the stack on exit (not technically needed by sys-V ABI)
+            generator_->movu(make128(R64::RSP, 0 *16), XMM::XMM0);
+            generator_->movu(make128(R64::RSP, 1 *16), XMM::XMM1);
+            generator_->movu(make128(R64::RSP, 2 *16), XMM::XMM2);
+            generator_->movu(make128(R64::RSP, 3 *16), XMM::XMM3);
+            generator_->movu(make128(R64::RSP, 4 *16), XMM::XMM4);
+            generator_->movu(make128(R64::RSP, 5 *16), XMM::XMM5);
+            generator_->movu(make128(R64::RSP, 6 *16), XMM::XMM6);
+            generator_->movu(make128(R64::RSP, 7 *16), XMM::XMM7);
+            generator_->movu(make128(R64::RSP, 8 *16), XMM::XMM8);
+            generator_->movu(make128(R64::RSP, 9 *16), XMM::XMM9);
+            generator_->movu(make128(R64::RSP, 10*16), XMM::XMM10);
+            generator_->movu(make128(R64::RSP, 11*16), XMM::XMM11);
+            generator_->movu(make128(R64::RSP, 12*16), XMM::XMM12);
+            generator_->movu(make128(R64::RSP, 13*16), XMM::XMM13);
+            generator_->movu(make128(R64::RSP, 14*16), XMM::XMM14);
+            generator_->movu(make128(R64::RSP, 15*16), XMM::XMM15);
+            generator_->lea(R64::RSP, make64(R64::RSP, +16*16));
+        }
+    }
+
+    void Compiler::loadRegistersFromEmulator() {
+        if(directXmm()) {
+            // Push xmm to the stack on entry (not technically needed by sys-V ABI)
+            generator_->lea(R64::RSP, make64(R64::RSP, -16*16));
+            generator_->movu(make128(R64::RSP, 0 *16), XMM::XMM0);
+            generator_->movu(make128(R64::RSP, 1 *16), XMM::XMM1);
+            generator_->movu(make128(R64::RSP, 2 *16), XMM::XMM2);
+            generator_->movu(make128(R64::RSP, 3 *16), XMM::XMM3);
+            generator_->movu(make128(R64::RSP, 4 *16), XMM::XMM4);
+            generator_->movu(make128(R64::RSP, 5 *16), XMM::XMM5);
+            generator_->movu(make128(R64::RSP, 6 *16), XMM::XMM6);
+            generator_->movu(make128(R64::RSP, 7 *16), XMM::XMM7);
+            generator_->movu(make128(R64::RSP, 8 *16), XMM::XMM8);
+            generator_->movu(make128(R64::RSP, 9 *16), XMM::XMM9);
+            generator_->movu(make128(R64::RSP, 10*16), XMM::XMM10);
+            generator_->movu(make128(R64::RSP, 11*16), XMM::XMM11);
+            generator_->movu(make128(R64::RSP, 12*16), XMM::XMM12);
+            generator_->movu(make128(R64::RSP, 13*16), XMM::XMM13);
+            generator_->movu(make128(R64::RSP, 14*16), XMM::XMM14);
+            generator_->movu(make128(R64::RSP, 15*16), XMM::XMM15);
+            // Load the values of xmm
+            generator_->mova(XMM::XMM0, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM0)));
+            generator_->mova(XMM::XMM1, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM1)));
+            generator_->mova(XMM::XMM2, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM2)));
+            generator_->mova(XMM::XMM3, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM3)));
+            generator_->mova(XMM::XMM4, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM4)));
+            generator_->mova(XMM::XMM5, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM5)));
+            generator_->mova(XMM::XMM6, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM6)));
+            generator_->mova(XMM::XMM7, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM7)));
+            generator_->mova(XMM::XMM8, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM8)));
+            generator_->mova(XMM::XMM9, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM9)));
+            generator_->mova(XMM::XMM10, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM10)));
+            generator_->mova(XMM::XMM11, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM11)));
+            generator_->mova(XMM::XMM12, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM12)));
+            generator_->mova(XMM::XMM13, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM13)));
+            generator_->mova(XMM::XMM14, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM14)));
+            generator_->mova(XMM::XMM15, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM15)));
+        }
     }
 
     void Compiler::storeFlagsToEmulator(TmpReg tmp) {

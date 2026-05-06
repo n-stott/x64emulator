@@ -33,7 +33,7 @@ int main(int argc, char**) {
     if(argc != 1) {
         cpu.exec(bb);
     } else {
-        Compiler compiler;
+        Compiler compiler(CompilerOptions{0});
         auto nativebb = compiler.tryCompile(bb);
         if(!nativebb) return 1;
 

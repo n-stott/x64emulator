@@ -349,9 +349,9 @@ namespace kernel::gnulinux {
                 for(const auto& ins : bb->basicBlock().instructions()) {
                     fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
                 }
-                x64::Compiler compiler;
                 {
-                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 0, nullptr, nullptr, false);
+                    x64::Compiler compiler(x64::CompilerOptions { 0 });
+                    auto ir = compiler.tryCompileIR(bb->basicBlock(), nullptr, nullptr, false);
                     assert(!!ir);
                     fmt::print("    unoptimized IR: {} instructions\n", ir->instructions.size());
                     for(const auto& ins : ir->instructions) {
@@ -359,7 +359,8 @@ namespace kernel::gnulinux {
                     }
                 }
                 {
-                    auto ir = compiler.tryCompileIR(bb->basicBlock(), 1, nullptr, nullptr, false);
+                    x64::Compiler compiler(x64::CompilerOptions { 1 });
+                    auto ir = compiler.tryCompileIR(bb->basicBlock(), nullptr, nullptr, false);
                     assert(!!ir);
                     fmt::print("    optimized IR: {} instructions\n", ir->instructions.size());
                     for(const auto& ins : ir->instructions) {
@@ -380,8 +381,8 @@ namespace kernel::gnulinux {
                 for(const auto& ins : bb->basicBlock().instructions()) {
                     fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
                 }
-                x64::Compiler compiler;
-                [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), 1, {}, {}, true);
+                x64::Compiler compiler(x64::CompilerOptions { 1 });
+                [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), {}, {}, true);
             }
         }
     }

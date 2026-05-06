@@ -20,19 +20,23 @@ namespace x64 {
     class CodeGenerator;
     class Assembler;
 
+    struct CompilerOptions {
+        int optimizationLevel { 0 };
+    };
+
     class Compiler {
     public:
-        Compiler();
+        explicit Compiler(CompilerOptions options);
         ~Compiler();
 
-        std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
+        std::optional<NativeBasicBlock> tryCompile(const BasicBlock&, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
 
         std::optional<NativeBasicBlock> tryCompileJitTrampoline();
 
         void writeJumpTo(const void* address, u8* ptr, size_t size);
         void writePushCallstackTo(const void* address, u8* ptr, size_t size);
 
-        std::optional<ir::IR> tryCompileIR(const BasicBlock&, int optimizationLevel = 0, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
+        std::optional<ir::IR> tryCompileIR(const BasicBlock&, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
     private:
         bool tryCompile(const X64Instruction&);
 
@@ -592,6 +596,9 @@ namespace x64 {
         std::unique_ptr<ir::Optimizer> optimizer_;
         std::unique_ptr<CodeGenerator> codeGenerator_;
         std::unique_ptr<Assembler> assembler_;
+        CompilerOptions options_;
+
+        bool directXmm() const { return options_.optimizationLevel >= 2; }
 
         void readReg8(Reg dst, R8 src);
         void writeReg8(R8 dst, Reg src);
@@ -679,9 +686,11 @@ namespace x64 {
         void loadImm32(Reg dst, u32 imm);
         void loadImm64(Reg dst, u64 imm);
         void loadArguments(TmpReg tmp);
+        void storeRegistersToEmulator();
+        void loadRegistersFromEmulator();
+        void storeFlagsToEmulator(TmpReg tmp);
         void loadFlagsFromEmulator(TmpReg tmp);
         void callNativeBasicBlock(TmpReg tmp);
-        void storeFlagsToEmulator(TmpReg tmp);
         void loadMxcsrFromEmulator(Reg dst);
         void push64(Reg src, TmpReg tmp);
         void pop64(Reg dst, TmpReg tmp);
