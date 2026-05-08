@@ -123,6 +123,7 @@ namespace kernel::gnulinux {
             SymbolRetriever(const SymbolRetriever&) = delete;
             x64::DisassemblyCache* disassemblyCache_ { nullptr };
             SymbolProvider* symbolProvider_ { nullptr };
+            bool jitEnabled_ { false };
         };
 
     protected:

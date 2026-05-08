@@ -15,6 +15,8 @@ namespace x64 {
         callsForCompilation_ = JIT_THRESHOLD;
     }
 
+    CodeSegment::~CodeSegment() = default;
+
     u64 CodeSegment::start() const {
         return cpuBasicBlock_.instructions()[0].first.address();
     }
@@ -27,12 +29,7 @@ namespace x64 {
         if(endsWithFixedDestinationJump_) {
             return fixedDestinationInfo_.findNext(address);
         } else {
-            auto it = successors_.find(address);
-            if(it != successors_.end()) {
-                return it->second;
-            } else {
-                return nullptr;
-            }
+            return successors_.find(address);
         }
     }
 
@@ -89,8 +86,8 @@ namespace x64 {
         if(endsWithFixedDestinationJump_) {
             fixedDestinationInfo_.addSuccessor(other);
         }
-        auto res = successors_.insert(std::make_pair(other->start(), other));
-        if(res.second && !endsWithFixedDestinationJump_) {
+        auto inserted = successors_.insert(other->start(), other);
+        if(inserted && !endsWithFixedDestinationJump_) {
             variableDestinationInfo_.addSuccessor(other);
             syncBlockLookupTable();
         }
@@ -100,7 +97,7 @@ namespace x64 {
     void CodeSegment::addReturn(CodeSegment* other) {
         returnDestinationInfo_.addReturn(other);
         verify(other->start() == end());
-        other->callPredecessors_.insert(std::make_pair(start(), this));
+        other->callPredecessors_.insert(start(), this);
     }
 
     void CodeSegment::ReturnDestinationInfo::addReturn(CodeSegment* other) {
@@ -146,9 +143,13 @@ namespace x64 {
     void CodeSegment::removeFromCaches() {
         for(auto prev : predecessors_) prev.second->removeSucessor(this);
         predecessors_.clear();
-        for(auto succ : successors_) succ.second->removePredecessor(this);
+        successors_.forEach([&](u64, CodeSegment* prev) {
+            prev->removePredecessor(this);
+        });
         successors_.clear();
-        for(auto prev : callPredecessors_) prev.second->removeCallPredecessor(this);
+        callPredecessors_.forEach([&](u64, CodeSegment* prev) {
+            prev->removeCallPredecessor(this);
+        });
         callPredecessors_.clear();
         jitBasicBlock_ = nullptr;
     }
@@ -184,9 +185,9 @@ namespace x64 {
                     for(auto prev : predecessors_) {
                         prev.second->tryPatch(jit);
                     }
-                    for(auto prev : callPredecessors_) {
-                        prev.second->tryPatch(jit);
-                    }
+                    callPredecessors_.forEach([&](u64, CodeSegment* prev) {
+                        prev->tryPatch(jit);
+                    });
                 }
             }
             compilationAttempted_ = true;

@@ -7,6 +7,7 @@
 #include "x64/x87.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/instructions/x64instruction.h"
+#include "smallvector.h"
 #include <vector>
 
 namespace x64 {
@@ -138,7 +139,7 @@ namespace x64 {
         SimdControlStatus mxcsr_;
         std::array<u64, 8> segmentBase_ {{ 0, 0, 0, 0, 0, 0, 0, 0 }};
 
-        std::vector<Callback*> callbacks_;
+        SmallVector<Callback*, 2> callbacks_;
 
         struct FPUState {
             u16 fcw;

@@ -30,7 +30,7 @@ namespace x64 {
     }
 
     void Cpu::removeCallback(Callback* callback) {
-        callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
+        callbacks_.erase(callback);
     }
 
     void Cpu::setSegmentBase(Segment segment, u64 base) {
@@ -2664,7 +2664,9 @@ namespace x64 {
             // This is essentially targeting longjmp, which
             // can skip over multiple stackframes at once.
             if(dst == R64::RSP) {
-                for(auto* callback : callbacks_) callback->onStackChange(srcValue);
+                callbacks_.forEach([&](Callback* callback) {
+                    callback->onStackChange(srcValue);
+                });
             }
         }
         set(dst, srcValue);
@@ -2898,7 +2900,9 @@ namespace x64 {
     void Cpu::execCallDirect(const X64Instruction& ins) {
         u64 address =  ins.op0<u64>();
         push64(regs_.rip());
-        for(auto* callback : callbacks_) callback->onCall(address);
+        callbacks_.forEach([&](Callback* callback) {
+            callback->onCall(address);
+        });
         regs_.rip() = address;
     }
 
@@ -2906,7 +2910,9 @@ namespace x64 {
         const auto& src = ins.op0<RM32>();
         u64 address = get(src);
         push64(regs_.rip());
-        for(auto* callback : callbacks_) callback->onCall(address);
+        callbacks_.forEach([&](Callback* callback) {
+            callback->onCall(address);
+        });
         regs_.rip() = address;
     }
 
@@ -2914,20 +2920,26 @@ namespace x64 {
         const auto& src = ins.op0<RM64>();
         u64 address = get(src);
         push64(regs_.rip());
-        for(auto* callback : callbacks_) callback->onCall(address);
+        callbacks_.forEach([&](Callback* callback) {
+            callback->onCall(address);
+        });
         regs_.rip() = address;
     }
 
     void Cpu::execRet(const X64Instruction&) {
         regs_.rip() = pop64();
-        for(auto* callback : callbacks_) callback->onRet();
+        callbacks_.forEach([&](Callback* callback) {
+            callback->onRet();
+        });
     }
 
     void Cpu::execRetImm(const X64Instruction& ins) {
         const auto& src = ins.op0<Imm>();
         regs_.rip() = pop64();
         regs_.rsp() += get<u64>(src);
-        for(auto* callback : callbacks_) callback->onRet();
+        callbacks_.forEach([&](Callback* callback) {
+            callback->onRet();
+        });
     }
 
     void Cpu::execLeave(const X64Instruction&) {
@@ -7289,7 +7301,9 @@ namespace x64 {
     }
 
     void Cpu::execSyscall(const X64Instruction&) {
-        for(auto* callback : callbacks_) callback->onSyscall();
+        callbacks_.forEach([&](Callback* callback) {
+            callback->onSyscall();
+        });
     }
 
     void Cpu::execRdtsc(const X64Instruction&) {

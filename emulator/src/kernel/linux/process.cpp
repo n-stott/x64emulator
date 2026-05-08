@@ -213,7 +213,8 @@ namespace kernel::gnulinux {
 
     Process::SymbolRetriever::SymbolRetriever(Process* process) :
             disassemblyCache_(&process->disassemblyCache_),
-            symbolProvider_(&process->symbolProvider_) {
+            symbolProvider_(&process->symbolProvider_),
+            jitEnabled_(process->jitEnabled()) {
         disassemblyCache_->addCallback(this);
     }
 
@@ -222,6 +223,7 @@ namespace kernel::gnulinux {
     }
 
     void Process::SymbolRetriever::onNewDisassembly(const std::string& filename, u64 base) {
+        if(jitEnabled_) return;
         symbolProvider_->tryRetrieveSymbolsFromExecutable(filename, base);
     }
 

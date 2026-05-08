@@ -3,6 +3,7 @@
 
 #include "x64/compiler/jit.h"
 #include "x64/instructions/basicblock.h"
+#include "smallmap.h"
 
 namespace x64 {
 
@@ -11,6 +12,7 @@ namespace x64 {
     class CodeSegment {
     public:
         explicit CodeSegment(BasicBlock cpuBasicBlock);
+        ~CodeSegment();
 
         const BasicBlock& basicBlock() const {
             return cpuBasicBlock_;
@@ -86,9 +88,9 @@ namespace x64 {
         u64 callsForCompilation_ { 0 };
 
         bool endsWithFixedDestinationJump_ { false };
-        std::unordered_map<u64, CodeSegment*> successors_;
+        SmallMap<u64, CodeSegment*, 2> successors_;
         std::unordered_map<u64, CodeSegment*> predecessors_;
-        std::unordered_map<u64, CodeSegment*> callPredecessors_;
+        SmallMap<u64, CodeSegment*, 2> callPredecessors_;
 
         friend class CodeSegmentTest;
     };
