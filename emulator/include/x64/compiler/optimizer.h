@@ -41,12 +41,14 @@ namespace x64::ir {
     
     class DeadCodeElimination : public OptimizationPass {
     public:
+        enum class MMX_ALWAYS_LIVE { NO, YES };
         enum class XMM_ALWAYS_LIVE { NO, YES };
-        explicit DeadCodeElimination(XMM_ALWAYS_LIVE);
+        explicit DeadCodeElimination(MMX_ALWAYS_LIVE, XMM_ALWAYS_LIVE);
         ~DeadCodeElimination();
         bool optimize(IR*, Optimizer::Stats*) override;
 
     private:
+        MMX_ALWAYS_LIVE mmxLiveness_ { MMX_ALWAYS_LIVE::NO };
         XMM_ALWAYS_LIVE xmmLiveness_ { XMM_ALWAYS_LIVE::NO };
         std::unique_ptr<LivenessAnalysis> analysis_;
         std::vector<size_t> removableInstructions_;

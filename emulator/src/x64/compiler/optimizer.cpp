@@ -91,7 +91,7 @@ namespace x64::ir {
         }
     };
 
-    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis, bool xmmAlwaysLive) {
+    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis, bool mmxAlwaysLive, bool xmmAlwaysLive) {
         assert(!!analysis);
         LivenessAnalysis a;
         std::swap(a, *analysis);
@@ -102,6 +102,18 @@ namespace x64::ir {
             R64::RSP,
             R64::RAX,
             R64::RDX,
+        }};
+
+        // MMXs may be always live
+        static constexpr std::array<MMX, 8> alwaysLiveMmxs {{
+            MMX::MM0,
+            MMX::MM1,
+            MMX::MM2,
+            MMX::MM3,
+            MMX::MM4,
+            MMX::MM5,
+            MMX::MM6,
+            MMX::MM7,
         }};
 
         // XMMs may be always live
@@ -175,6 +187,11 @@ namespace x64::ir {
             a.gprs.back().set((u32)alwaysLive);
         }
         a.mmxs.resize(ir.instructions.size()+1);
+        if(mmxAlwaysLive) {
+            for(MMX alwaysLive : alwaysLiveMmxs) {
+                a.mmxs.back().set((u32)alwaysLive);
+            }
+        }
         a.xmms.resize(ir.instructions.size()+1);
         if(xmmAlwaysLive) {
             for(XMM alwaysLive : alwaysLiveXmms) {
@@ -393,13 +410,16 @@ namespace x64::ir {
         std::swap(a, *analysis);
     }
 
-    DeadCodeElimination::DeadCodeElimination(XMM_ALWAYS_LIVE xmmLiveness) : xmmLiveness_(xmmLiveness) { }
+    DeadCodeElimination::DeadCodeElimination(MMX_ALWAYS_LIVE mmxLiveness, XMM_ALWAYS_LIVE xmmLiveness) :
+            mmxLiveness_(mmxLiveness), xmmLiveness_(xmmLiveness) { }
     DeadCodeElimination::~DeadCodeElimination() = default;
 
     bool DeadCodeElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
         if(!analysis_) analysis_ = std::make_unique<LivenessAnalysis>();
-        computeLiveRegistersAndAddresses(*ir, analysis_.get(), xmmLiveness_ == XMM_ALWAYS_LIVE::YES);
+        computeLiveRegistersAndAddresses(*ir, analysis_.get(),
+                mmxLiveness_ == MMX_ALWAYS_LIVE::YES,
+                xmmLiveness_ == XMM_ALWAYS_LIVE::YES);
 
         auto address64Index = [&](const M64& address) -> u32 {
             auto it = std::find(analysis_->allAddresses64.begin(), analysis_->allAddresses64.end(), address);

@@ -566,6 +566,12 @@ namespace x64 {
         enum class RegMM {
             GPR0,
             GPR1,
+            GPR2,
+            GPR3,
+            GPR4,
+            GPR5,
+            GPR6,
+            GPR7,
         };
 
         static MMX get(RegMM);
@@ -590,6 +596,7 @@ namespace x64 {
         };
 
         static XMM get(Reg128);
+        static RegMM toGpr(MMX);
         static Reg128 toGpr(XMM);
 
         std::unique_ptr<ir::IrGenerator> generator_;
@@ -598,6 +605,7 @@ namespace x64 {
         std::unique_ptr<Assembler> assembler_;
         CompilerOptions options_;
 
+        bool directMmx() const { return options_.optimizationLevel >= 3; }
         bool directXmm() const { return options_.optimizationLevel >= 2; }
 
         void readReg8(Reg dst, R8 src);
@@ -697,11 +705,14 @@ namespace x64 {
         void saveStack();
         void restoreStack();
 
+        void push(RegMM);
+        void pop(RegMM);
         void push(Reg128);
         void pop(Reg128);
 
         void tryCompileBlockLookup();
 
+        static MMX scratchMmxRegister(std::initializer_list<MMX> usedRegisters);
         static XMM scratchXmmRegister(std::initializer_list<XMM> usedRegisters);
 
         template<typename Func>
