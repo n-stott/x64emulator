@@ -473,6 +473,8 @@ namespace x64::ir {
         void blendvps(XMM, XMM);
         void pblendvb(XMM, XMM);
 
+        void emms();
+
         // exits
         struct Label {
             u32 labelIndex;

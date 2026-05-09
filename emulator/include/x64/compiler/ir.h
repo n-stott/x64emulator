@@ -358,6 +358,7 @@ namespace x64::ir {
         PINSRD,
         BLENDVPS,
         PBLENDVB,
+        EMMS,
     };
 
     class Instruction {

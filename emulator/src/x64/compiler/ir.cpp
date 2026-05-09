@@ -262,6 +262,7 @@ namespace x64::ir {
             case Op::PINSRD: return "pinsrd";
             case Op::BLENDVPS: return "blendvps";
             case Op::PBLENDVB: return "pblendvb";
+            case Op::EMMS: return "emms";
         }
         return "NO OP";
     }

@@ -3194,6 +3194,10 @@ namespace x64 {
                     }
                     break;
                 }
+                case ir::Op::EMMS: {
+                    assembler_->emms();
+                    break;
+                }
             }
         }
 

@@ -487,6 +487,8 @@ namespace x64 {
         void blendvps(XMM, XMM);
         void pblendvb(XMM, XMM);
 
+        void emms();
+
         // exits
         struct Label {
             explicit Label(Assembler&);

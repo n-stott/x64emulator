@@ -3826,6 +3826,11 @@ namespace x64 {
         write8((u8)(0b11000000 | (encodeRegister(dst) << 3) | encodeRegister(src)));
     }
 
+    void Assembler::emms() {
+        write8((u8)0x0f);
+        write8((u8)0x77);
+    }
+
     void Assembler::patchJumps() {
         for(const Label& label : labels_) {
             closeLabel(label);

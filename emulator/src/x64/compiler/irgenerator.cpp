@@ -539,6 +539,8 @@ namespace x64::ir {
     void IrGenerator::blendvps(XMM dst, XMM src) { emit(Op::BLENDVPS, dst, dst, src, XMM::XMM0); }
     void IrGenerator::pblendvb(XMM dst, XMM src) { emit(Op::PBLENDVB, dst, dst, src, XMM::XMM0); }
 
+    void IrGenerator::emms() { emit(Op::EMMS); }
+
     IrGenerator::Label& IrGenerator::label() {
         Label newLabel {
             (u32)labels_.size(),
