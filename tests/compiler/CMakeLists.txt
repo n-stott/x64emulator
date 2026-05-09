@@ -305,3 +305,15 @@ target_include_directories(test_compiler_movd PUBLIC include ${CMAKE_SOURCE_DIR}
 target_link_libraries(test_compiler_movd PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_movd PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_movd COMMAND test_compiler_movd)
+
+add_executable(test_compiler_movdqu src/test_movdqu.cpp)
+target_compile_options(test_compiler_movdqu PUBLIC ${CC_OPTIONS})
+target_include_directories(test_compiler_movdqu PUBLIC include ${CMAKE_SOURCE_DIR}/emulator/include)
+target_link_libraries(test_compiler_movdqu PUBLIC x64cpu x64jit)
+target_link_options(test_compiler_movdqu PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_movdqu COMMAND test_compiler_movdqu)
+
+add_executable(test_compiler_mmx_unordered_map src/test_mmx_unordered_map.cpp)
+target_compile_options(test_compiler_mmx_unordered_map PUBLIC ${CC_OPTIONS})
+target_link_options(test_compiler_mmx_unordered_map PUBLIC ${LD_OPTIONS})
+add_test(NAME compiler_mmx_unordered_map COMMAND test_compiler_mmx_unordered_map)
