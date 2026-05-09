@@ -175,7 +175,7 @@ namespace x64 {
         // 1- load the ptr to the basic block ptr
         constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
         static_assert(BBPTR_OFFSET == 0x58);
-        M64 bbPtr = make64(R64::RDI, BBPTR_OFFSET);
+        M64 bbPtr = make64(get(Reg::JIT_ARGS), BBPTR_OFFSET);
         generator_->mov(R64::R13, bbPtr);
         // 2- load the ptr to the lookup table
         M64 tablePtr = make64(R64::R13, BLOCK_LOOKUP_TABLE_OFFSET);
@@ -764,6 +764,8 @@ namespace x64 {
     std::optional<ir::IR> Compiler::jitEntry() {
         generator_->clear();
         saveStack();
+        saveRegisters();
+        saveArgument();
         loadArguments(TmpReg{Reg::GPR1});
         loadRegistersFromEmulator();
         loadFlagsFromEmulator(TmpReg{Reg::GPR1});
@@ -818,6 +820,8 @@ namespace x64 {
         generator_->clear();
         storeFlagsToEmulator(TmpReg{Reg::GPR1});
         storeRegistersToEmulator();
+        restoreArgument();
+        restoreRegisters();
         restoreStack();
         generator_->ret();
         return generator_->generateIR();
@@ -5440,9 +5444,10 @@ namespace x64 {
             case Reg::GPR1: return R8::R9B;
             case Reg::MEM_ADDR: return R8::R10B;
             case Reg::REG_BASE: return R8::SIL;
-            case Reg::MMX_BASE: return R8::R11B;
-            case Reg::XMM_BASE: return R8::DL;
+            case Reg::MMX_BASE: return R8::R12B;
+            case Reg::XMM_BASE: return R8::R13B;
             case Reg::MEM_BASE: return R8::CL;
+            case Reg::JIT_ARGS: return R8::R15B;
         }
         assert(false);
         UNREACHABLE();
@@ -5454,9 +5459,10 @@ namespace x64 {
             case Reg::GPR1: return R16::R9W;
             case Reg::MEM_ADDR: return R16::R10W;
             case Reg::REG_BASE: return R16::SI;
-            case Reg::MMX_BASE: return R16::R11W;
-            case Reg::XMM_BASE: return R16::DX;
+            case Reg::MMX_BASE: return R16::R12W;
+            case Reg::XMM_BASE: return R16::R13W;
             case Reg::MEM_BASE: return R16::CX;
+            case Reg::JIT_ARGS: return R16::R15W;
         }
         assert(false);
         UNREACHABLE();
@@ -5468,9 +5474,10 @@ namespace x64 {
             case Reg::GPR1: return R32::R9D;
             case Reg::MEM_ADDR: return R32::R10D;
             case Reg::REG_BASE: return R32::ESI;
-            case Reg::MMX_BASE: return R32::R11D;
-            case Reg::XMM_BASE: return R32::EDX;
+            case Reg::MMX_BASE: return R32::R12D;
+            case Reg::XMM_BASE: return R32::R13D;
             case Reg::MEM_BASE: return R32::ECX;
+            case Reg::JIT_ARGS: return R32::R15D;
         }
         assert(false);
         UNREACHABLE();
@@ -5482,9 +5489,10 @@ namespace x64 {
             case Reg::GPR1: return R64::R9;
             case Reg::MEM_ADDR: return R64::R10;
             case Reg::REG_BASE: return R64::RSI;
-            case Reg::MMX_BASE: return R64::R11;
-            case Reg::XMM_BASE: return R64::RDX;
+            case Reg::MMX_BASE: return R64::R12;
+            case Reg::XMM_BASE: return R64::R13;
             case Reg::MEM_BASE: return R64::RCX;
+            case Reg::JIT_ARGS: return R64::R15;
         }
         assert(false);
         UNREACHABLE();
@@ -5904,7 +5912,7 @@ namespace x64 {
     void Compiler::addTime(u32 amount) {
         constexpr size_t TICKS_OFFSET = offsetof(NativeArguments, ticks);
         static_assert(TICKS_OFFSET == 0x38);
-        M64 ticksPtr = make64(R64::RDI, TICKS_OFFSET);
+        M64 ticksPtr = make64(get(Reg::JIT_ARGS), TICKS_OFFSET);
         generator_->mov(get(Reg::GPR1), ticksPtr);
         M64 ticks = make64(get(Reg::GPR1), 0);
         generator_->mov(get(Reg::GPR0), ticks);
@@ -5916,7 +5924,7 @@ namespace x64 {
     void Compiler::incrementCalls() {
         constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
         static_assert(BBPTR_OFFSET == 0x58);
-        M64 bbPtr = make64(R64::RDI, BBPTR_OFFSET);
+        M64 bbPtr = make64(get(Reg::JIT_ARGS), BBPTR_OFFSET);
         generator_->mov(get(Reg::GPR0), bbPtr);
         M64 callsPtr = make64(get(Reg::GPR0), CALLS_OFFSET);
         // read the calls
@@ -5930,14 +5938,14 @@ namespace x64 {
     void Compiler::readFsBase(Reg dst) {
         constexpr size_t FS_BASE = offsetof(NativeArguments, fsbase);
         static_assert(FS_BASE == 0x30);
-        M64 fsbasePtr = make64(R64::RDI, FS_BASE);
+        M64 fsbasePtr = make64(get(Reg::JIT_ARGS), FS_BASE);
         generator_->mov(get(dst), fsbasePtr);
     }
 
     void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
         constexpr size_t SEGMENTPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingSegmentPtr);
         static_assert(SEGMENTPTR_OFFSET == 0x50);
-        M64 bbPtrPtr = make64(R64::RDI, SEGMENTPTR_OFFSET);
+        M64 bbPtrPtr = make64(get(Reg::JIT_ARGS), SEGMENTPTR_OFFSET);
         generator_->mov(get(Reg::GPR1), bbPtrPtr);
         M64 bbPtr = make64(get(Reg::GPR1), 0);
         loadImm64(Reg::GPR0, basicBlockPtr);
@@ -5947,7 +5955,7 @@ namespace x64 {
     void Compiler::writeJitBasicBlockPtr(u64 jitBasicBlockPtr) {
         constexpr size_t JITBBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
         static_assert(JITBBPTR_OFFSET == 0x58);
-        M64 bbPtr = make64(R64::RDI, JITBBPTR_OFFSET);
+        M64 bbPtr = make64(get(Reg::JIT_ARGS), JITBBPTR_OFFSET);
         loadImm64(Reg::GPR0, jitBasicBlockPtr);
         generator_->mov(bbPtr, get(Reg::GPR0));
     }
@@ -5977,7 +5985,7 @@ namespace x64 {
         // increment the size
         constexpr size_t JITCALLSTACKIZEPTR_OFFSET = offsetof(NativeArguments, callstackSize);
         static_assert(JITCALLSTACKIZEPTR_OFFSET == 0x48);
-        M64 callstackSizePtr = make64(R64::RDI, JITCALLSTACKIZEPTR_OFFSET); // address of the u64*
+        M64 callstackSizePtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKIZEPTR_OFFSET); // address of the u64*
         assembler_->mov(get(tmp2.reg), callstackSizePtr); // tmp2.reg holds the u64*
         assembler_->mov(get(tmp1.reg), make64(get(tmp2.reg), 0)); // tmp1.reg holds the u64
         assembler_->lea(get(tmp1.reg), make64(get(tmp1.reg), 1)); // increment the u64
@@ -5986,7 +5994,7 @@ namespace x64 {
         
         constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
         static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
-        M64 callstackPtrPtr = make64(R64::RDI, JITCALLSTACKPTR_OFFSET); // address of the void**
+        M64 callstackPtrPtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKPTR_OFFSET); // address of the void**
         assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
         assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, -8)); // tmp2.reg holds the new entry
         assembler_->mov(get(tmp1.reg), (u64)dst); // load the dst
@@ -6009,7 +6017,7 @@ namespace x64 {
         // decrement the size
         constexpr size_t JITCALLSTACKIZEPTR_OFFSET = offsetof(NativeArguments, callstackSize);
         static_assert(JITCALLSTACKIZEPTR_OFFSET == 0x48);
-        M64 callstackSizePtr = make64(R64::RDI, JITCALLSTACKIZEPTR_OFFSET); // RDI = &callstackSizePtr
+        M64 callstackSizePtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKIZEPTR_OFFSET); // RDI = &callstackSizePtr
         assembler_->mov(get(tmp2.reg), callstackSizePtr); // tmp2.reg = callstackSizePtr
         assembler_->mov(get(tmp1.reg), make64(get(tmp2.reg), 0)); // tmp1.reg = callstackSize
         assembler_->lea(get(tmp1.reg), make64(get(tmp1.reg), -1)); // --tmp1.reg
@@ -6018,7 +6026,7 @@ namespace x64 {
         // TODO read the value and use it after
         constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
         static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
-        M64 callstackPtrPtr = make64(R64::RDI, JITCALLSTACKPTR_OFFSET); // address of the void**
+        M64 callstackPtrPtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKPTR_OFFSET); // address of the void**
         assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
         assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, 0)); // tmp2.reg holds the entry
         assembler_->mov(get(dst), make64(get(tmp2.reg), 0)); // load the dst
@@ -6348,6 +6356,28 @@ namespace x64 {
         generator_->pop64(R64::RBP);
     }
 
+    void Compiler::saveRegisters() {
+        generator_->push64(R64::RDI);
+        generator_->push64(get(Reg::JIT_ARGS));
+        generator_->push64(get(Reg::MMX_BASE));
+        generator_->push64(get(Reg::XMM_BASE));
+    }
+
+    void Compiler::restoreRegisters() {
+        generator_->pop64(get(Reg::XMM_BASE));
+        generator_->pop64(get(Reg::MMX_BASE));
+        generator_->pop64(get(Reg::JIT_ARGS));
+        generator_->pop64(R64::RDI);
+    }
+
+    void Compiler::saveArgument() {
+        generator_->mov(get(Reg::JIT_ARGS), R64::RDI);
+    }
+
+    void Compiler::restoreArgument() {
+        generator_->mov(R64::RDI, get(Reg::JIT_ARGS));
+    }
+
     void Compiler::loadArguments(TmpReg) {
         constexpr size_t GPRS_OFFSET = offsetof(NativeArguments, gprs);
         static_assert(GPRS_OFFSET   == 0x00);
@@ -6357,10 +6387,10 @@ namespace x64 {
         static_assert(XMMS_OFFSET   == 0x10);
         constexpr size_t MEMORY_OFFSET = offsetof(NativeArguments, memory);
         static_assert(MEMORY_OFFSET == 0x18);
-        M64 gprs = make64(R64::RDI,   GPRS_OFFSET);
-        M64 mmxs = make64(R64::RDI,   MMXS_OFFSET);
-        M64 xmms = make64(R64::RDI,   XMMS_OFFSET);
-        M64 memory = make64(R64::RDI, MEMORY_OFFSET);
+        M64 gprs = make64(get(Reg::JIT_ARGS),   GPRS_OFFSET);
+        M64 mmxs = make64(get(Reg::JIT_ARGS),   MMXS_OFFSET);
+        M64 xmms = make64(get(Reg::JIT_ARGS),   XMMS_OFFSET);
+        M64 memory = make64(get(Reg::JIT_ARGS), MEMORY_OFFSET);
         generator_->mov(get(Reg::MEM_BASE), memory);
         generator_->mov(get(Reg::MMX_BASE), mmxs);
         generator_->mov(get(Reg::XMM_BASE), xmms);
@@ -6502,7 +6532,7 @@ namespace x64 {
     void Compiler::storeFlagsToEmulator(TmpReg tmp) {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
-        M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
+        M64 rflagsPtr = make64(get(Reg::JIT_ARGS), FLAGS_OFFSET);
         generator_->mov(get(tmp.reg), rflagsPtr);
         M64 rflags = make64(get(tmp.reg), 0);
         generator_->pushf();
@@ -6512,7 +6542,7 @@ namespace x64 {
     void Compiler::loadFlagsFromEmulator(TmpReg tmp) {
         constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
         static_assert(FLAGS_OFFSET == 0x20);
-        M64 rflagsPtr = make64(R64::RDI, FLAGS_OFFSET);
+        M64 rflagsPtr = make64(get(Reg::JIT_ARGS), FLAGS_OFFSET);
         generator_->mov(get(tmp.reg), rflagsPtr);
         M64 rflags = make64(get(tmp.reg), 0);
         generator_->push64(rflags);
@@ -6522,7 +6552,7 @@ namespace x64 {
     void Compiler::callNativeBasicBlock(TmpReg tmp) {
         constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, executableCode);
         static_assert(EXEC_MEM_OFFSET == 0x60);
-        M64 execMemPtrPtr = make64(R64::RDI, EXEC_MEM_OFFSET);
+        M64 execMemPtrPtr = make64(get(Reg::JIT_ARGS), EXEC_MEM_OFFSET);
         generator_->mov(get(tmp.reg), execMemPtrPtr);
         generator_->call(get(tmp.reg));
     }
@@ -6530,7 +6560,7 @@ namespace x64 {
     void Compiler::loadMxcsrFromEmulator(Reg dst) {
         constexpr size_t MXCSR_OFFSET = offsetof(NativeArguments, mxcsr);
         static_assert(MXCSR_OFFSET == 0x28);
-        M64 mxcsrPtr = make64(R64::RDI, MXCSR_OFFSET);
+        M64 mxcsrPtr = make64(get(Reg::JIT_ARGS), MXCSR_OFFSET);
         generator_->mov(get(dst), mxcsrPtr);
         M32 mxcsr = make32(get(dst), 0);
         generator_->mov(get32(dst), mxcsr);

@@ -542,6 +542,8 @@ namespace x64 {
             MMX_BASE,
             XMM_BASE,
             MEM_BASE,
+
+            JIT_ARGS,
         };
 
         struct TmpReg {
@@ -708,6 +710,10 @@ namespace x64 {
         void pop64(Reg dst, TmpReg tmp);
         void saveStack();
         void restoreStack();
+        void saveRegisters();
+        void restoreRegisters();
+        void saveArgument();
+        void restoreArgument();
 
         void push(RegMM);
         void pop(RegMM);
