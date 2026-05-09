@@ -119,6 +119,8 @@ namespace x64 {
                         assembler_->mov(r64dst.value(), imm64src.value());
                     } else if(r32dst && mmxsrc) {
                         assembler_->movd(r32dst.value(), mmxsrc.value());
+                    } else if(mmxdst && mmxsrc) {
+                        assembler_->mov(mmxdst.value(), mmxsrc.value());
                     } else if(mmxdst && r32src) {
                         assembler_->movd(mmxdst.value(), r32src.value());
                     } else if(mmxdst && m32src) {
