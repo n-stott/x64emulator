@@ -389,6 +389,34 @@ namespace kernel::gnulinux {
         }
     }
 
+    void Process::dumpInstructionStats(const std::vector<const x64::CodeSegment*>& segments) const {
+        if(segments.empty()) return;
+        std::vector<std::pair<x64::X64Instruction, u64>> instructionCalls;
+        auto addInstructionCalls = [&](const x64::X64Instruction& ins, u64 count) {
+            u32 insncode = (u32)ins.insn();
+            if(instructionCalls.size() <= insncode) instructionCalls.resize(insncode+1, std::make_pair(ins, 0));
+            instructionCalls[insncode].first = ins;
+            instructionCalls[insncode].second += count;
+        };
+        for(const x64::CodeSegment* seg : segments) {
+            u64 calls = seg->calls();
+            for(const auto& ins : seg->basicBlock().instructions()) {
+                addInstructionCalls(ins.first, calls);
+            }
+        }
+        std::stable_sort(instructionCalls.begin(), instructionCalls.end(), [](const auto& p, const auto& q) {
+            if(p.second > q.second) return true;
+            if(p.second < q.second) return false;
+            return (u32)p.first.insn() < (u32)q.first.insn();
+        });
+        auto dummy = std::make_pair(x64::X64Instruction::make(0, x64::Insn::EMMS, 0), 0);
+        if(instructionCalls.size() >= 50) instructionCalls.resize(50, dummy);
+        fmt::println("Top instructions called:");
+        for(const auto& p : instructionCalls) {
+            fmt::println("  {:12} : {}", p.second, p.first.toString());
+        }
+    }
+
     Directory* Process::chdir(const Path& path) {
         Directory* newcwd = fs_.findCurrentWorkDirectory(path);
         if(!newcwd) return nullptr;
