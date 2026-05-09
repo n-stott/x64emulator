@@ -6331,22 +6331,22 @@ namespace x64 {
             generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM14)), XMM::XMM14);
             generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM15)), XMM::XMM15);
             // Pop xmm from the stack on exit (not technically needed by sys-V ABI)
-            generator_->movu(make128(R64::RSP, 0 *16), XMM::XMM0);
-            generator_->movu(make128(R64::RSP, 1 *16), XMM::XMM1);
-            generator_->movu(make128(R64::RSP, 2 *16), XMM::XMM2);
-            generator_->movu(make128(R64::RSP, 3 *16), XMM::XMM3);
-            generator_->movu(make128(R64::RSP, 4 *16), XMM::XMM4);
-            generator_->movu(make128(R64::RSP, 5 *16), XMM::XMM5);
-            generator_->movu(make128(R64::RSP, 6 *16), XMM::XMM6);
-            generator_->movu(make128(R64::RSP, 7 *16), XMM::XMM7);
-            generator_->movu(make128(R64::RSP, 8 *16), XMM::XMM8);
-            generator_->movu(make128(R64::RSP, 9 *16), XMM::XMM9);
-            generator_->movu(make128(R64::RSP, 10*16), XMM::XMM10);
-            generator_->movu(make128(R64::RSP, 11*16), XMM::XMM11);
-            generator_->movu(make128(R64::RSP, 12*16), XMM::XMM12);
-            generator_->movu(make128(R64::RSP, 13*16), XMM::XMM13);
-            generator_->movu(make128(R64::RSP, 14*16), XMM::XMM14);
-            generator_->movu(make128(R64::RSP, 15*16), XMM::XMM15);
+            generator_->movu(XMM::XMM0, make128(R64::RSP, 0 *16));
+            generator_->movu(XMM::XMM1, make128(R64::RSP, 1 *16));
+            generator_->movu(XMM::XMM2, make128(R64::RSP, 2 *16));
+            generator_->movu(XMM::XMM3, make128(R64::RSP, 3 *16));
+            generator_->movu(XMM::XMM4, make128(R64::RSP, 4 *16));
+            generator_->movu(XMM::XMM5, make128(R64::RSP, 5 *16));
+            generator_->movu(XMM::XMM6, make128(R64::RSP, 6 *16));
+            generator_->movu(XMM::XMM7, make128(R64::RSP, 7 *16));
+            generator_->movu(XMM::XMM8, make128(R64::RSP, 8 *16));
+            generator_->movu(XMM::XMM9, make128(R64::RSP, 9 *16));
+            generator_->movu(XMM::XMM10, make128(R64::RSP, 10*16));
+            generator_->movu(XMM::XMM11, make128(R64::RSP, 11*16));
+            generator_->movu(XMM::XMM12, make128(R64::RSP, 12*16));
+            generator_->movu(XMM::XMM13, make128(R64::RSP, 13*16));
+            generator_->movu(XMM::XMM14, make128(R64::RSP, 14*16));
+            generator_->movu(XMM::XMM15, make128(R64::RSP, 15*16));
             generator_->lea(R64::RSP, make64(R64::RSP, +16*16));
         }
         if(directMmx()) {
