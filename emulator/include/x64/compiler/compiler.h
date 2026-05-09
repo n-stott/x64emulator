@@ -64,12 +64,14 @@ namespace x64 {
         bool tryCompileMovR32Imm(R32, Imm);
         bool tryCompileMovM32Imm(const M32&, Imm);
         bool tryCompileMovR32R32(R32, R32);
+        bool tryCompileMovR32M32RIP(R32, const M32&, u64);
         bool tryCompileMovR32M32(R32, const M32&);
         bool tryCompileMovM32R32(const M32&, R32);
         bool tryCompileMovR64Imm(R64, Imm);
         bool tryCompileMovM64Imm(const M64&, Imm);
         bool tryCompileMovR64R64(R64, R64);
         bool tryCompileMovR64M64(R64, const M64&);
+        bool tryCompileMovR64M64RIP(R64, const M64&, u64);
         bool tryCompileMovM64R64(const M64&, R64);
         bool tryCompileMovzxR16RM8(R16, const RM8&);
         bool tryCompileMovzxR32RM8(R32, const RM8&);
@@ -618,11 +620,13 @@ namespace x64 {
         void writeMem16(const Mem& address, Reg src);
         void readReg32(Reg dst, R32 src);
         void writeReg32(R32 dst, Reg src);
+        void readMem32(Reg dst, i32 offset);
         void readMem32(Reg dst, const Mem& address);
         void writeMem32(const Mem& address, Reg src);
         void readReg64(Reg dst, R64 src);
         void writeReg64(R64 dst, Reg src);
         void writeReg64(R64 dst, u64 imm, TmpReg tmp);
+        void readMem64(Reg dst, i32 offset);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
 

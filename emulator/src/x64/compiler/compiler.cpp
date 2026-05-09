@@ -277,12 +277,26 @@ namespace x64 {
             case Insn::MOV_R32_IMM: return tryCompileMovR32Imm(ins.op0<R32>(), ins.op1<Imm>());
             case Insn::MOV_M32_IMM: return tryCompileMovM32Imm(ins.op0<M32>(), ins.op1<Imm>());
             case Insn::MOV_R32_R32: return tryCompileMovR32R32(ins.op0<R32>(), ins.op1<R32>());
-            case Insn::MOV_R32_M32: return tryCompileMovR32M32(ins.op0<R32>(), ins.op1<M32>());
+            case Insn::MOV_R32_M32: {
+                const auto& mem = ins.op1<M32>();
+                if(mem.encoding.base == R64::RIP) {
+                    return tryCompileMovR32M32RIP(ins.op0<R32>(), ins.op1<M32>(), ins.nextAddress());
+                } else {
+                    return tryCompileMovR32M32(ins.op0<R32>(), ins.op1<M32>());
+                }
+            }
             case Insn::MOV_M32_R32: return tryCompileMovM32R32(ins.op0<M32>(), ins.op1<R32>());
             case Insn::MOV_R64_IMM: return tryCompileMovR64Imm(ins.op0<R64>(), ins.op1<Imm>());
             case Insn::MOV_M64_IMM: return tryCompileMovM64Imm(ins.op0<M64>(), ins.op1<Imm>());
             case Insn::MOV_R64_R64: return tryCompileMovR64R64(ins.op0<R64>(), ins.op1<R64>());
-            case Insn::MOV_R64_M64: return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
+            case Insn::MOV_R64_M64: {
+                const auto& mem = ins.op1<M64>();
+                if(mem.encoding.base == R64::RIP) {
+                    return tryCompileMovR64M64RIP(ins.op0<R64>(), ins.op1<M64>(), ins.nextAddress());
+                } else {
+                    return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
+                }
+            }
             case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
             case Insn::MOVZX_R16_RM8: return tryCompileMovzxR16RM8(ins.op0<R16>(), ins.op1<RM8>());
             case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
@@ -1021,6 +1035,21 @@ namespace x64 {
         return true;
     }
 
+    bool Compiler::tryCompileMovR32M32RIP(R32 dst, const M32& src, u64 rip) {
+        verify(src.encoding.base == R64::RIP);
+        verify(src.encoding.index == R64::ZERO);
+        u64 actualAddress = rip+src.encoding.displacement;
+        if((u64)(i32)actualAddress != actualAddress) {
+            // fall back to long path
+            return tryCompileMovR32M32(dst, src);
+        }
+        // read memory at that address
+        readMem32(Reg::GPR0, (i32)actualAddress);
+        // write to the destination register
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
     bool Compiler::tryCompileMovM32R32(const M32& dst, R32 src) {
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
@@ -1065,6 +1094,21 @@ namespace x64 {
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
         // read memory at that address
         readMem64(Reg::GPR0, addr);
+        // write to the destination register
+        writeReg64(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR64M64RIP(R64 dst, const M64& src, u64 rip) {
+        verify(src.encoding.base == R64::RIP);
+        verify(src.encoding.index == R64::ZERO);
+        u64 actualAddress = rip+src.encoding.displacement;
+        if((u64)(i32)actualAddress != actualAddress) {
+            // fall back to long path
+            return tryCompileMovR64M64(dst, src);
+        }
+        // read memory at that address
+        readMem64(Reg::GPR0, (i32)actualAddress);
         // write to the destination register
         writeReg64(dst, Reg::GPR0);
         return true;
@@ -5658,6 +5702,12 @@ namespace x64 {
         generator_->mov(d, s);
     }
 
+    void Compiler::readMem32(Reg dst, i32 offset) {
+        R32 d = get32(dst);
+        M32 s = make32(get(Reg::MEM_BASE), R64::ZERO, 1, offset);
+        generator_->mov(d, s);
+    }
+
     void Compiler::readMem32(Reg dst, const Mem& address) {
         R32 d = get32(dst);
         M32 s = make32(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
@@ -5667,6 +5717,12 @@ namespace x64 {
     void Compiler::writeMem32(const Mem& address, Reg src) {
         M32 d = make32(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R32 s = get32(src);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::readMem64(Reg dst, i32 offset) {
+        R64 d = get(dst);
+        M64 s = make64(get(Reg::MEM_BASE), R64::ZERO, 1, offset);
         generator_->mov(d, s);
     }
 
