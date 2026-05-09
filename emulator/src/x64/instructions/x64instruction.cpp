@@ -10,22 +10,22 @@ namespace x64 {
     
     std::string X64Instruction::toString(const char* mnemonic) const {
         assert(nbOperands() == 0);
-        return fmt::format("{:9}", mnemonic);
+        return fmt::format("{:11}", mnemonic);
     }
 
     template<typename T0>
     std::string X64Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:9}{}", mnemonic, utils::toString(op0<T0>()));
+        return fmt::format("{:11}{}", mnemonic, utils::toString(op0<T0>()));
     }
 
     template<typename T0, typename T1>
     std::string X64Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:9}{},{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()));
+        return fmt::format("{:11}{},{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()));
     }
 
     template<typename T0, typename T1, typename T2>
     std::string X64Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:9}{},{},{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()));
+        return fmt::format("{:11}{},{},{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()));
     }
 
     std::string X64Instruction::toString() const {
