@@ -534,6 +534,9 @@ namespace x64 {
         bool tryCompileJmp(const RM64&);
 
         enum class Reg {
+            RAX,
+            RDX,
+
             GPR0,
             GPR1,
             MEM_ADDR,
@@ -546,6 +549,8 @@ namespace x64 {
             JIT_ARGS,
         };
 
+        static bool isDirectReg(Reg reg);
+
         struct TmpReg {
             Reg reg;
         };
@@ -554,6 +559,25 @@ namespace x64 {
         static R16 get16(Reg);
         static R32 get32(Reg);
         static R64 get(Reg);
+
+        struct RegisterAllocation1 {
+            Reg reg0;
+        };
+
+        static RegisterAllocation1 allocateReg(R8 dst);
+        static RegisterAllocation1 allocateReg(R16 dst);
+        static RegisterAllocation1 allocateReg(R32 dst);
+        static RegisterAllocation1 allocateReg(R64 dst);
+
+        struct RegisterAllocation2 {
+            Reg reg0;
+            Reg reg1;
+        };
+
+        static RegisterAllocation2 allocateReg(R8 dst, R8 src);
+        static RegisterAllocation2 allocateReg(R16 dst, R16 src);
+        static RegisterAllocation2 allocateReg(R32 dst, R32 src);
+        static RegisterAllocation2 allocateReg(R64 dst, R64 src);
 
         struct Mem {
             Reg base;
@@ -579,6 +603,7 @@ namespace x64 {
         };
 
         static MMX get(RegMM);
+        static RegMM toGpr(MMX);
 
         enum class Reg128 {
             GPR0,
@@ -600,7 +625,6 @@ namespace x64 {
         };
 
         static XMM get(Reg128);
-        static RegMM toGpr(MMX);
         static Reg128 toGpr(XMM);
 
         std::unique_ptr<ir::IrGenerator> generator_;
@@ -609,6 +633,7 @@ namespace x64 {
         std::unique_ptr<Assembler> assembler_;
         CompilerOptions options_;
 
+        bool directR64() const { return options_.optimizationLevel >= 4; }
         bool directMmx() const { return options_.optimizationLevel >= 3; }
         bool directXmm() const { return options_.optimizationLevel >= 2; }
 
@@ -631,6 +656,17 @@ namespace x64 {
         void readMem64(Reg dst, i32 offset);
         void readMem64(Reg dst, const Mem& address);
         void writeMem64(const Mem& address, Reg src);
+
+        void forceEmulatorRegisterSync(R8 reg);
+        void forceEmulatorRegisterSync(R16 reg);
+        void forceEmulatorRegisterSync(R32 reg);
+        void forceEmulatorRegisterSync(R64 reg);
+        void forceJitRegisterSync(R8 reg);
+        void forceJitRegisterSync(R16 reg);
+        void forceJitRegisterSync(R32 reg);
+        void forceJitRegisterSync(R64 reg);
+        template<Size size>
+        void forceEncodingSync(const M<size>& reg);
 
         void readRegMM(RegMM dst, MMX src);
         void writeRegMM(MMX dst, RegMM src);

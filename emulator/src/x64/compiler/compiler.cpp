@@ -21,13 +21,16 @@ namespace x64 {
     Compiler::Compiler(CompilerOptions options) : options_(options) {
         generator_ = std::make_unique<ir::IrGenerator>();
         optimizer_ = std::make_unique<ir::Optimizer>();
+        auto r64Live = directR64()
+                ? ir::DeadCodeElimination::R64_ALWAYS_LIVE::YES
+                : ir::DeadCodeElimination::R64_ALWAYS_LIVE::NO;
         auto mmxLive = directMmx()
                 ? ir::DeadCodeElimination::MMX_ALWAYS_LIVE::YES
                 : ir::DeadCodeElimination::MMX_ALWAYS_LIVE::NO;
         auto xmmLive = directXmm()
                 ? ir::DeadCodeElimination::XMM_ALWAYS_LIVE::YES
                 : ir::DeadCodeElimination::XMM_ALWAYS_LIVE::NO;
-        optimizer_->addPass<ir::DeadCodeElimination>(mmxLive, xmmLive);
+        optimizer_->addPass<ir::DeadCodeElimination>(r64Live, mmxLive, xmmLive);
         optimizer_->addPass<ir::ImmediateReadBackElimination>();
         optimizer_->addPass<ir::DelayedReadBackElimination>();
         optimizer_->addPass<ir::DuplicateInstructionElimination>();
@@ -907,10 +910,12 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR8Imm(R8 dst, Imm imm) {
         checkCompilation(Insn::MOV_R8_IMM, static_cast<void(Assembler::*)(R8, u8)>(&Assembler::mov), dst, imm, dst, imm.as<u8>());
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // load the immediate
-        loadImm8(Reg::GPR0, imm.as<u8>());
+        loadImm8(regalloc.reg0, imm.as<u8>());
         // write to the destination register
-        writeReg8(dst, Reg::GPR0);
+        writeReg8(dst, regalloc.reg0);
         return true;
     }
 
@@ -927,39 +932,49 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR8R8(R8 dst, R8 src) {
         checkCompilation(Insn::MOV_R8_R8, static_cast<void(Assembler::*)(R8, R8)>(&Assembler::mov), dst, src, dst, src);
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
         // read from the source register
-        readReg8(Reg::GPR0, src);
+        readReg8(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get8(regalloc.reg0), get8(regalloc.reg1));
         // write to the destination register
-        writeReg8(dst, Reg::GPR0);
+        writeReg8(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR8M8(R8 dst, const M8& src) {
         // get the source address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // read memory at that address
-        readMem8(Reg::GPR0, addr);
+        readMem8(regalloc.reg0, addr);
         // write to the destination register
-        writeReg8(dst, Reg::GPR0);
+        writeReg8(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
         if(dst.segment == Segment::FS) return false;
+        // allocate register
+        auto regalloc = allocateReg(src);
         // read the value of the source register
-        readReg8(Reg::GPR0, src);
+        readReg8(regalloc.reg0, src);
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // write to the destination address
-        writeMem8(addr, Reg::GPR0);
+        writeMem8(addr, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR16Imm(R16 dst, Imm imm) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // load the immediate
-        loadImm16(Reg::GPR0, imm.as<u16>());
+        loadImm16(regalloc.reg0, imm.as<u16>());
         // write to the destination register
-        writeReg16(dst, Reg::GPR0);
+        writeReg16(dst, regalloc.reg0);
         return true;
     }
 
@@ -975,38 +990,48 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR16R16(R16 dst, R16 src) {
         checkCompilation(Insn::MOV_R16_R16, static_cast<void(Assembler::*)(R16, R16)>(&Assembler::mov), dst, src, dst, src);
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
         // read from the source register
-        readReg16(Reg::GPR0, src);
+        readReg16(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get16(regalloc.reg0), get16(regalloc.reg1));
         // write to the destination register
-        writeReg16(dst, Reg::GPR0);
+        writeReg16(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR16M16(R16 dst, const M16& src) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // get the source address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
         // read memory at that address
-        readMem16(Reg::GPR0, addr);
+        readMem16(regalloc.reg0, addr);
         // write to the destination register
-        writeReg16(dst, Reg::GPR0);
+        writeReg16(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovM16R16(const M16& dst, R16 src) {
+        // allocate register
+        auto regalloc = allocateReg(src);
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // read the value of the register
-        readReg16(Reg::GPR0, src);
+        readReg16(regalloc.reg0, src);
         // write the value the destination address
-        writeMem16(addr, Reg::GPR0);
+        writeMem16(addr, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR32Imm(R32 dst, Imm imm) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // load the immediate
-        loadImm64(Reg::GPR0, imm.as<u32>());
+        loadImm64(regalloc.reg0, imm.as<u32>());
         // write to the destination register
-        writeReg32(dst, Reg::GPR0);
+        writeReg32(dst, regalloc.reg0);
         return true;
     }
 
@@ -1022,20 +1047,26 @@ namespace x64 {
 
     bool Compiler::tryCompileMovR32R32(R32 dst, R32 src) {
         checkCompilation(Insn::MOV_R32_R32, static_cast<void(Assembler::*)(R32, R32)>(&Assembler::mov), dst, src, dst, src);
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
         // read from the source register
-        readReg32(Reg::GPR0, src);
+        readReg32(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get32(regalloc.reg0), get32(regalloc.reg1));
         // write to the destination register
-        writeReg32(dst, Reg::GPR0);
+        writeReg32(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR32M32(R32 dst, const M32& src) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // get the source address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
         // read memory at that address
-        readMem32(Reg::GPR0, addr);
+        readMem32(regalloc.reg0, addr);
         // write to the destination register
-        writeReg32(dst, Reg::GPR0);
+        writeReg32(dst, regalloc.reg0);
         return true;
     }
 
@@ -1047,28 +1078,34 @@ namespace x64 {
             // fall back to long path
             return tryCompileMovR32M32(dst, src);
         }
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // read memory at that address
-        readMem32(Reg::GPR0, (i32)actualAddress);
+        readMem32(regalloc.reg0, (i32)actualAddress);
         // write to the destination register
-        writeReg32(dst, Reg::GPR0);
+        writeReg32(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovM32R32(const M32& dst, R32 src) {
+        // allocate register
+        auto regalloc = allocateReg(src);
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
         // read the value of the register
-        readReg32(Reg::GPR0, src);
+        readReg32(regalloc.reg0, src);
         // write the value the destination address
-        writeMem32(addr, Reg::GPR0);
+        writeMem32(addr, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR64Imm(R64 dst, Imm imm) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // load the immedate
-        loadImm64(Reg::GPR0, imm.as<u64>());
+        loadImm64(regalloc.reg0, imm.as<u64>());
         // write to the destination register
-        writeReg64(dst, Reg::GPR0);
+        writeReg64(dst, regalloc.reg0);
         return true;
     }
 
@@ -1086,20 +1123,26 @@ namespace x64 {
         checkCompilation(Insn::MOV_R64_R64, static_cast<void(Assembler::*)(R64, R64)>(&Assembler::mov), dst, src, dst, src);
         // don't jit "unusual" writes to RSP (longjmp)
         if(dst == R64::RSP && src != R64::RBP) return false;
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
         // read from the source register
-        readReg64(Reg::GPR0, src);
+        readReg64(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get(regalloc.reg0), get(regalloc.reg1));
         // write to the destination register
-        writeReg64(dst, Reg::GPR0);
+        writeReg64(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovR64M64(R64 dst, const M64& src) {
         // get the source address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // read memory at that address
-        readMem64(Reg::GPR0, addr);
+        readMem64(regalloc.reg0, addr);
         // write to the destination register
-        writeReg64(dst, Reg::GPR0);
+        writeReg64(dst, regalloc.reg0);
         return true;
     }
 
@@ -1111,20 +1154,24 @@ namespace x64 {
             // fall back to long path
             return tryCompileMovR64M64(dst, src);
         }
+        // allocate register
+        auto regalloc = allocateReg(dst);
         // read memory at that address
-        readMem64(Reg::GPR0, (i32)actualAddress);
+        readMem64(regalloc.reg0, (i32)actualAddress);
         // write to the destination register
-        writeReg64(dst, Reg::GPR0);
+        writeReg64(dst, regalloc.reg0);
         return true;
     }
 
     bool Compiler::tryCompileMovM64R64(const M64& dst, R64 src) {
         // get the destination address
         Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // allocate register
+        auto regalloc = allocateReg(src);
         // read the value of the register
-        readReg64(Reg::GPR0, src);
+        readReg64(regalloc.reg0, src);
         // write the value to memory
-        writeMem64(addr, Reg::GPR0);
+        writeMem64(addr, regalloc.reg0);
         return true;
     }
 
@@ -1790,6 +1837,8 @@ namespace x64 {
         writeReg32(R32::EDX, Reg::GPR0);
         generator_->pop64(R64::RDX);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -1809,6 +1858,8 @@ namespace x64 {
         writeReg64(R64::RDX, Reg::GPR0);
         generator_->pop64(R64::RDX);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -1828,6 +1879,8 @@ namespace x64 {
         writeReg32(R32::EDX, Reg::GPR0);
         generator_->pop64(R64::RDX);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -1847,6 +1900,8 @@ namespace x64 {
         writeReg64(R64::RDX, Reg::GPR0);
         generator_->pop64(R64::RDX);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -1905,6 +1960,8 @@ namespace x64 {
             writeReg32(R32::EDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         } else {
             generator_->push64(R64::RAX);
@@ -1928,6 +1985,8 @@ namespace x64 {
             writeReg32(R32::EDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         }
     }
@@ -1951,6 +2010,8 @@ namespace x64 {
             writeReg64(R64::RDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         } else {
             generator_->push64(R64::RAX);
@@ -1974,6 +2035,8 @@ namespace x64 {
             writeReg64(R64::RDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         }
     }
@@ -1997,6 +2060,8 @@ namespace x64 {
             writeReg32(R32::EDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         } else {
             generator_->push64(R64::RAX);
@@ -2020,6 +2085,8 @@ namespace x64 {
             writeReg32(R32::EDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         }
     }
@@ -2043,6 +2110,8 @@ namespace x64 {
             writeReg64(R64::RDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         } else {
             generator_->push64(R64::RAX);
@@ -2066,6 +2135,8 @@ namespace x64 {
             writeReg64(R64::RDX, Reg::GPR0);
             generator_->pop64(R64::RDX);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         }
     }
@@ -2486,6 +2557,7 @@ namespace x64 {
             const M64& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the src value at the address
@@ -2949,6 +3021,7 @@ namespace x64 {
             generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         } else {
             // fetch dst address
@@ -2974,6 +3047,7 @@ namespace x64 {
             generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         }
     }
@@ -2997,6 +3071,7 @@ namespace x64 {
             generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         } else {
             // fetch dst address
@@ -3022,6 +3097,7 @@ namespace x64 {
             generator_->mov(get(Reg::GPR0), R64::RAX);
             writeReg64(R64::RAX, Reg::GPR0);
             generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
             return true;
         }
     }
@@ -3046,6 +3122,7 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -3069,6 +3146,7 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -3094,6 +3172,7 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -3105,6 +3184,7 @@ namespace x64 {
         generator_->mov(get(Reg::GPR0), R64::RAX);
         writeReg64(R64::RAX, Reg::GPR0);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -3120,6 +3200,8 @@ namespace x64 {
         writeReg64(R64::RDX, Reg::GPR1);
         generator_->pop64(R64::RDX);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -3135,6 +3217,8 @@ namespace x64 {
         writeReg64(R64::RDX, Reg::GPR1);
         generator_->pop64(R64::RDX);
         generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
         return true;
     }
 
@@ -3323,6 +3407,9 @@ namespace x64 {
         generator_->pop64(R64::RAX);
         generator_->pop64(R64::RCX);
         generator_->pop64(R64::RDI);
+        forceJitRegisterSync(R64::RAX);
+        forceJitRegisterSync(R64::RCX);
+        forceJitRegisterSync(R64::RDI);
         return true;
     }
 
@@ -3361,6 +3448,9 @@ namespace x64 {
         generator_->pop64(R64::RAX);
         generator_->pop64(R64::RCX);
         generator_->pop64(R64::RDI);
+        forceJitRegisterSync(R64::RAX);
+        forceJitRegisterSync(R64::RCX);
+        forceJitRegisterSync(R64::RDI);
         return true;
     }
 
@@ -3400,6 +3490,9 @@ namespace x64 {
         generator_->pop64(R64::RAX);
         generator_->pop64(R64::RCX);
         generator_->pop64(R64::RDI);
+        forceJitRegisterSync(R64::RAX);
+        forceJitRegisterSync(R64::RCX);
+        forceJitRegisterSync(R64::RDI);
         return true;
     }
 
@@ -5440,6 +5533,8 @@ namespace x64 {
 
     R8 Compiler::get8(Compiler::Reg reg) {
         switch(reg) {
+            case Reg::RAX: return R8::AL;
+            case Reg::RDX: return R8::DL;
             case Reg::GPR0: return R8::R8B;
             case Reg::GPR1: return R8::R9B;
             case Reg::MEM_ADDR: return R8::R10B;
@@ -5455,6 +5550,8 @@ namespace x64 {
 
     R16 Compiler::get16(Compiler::Reg reg) {
         switch(reg) {
+            case Reg::RAX: return R16::AX;
+            case Reg::RDX: return R16::DX;
             case Reg::GPR0: return R16::R8W;
             case Reg::GPR1: return R16::R9W;
             case Reg::MEM_ADDR: return R16::R10W;
@@ -5470,6 +5567,8 @@ namespace x64 {
 
     R32 Compiler::get32(Compiler::Reg reg) {
         switch(reg) {
+            case Reg::RAX: return R32::EAX;
+            case Reg::RDX: return R32::EDX;
             case Reg::GPR0: return R32::R8D;
             case Reg::GPR1: return R32::R9D;
             case Reg::MEM_ADDR: return R32::R10D;
@@ -5485,6 +5584,8 @@ namespace x64 {
 
     R64 Compiler::get(Compiler::Reg reg) {
         switch(reg) {
+            case Reg::RAX: return R64::RAX;
+            case Reg::RDX: return R64::RDX;
             case Reg::GPR0: return R64::R8;
             case Reg::GPR1: return R64::R9;
             case Reg::MEM_ADDR: return R64::R10;
@@ -5497,6 +5598,92 @@ namespace x64 {
         assert(false);
         UNREACHABLE();
     }
+
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R8 dst) {
+        if(dst == R8::AL) {
+            return RegisterAllocation1 { Reg::RAX };
+        }
+        if(dst == R8::DL) {
+            return RegisterAllocation1 { Reg::RDX };
+        }
+        (void)dst;
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R16 dst) {
+        if(dst == R16::AX) {
+            return RegisterAllocation1 { Reg::RAX };
+        }
+        if(dst == R16::DX) {
+            return RegisterAllocation1 { Reg::RDX };
+        }
+        (void)dst;
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R32 dst) {
+        if(dst == R32::EAX) {
+            return RegisterAllocation1 { Reg::RAX };
+        }
+        if(dst == R32::EDX) {
+            return RegisterAllocation1 { Reg::RDX };
+        }
+        (void)dst;
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R64 dst) {
+        if(dst == R64::RAX) {
+            return RegisterAllocation1 { Reg::RAX };
+        }
+        if(dst == R64::RDX) {
+            return RegisterAllocation1 { Reg::RDX };
+        }
+        (void)dst;
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R8 dst, R8 src) {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R16 dst, R16 src) {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R32 dst, R32 src) {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R64 dst, R64 src) {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
 
     i32 registerOffset(R8 reg) {
         if((u8)reg < 16) {
@@ -5623,53 +5810,98 @@ namespace x64 {
         };
     }
 
+    bool Compiler::isDirectReg(Reg reg) {
+        return reg == Reg::RAX
+            || reg == Reg::RDX;
+    }
+
     void Compiler::readReg8(Reg dst, R8 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get8(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
         R8 d = get8(dst);
         M8 s = make8(get(Reg::REG_BASE), registerOffset(src));
         generator_->mov(d, s);
     }
 
     void Compiler::writeReg8(R8 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get8(src) == dst) return;
+        }
         M8 d = make8(get(Reg::REG_BASE), registerOffset(dst));
         R8 s = get8(src);
         generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
     }
 
     void Compiler::readReg16(Reg dst, R16 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get16(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
         R16 d = get16(dst);
         M16 s = make16(get(Reg::REG_BASE), registerOffset(src));
         generator_->mov(d, s);
     }
 
     void Compiler::writeReg16(R16 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get16(src) == dst) return;
+        }
         M16 d = make16(get(Reg::REG_BASE), registerOffset(dst));
         R16 s = get16(src);
         generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
     }
 
     void Compiler::readReg32(Reg dst, R32 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get32(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
         R32 d = get32(dst);
         M32 s = make32(get(Reg::REG_BASE), registerOffset(src));
         generator_->mov(d, s);
     }
 
     void Compiler::writeReg32(R32 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get32(src) == dst) return;
+        }
         // we need to zero extend the value, so we write the full 64 bit register
         M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
         R64 s = get(src);
         generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
     }
 
     void Compiler::readReg64(Reg dst, R64 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
         R64 d = get(dst);
         M64 s = make64(get(Reg::REG_BASE), registerOffset(src));
         generator_->mov(d, s);
     }
 
     void Compiler::writeReg64(R64 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get(src) == dst) return;
+        }
         M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
         R64 s = get(src);
         generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
     }
 
     void Compiler::writeReg64(R64 dst, u64 imm, TmpReg tmp) {
@@ -5744,6 +5976,87 @@ namespace x64 {
         M64 d = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
         R64 s = get(src);
         generator_->mov(d, s);
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R8 reg) {
+        if(!directR64()) return;
+        // regalloc is not yet done properly for AH, DH
+        bool isUpperR8 = (reg == R8::AH || reg == R8::DH);
+        if(isUpperR8) {
+            generator_->mov(make64(get(Reg::REG_BASE), registerOffset(containingRegister(reg))), containingRegister(reg));
+            return;
+        }
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get8(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), containingRegister(reg));
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R16 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get16(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), containingRegister(reg));
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R32 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get32(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), containingRegister(reg));
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R64 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), reg);
+    }
+
+    void Compiler::forceJitRegisterSync(R8 reg) {
+        if(!directR64()) return;
+        // regalloc is not yet done properly for AH, DH
+        bool isUpperR8 = (reg == R8::AH || reg == R8::DH);
+        if(isUpperR8) {
+            generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(containingRegister(reg))));
+            return;
+        }
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get8(regalloc.reg0) != reg) return;
+        generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    void Compiler::forceJitRegisterSync(R16 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get16(regalloc.reg0) != reg) return;
+        generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    void Compiler::forceJitRegisterSync(R32 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get32(regalloc.reg0) != reg) return;
+        generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    void Compiler::forceJitRegisterSync(R64 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get(regalloc.reg0) != reg) return;
+        generator_->mov(reg, make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    template<Size size>
+    void Compiler::forceEncodingSync(const M<size>& mem) {
+        (void)mem;
     }
 
     MMX Compiler::get(RegMM reg) {
@@ -6361,9 +6674,13 @@ namespace x64 {
         generator_->push64(get(Reg::JIT_ARGS));
         generator_->push64(get(Reg::MMX_BASE));
         generator_->push64(get(Reg::XMM_BASE));
+        generator_->push64(get(Reg::RAX));
+        generator_->push64(get(Reg::RDX));
     }
 
     void Compiler::restoreRegisters() {
+        generator_->pop64(get(Reg::RDX));
+        generator_->pop64(get(Reg::RAX));
         generator_->pop64(get(Reg::XMM_BASE));
         generator_->pop64(get(Reg::MMX_BASE));
         generator_->pop64(get(Reg::JIT_ARGS));
@@ -6462,9 +6779,25 @@ namespace x64 {
             // This is important !
             generator_->emms();
         }
+        if(directR64()) {
+            // Store the values of R64
+            generator_->mov(make64(get(Reg::REG_BASE), registerOffset(R64::RAX)), R64::RAX);
+            generator_->mov(make64(get(Reg::REG_BASE), registerOffset(R64::RDX)), R64::RDX);
+            // Pop R64 from the stack
+            generator_->pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+        }
     }
 
     void Compiler::loadRegistersFromEmulator() {
+        if(directR64()) {
+            // Push R64 to the stack
+            generator_->push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            // Load the values of R64
+            generator_->mov(R64::RAX, make64(get(Reg::REG_BASE), registerOffset(R64::RAX)));
+            generator_->mov(R64::RDX, make64(get(Reg::REG_BASE), registerOffset(R64::RDX)));
+        }
         if(directMmx()) {
             // Push mmx to the stack on entry (not technically needed by sys-V ABI)
             checkCompilation(Insn::MOVQ_RM64_MMX, static_cast<void(Assembler::*)(const M64&, MMX)>(&Assembler::movq),
@@ -6613,19 +6946,22 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack) {
         if(dst.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg);
             // read the register
-            readReg8(Reg::GPR0, dst.reg);
+            readReg8(regalloc.reg0, dst.reg);
             // perform the binary op
-            func(Reg::GPR0, imm);
+            func(regalloc.reg0, imm);
             if(writeResultBack) {
                 // write back to the register
-                writeReg8(dst.reg, Reg::GPR0);
+                writeReg8(dst.reg, regalloc.reg0);
             }
             return true;
         } else {
             // fetch address
             const M8& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6643,21 +6979,24 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack) {
         if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
             // read the dst
-            readReg8(Reg::GPR0, dst.reg);
+            readReg8(regalloc.reg0, dst.reg);
             // read the src
-            readReg8(Reg::GPR1, src.reg);
+            readReg8(regalloc.reg1, src.reg);
             // perform the binary op
-            func(Reg::GPR0, Reg::GPR1);
+            func(regalloc.reg0, regalloc.reg1);
             if(writeResultBack) {
                 // write back dst
-                writeReg8(dst.reg, Reg::GPR0);
+                writeReg8(dst.reg, regalloc.reg0);
             }
             return true;
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M8& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -6675,6 +7014,7 @@ namespace x64 {
             // fetch src address
             const M8& mem = src.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -6711,6 +7051,7 @@ namespace x64 {
             // fetch address
             const M16& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6743,6 +7084,7 @@ namespace x64 {
             // fetch address
             const M16& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6760,21 +7102,24 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM16RM16(const RM16& dst, const RM16& src, Func&& func, bool writeResultBack) {
         if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
             // read the dst
-            readReg16(Reg::GPR0, dst.reg);
+            readReg16(regalloc.reg0, dst.reg);
             // read the src
-            readReg16(Reg::GPR1, src.reg);
+            readReg16(regalloc.reg1, src.reg);
             // perform the binary op
-            func(Reg::GPR0, Reg::GPR1);
+            func(regalloc.reg0, regalloc.reg1);
             if(writeResultBack) {
                 // write back dst
-                writeReg16(dst.reg, Reg::GPR0);
+                writeReg16(dst.reg, regalloc.reg0);
             }
             return true;
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M16& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -6792,6 +7137,7 @@ namespace x64 {
             // fetch src address
             const M16& mem = src.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -6828,6 +7174,7 @@ namespace x64 {
             // fetch address
             const M32& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6847,19 +7194,22 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM32Imm(const RM32& dst, Imm imm, Func&& func, bool writeResultBack) {
         if(dst.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg);
             // read the register
-            readReg32(Reg::GPR0, dst.reg);
+            readReg32(regalloc.reg0, dst.reg);
             // perform the binary op
-            func(Reg::GPR0, imm);
+            func(regalloc.reg0, imm);
             if(writeResultBack) {
                 // write back to the register
-                writeReg32(dst.reg, Reg::GPR0);
+                writeReg32(dst.reg, regalloc.reg0);
             }
             return true;
         } else {
             // fetch address
             const M32& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6877,21 +7227,24 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM32RM32(const RM32& dst, const RM32& src, Func&& func, bool writeResultBack) {
         if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
             // read the dst
-            readReg32(Reg::GPR0, dst.reg);
+            readReg32(regalloc.reg0, dst.reg);
             // read the src
-            readReg32(Reg::GPR1, src.reg);
+            readReg32(regalloc.reg1, src.reg);
             // perform the binary op
-            func(Reg::GPR0, Reg::GPR1);
+            func(regalloc.reg0, regalloc.reg1);
             if(writeResultBack) {
                 // write back dst
-                writeReg32(dst.reg, Reg::GPR0);
+                writeReg32(dst.reg, regalloc.reg0);
             }
             return true;
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M32& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -6909,6 +7262,7 @@ namespace x64 {
             // fetch src address
             const M32& mem = src.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -6945,6 +7299,7 @@ namespace x64 {
             // fetch address
             const M64& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6964,19 +7319,22 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM64Imm(const RM64& dst, Imm imm, Func&& func, bool writeResultBack) {
         if(dst.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg);
             // read the register
-            readReg64(Reg::GPR0, dst.reg);
+            readReg64(regalloc.reg0, dst.reg);
             // perform the binary op
-            func(Reg::GPR0, imm);
+            func(regalloc.reg0, imm);
             if(writeResultBack) {
                 // write back to the register
-                writeReg64(dst.reg, Reg::GPR0);
+                writeReg64(dst.reg, regalloc.reg0);
             }
             return true;
         } else {
             // fetch address
             const M64& mem = dst.mem;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the value at the address
@@ -6994,20 +7352,23 @@ namespace x64 {
     template<typename Func>
     bool Compiler::forRM64RM64(const RM64& dst, const RM64& src, Func&& func, bool writeResultBack) {
         if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
             // read the dst
-            readReg64(Reg::GPR0, dst.reg);
+            readReg64(regalloc.reg0, dst.reg);
             // read the src
-            readReg64(Reg::GPR1, src.reg);
+            readReg64(regalloc.reg1, src.reg);
             // perform the binary op
-            func(Reg::GPR0, Reg::GPR1);
+            func(regalloc.reg0, regalloc.reg1);
             if(writeResultBack) {
                 // write back dst
-                writeReg64(dst.reg, Reg::GPR0);
+                writeReg64(dst.reg, regalloc.reg0);
             }
             return true;
         } else if(!dst.isReg && src.isReg) {
             // fetch dst address
             const M64& mem = dst.mem;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -7024,6 +7385,7 @@ namespace x64 {
         } else if(dst.isReg && !src.isReg) {
             // fetch src address
             const M64& mem = src.mem;
+            forceEncodingSync(mem);
             // get the address
             Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
             // read the dst value at the address
@@ -7071,6 +7433,7 @@ namespace x64 {
             const M32& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // save the scratch register
             RegMM gpr = toGpr(scratchMmxRegister({ dst }));
             push(gpr);
@@ -7111,6 +7474,7 @@ namespace x64 {
             const M64& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // save the scratch register
             RegMM gpr = toGpr(scratchMmxRegister({ dst }));
             push(gpr);
@@ -7147,6 +7511,7 @@ namespace x64 {
         // fetch address
         if(src.segment == Segment::FS) return false;
         if(src.encoding.index == R64::RIP) return false;
+        forceEncodingSync(src);
         // save the scratch register
         Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
         push(gpr);
@@ -7185,6 +7550,7 @@ namespace x64 {
             const M32& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // read the dst register
             readReg128(toGpr(dst), dst);
             // get the address
@@ -7206,6 +7572,7 @@ namespace x64 {
         // fetch address
         if(src.segment == Segment::FS) return false;
         if(src.encoding.index == R64::RIP) return false;
+        forceEncodingSync(src);
         // save the scratch register
         Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
         push(gpr);
@@ -7244,6 +7611,7 @@ namespace x64 {
             const M64& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // read the dst register
             readReg128(toGpr(dst), dst);
             // get the address
@@ -7279,6 +7647,7 @@ namespace x64 {
             const M128& mem = src.mem;
             if(mem.segment == Segment::FS) return false;
             if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
             // save the scratch register
             Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
             push(gpr);

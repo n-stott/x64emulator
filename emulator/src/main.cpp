@@ -75,6 +75,11 @@ int main(int argc, char* argv[], char* envp[]) {
             .default_value(false)
             .implicit_value(true)
             .nargs(0);
+    parser.add_argument("-O4")
+            .help("JIT optimization level 4")
+            .default_value(false)
+            .implicit_value(true)
+            .nargs(0);
 
     parser.add_argument("-j")
             .help("Number of cores")
@@ -153,6 +158,9 @@ int main(int argc, char* argv[], char* envp[]) {
         }
         if(parser["-O3"] == true) {
             emulator.setOptimizationLevel(3);
+        }
+        if(parser["-O4"] == true) {
+            emulator.setOptimizationLevel(4);
         }
         if(parser["--shm"] == true) {
             emulator.setEnableShm(true);

@@ -78,13 +78,19 @@ IR testE() {
 
 Optimizer deadCodeOnly() {
     Optimizer optimizer;
-    optimizer.addPass<DeadCodeElimination>(DeadCodeElimination::MMX_ALWAYS_LIVE::NO, DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
+    optimizer.addPass<DeadCodeElimination>(
+            DeadCodeElimination::R64_ALWAYS_LIVE::NO,
+            DeadCodeElimination::MMX_ALWAYS_LIVE::NO,
+            DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
     return optimizer;
 }
 
 Optimizer deadCodeAndDelayedReadback() {
     Optimizer optimizer;
-    optimizer.addPass<DeadCodeElimination>(DeadCodeElimination::MMX_ALWAYS_LIVE::NO, DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
+    optimizer.addPass<DeadCodeElimination>(
+            DeadCodeElimination::R64_ALWAYS_LIVE::NO,
+            DeadCodeElimination::MMX_ALWAYS_LIVE::NO,
+            DeadCodeElimination::XMM_ALWAYS_LIVE::NO);
     optimizer.addPass<DelayedReadBackElimination>();
     return optimizer;
 }

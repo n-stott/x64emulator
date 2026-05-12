@@ -91,7 +91,8 @@ namespace x64::ir {
         }
     };
 
-    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis, bool mmxAlwaysLive, bool xmmAlwaysLive) {
+    void computeLiveRegistersAndAddresses(const IR& ir, LivenessAnalysis* analysis,
+            bool r64AlwaysLive, bool mmxAlwaysLive, bool xmmAlwaysLive) {
         assert(!!analysis);
         LivenessAnalysis a;
         std::swap(a, *analysis);
@@ -100,6 +101,12 @@ namespace x64::ir {
         // RSP, RAX and RDX are always live, no other register is live
         static constexpr std::array<R64, 3> alwaysLiveGprs {{
             R64::RSP,
+            R64::RAX,
+            R64::RDX,
+        }};
+
+        // RAX and RDX are always live
+        static constexpr std::array<R64, 2> alwaysLiveR64 {{
             R64::RAX,
             R64::RDX,
         }};
@@ -185,6 +192,11 @@ namespace x64::ir {
         a.gprs.resize(ir.instructions.size()+1);
         for(R64 alwaysLive : alwaysLiveGprs) {
             a.gprs.back().set((u32)alwaysLive);
+        }
+        if(r64AlwaysLive) {
+            for(R64 alwaysLive : alwaysLiveR64) {
+                a.gprs.back().set((u32)alwaysLive);
+            }
         }
         a.mmxs.resize(ir.instructions.size()+1);
         if(mmxAlwaysLive) {
@@ -410,14 +422,18 @@ namespace x64::ir {
         std::swap(a, *analysis);
     }
 
-    DeadCodeElimination::DeadCodeElimination(MMX_ALWAYS_LIVE mmxLiveness, XMM_ALWAYS_LIVE xmmLiveness) :
-            mmxLiveness_(mmxLiveness), xmmLiveness_(xmmLiveness) { }
+    DeadCodeElimination::DeadCodeElimination(R64_ALWAYS_LIVE r64Liveness,
+            MMX_ALWAYS_LIVE mmxLiveness, XMM_ALWAYS_LIVE xmmLiveness) :
+            r64Liveness_(r64Liveness),
+            mmxLiveness_(mmxLiveness),
+            xmmLiveness_(xmmLiveness) { }
     DeadCodeElimination::~DeadCodeElimination() = default;
 
     bool DeadCodeElimination::optimize(IR* ir, Optimizer::Stats* stats) {
         if(!ir) return false;
         if(!analysis_) analysis_ = std::make_unique<LivenessAnalysis>();
         computeLiveRegistersAndAddresses(*ir, analysis_.get(),
+                r64Liveness_ == R64_ALWAYS_LIVE::YES,
                 mmxLiveness_ == MMX_ALWAYS_LIVE::YES,
                 xmmLiveness_ == XMM_ALWAYS_LIVE::YES);
 
