@@ -564,20 +564,20 @@ namespace x64 {
             Reg reg0;
         };
 
-        static RegisterAllocation1 allocateReg(R8 dst);
-        static RegisterAllocation1 allocateReg(R16 dst);
-        static RegisterAllocation1 allocateReg(R32 dst);
-        static RegisterAllocation1 allocateReg(R64 dst);
+        RegisterAllocation1 allocateReg(R8 dst) const;
+        RegisterAllocation1 allocateReg(R16 dst) const;
+        RegisterAllocation1 allocateReg(R32 dst) const;
+        RegisterAllocation1 allocateReg(R64 dst) const;
 
         struct RegisterAllocation2 {
             Reg reg0;
             Reg reg1;
         };
 
-        static RegisterAllocation2 allocateReg(R8 dst, R8 src);
-        static RegisterAllocation2 allocateReg(R16 dst, R16 src);
-        static RegisterAllocation2 allocateReg(R32 dst, R32 src);
-        static RegisterAllocation2 allocateReg(R64 dst, R64 src);
+        RegisterAllocation2 allocateReg(R8 dst, R8 src) const;
+        RegisterAllocation2 allocateReg(R16 dst, R16 src) const;
+        RegisterAllocation2 allocateReg(R32 dst, R32 src) const;
+        RegisterAllocation2 allocateReg(R64 dst, R64 src) const;
 
         struct Mem {
             Reg base;

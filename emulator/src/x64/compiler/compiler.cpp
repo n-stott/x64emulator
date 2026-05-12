@@ -5600,51 +5600,55 @@ namespace x64 {
     }
 
 
-    Compiler::RegisterAllocation1 Compiler::allocateReg(R8 dst) {
-        if(dst == R8::AL) {
-            return RegisterAllocation1 { Reg::RAX };
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R8 dst) const {
+        if(directR64()) {
+            if(dst == R8::AL) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R8::DL) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
         }
-        if(dst == R8::DL) {
-            return RegisterAllocation1 { Reg::RDX };
-        }
-        (void)dst;
         return RegisterAllocation1 { Reg::GPR0 };
     }
 
-    Compiler::RegisterAllocation1 Compiler::allocateReg(R16 dst) {
-        if(dst == R16::AX) {
-            return RegisterAllocation1 { Reg::RAX };
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R16 dst) const {
+        if(directR64()) {
+            if(dst == R16::AX) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R16::DX) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
         }
-        if(dst == R16::DX) {
-            return RegisterAllocation1 { Reg::RDX };
-        }
-        (void)dst;
         return RegisterAllocation1 { Reg::GPR0 };
     }
 
-    Compiler::RegisterAllocation1 Compiler::allocateReg(R32 dst) {
-        if(dst == R32::EAX) {
-            return RegisterAllocation1 { Reg::RAX };
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R32 dst) const {
+        if(directR64()) {
+            if(dst == R32::EAX) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R32::EDX) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
         }
-        if(dst == R32::EDX) {
-            return RegisterAllocation1 { Reg::RDX };
-        }
-        (void)dst;
         return RegisterAllocation1 { Reg::GPR0 };
     }
 
-    Compiler::RegisterAllocation1 Compiler::allocateReg(R64 dst) {
-        if(dst == R64::RAX) {
-            return RegisterAllocation1 { Reg::RAX };
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R64 dst) const {
+        if(directR64()) {
+            if(dst == R64::RAX) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R64::RDX) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
         }
-        if(dst == R64::RDX) {
-            return RegisterAllocation1 { Reg::RDX };
-        }
-        (void)dst;
         return RegisterAllocation1 { Reg::GPR0 };
     }
 
-    Compiler::RegisterAllocation2 Compiler::allocateReg(R8 dst, R8 src) {
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R8 dst, R8 src) const {
         auto dstalloc = allocateReg(dst);
         auto srcalloc = allocateReg(src);
         if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
@@ -5654,7 +5658,7 @@ namespace x64 {
         }
     }
 
-    Compiler::RegisterAllocation2 Compiler::allocateReg(R16 dst, R16 src) {
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R16 dst, R16 src) const {
         auto dstalloc = allocateReg(dst);
         auto srcalloc = allocateReg(src);
         if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
@@ -5664,7 +5668,7 @@ namespace x64 {
         }
     }
 
-    Compiler::RegisterAllocation2 Compiler::allocateReg(R32 dst, R32 src) {
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R32 dst, R32 src) const {
         auto dstalloc = allocateReg(dst);
         auto srcalloc = allocateReg(src);
         if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
@@ -5674,7 +5678,7 @@ namespace x64 {
         }
     }
 
-    Compiler::RegisterAllocation2 Compiler::allocateReg(R64 dst, R64 src) {
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R64 dst, R64 src) const {
         auto dstalloc = allocateReg(dst);
         auto srcalloc = allocateReg(src);
         if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
