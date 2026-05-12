@@ -1123,17 +1123,22 @@ namespace x64 {
     }
 
     void Assembler::test(R8 lhs, R8 rhs) {
+        verify((u8)lhs < 16);
+        verify((u8)rhs < 16);
         if((u8)rhs >= 8 || (u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)rhs >= 8) ? 4 : 0) | (((u8)lhs >= 8) ? 1 : 0)));
+        } else {
+            write8((u8)0x40);
         }
         write8((u8)(0x84));
         write8((u8)(0b11000000 | (encodeRegister(rhs) << 3) | (encodeRegister(lhs))));
     }
 
     void Assembler::test(R8 lhs, u8 imm) {
-        verify(lhs == R8::R8B || lhs == R8::R9B);
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
+        } else {
+            write8((u8)0x40);
         }
         write8((u8)(0xF6));
         write8((u8)(0b11000000 | (0b000 << 3) | (encodeRegister(lhs))));
@@ -1151,7 +1156,6 @@ namespace x64 {
 
     void Assembler::test(R16 lhs, u16 imm) {
         write8(0x66);
-        verify(lhs == R16::R8W || lhs == R16::R9W);
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
         }
@@ -1169,7 +1173,6 @@ namespace x64 {
     }
 
     void Assembler::test(R32 lhs, u32 imm) {
-        verify(lhs == R32::R8D || lhs == R32::R9D);
         if((u8)lhs >= 8) {
             write8((u8)(0x40 | (((u8)lhs >= 8) ? 1 : 0)));
         }
@@ -1326,19 +1329,20 @@ namespace x64 {
     }
 
     void Assembler::xor_(R8 dst, R8 src) {
-        verify(dst == R8::R8B || dst == R8::R9B);
-        verify(src == R8::R8B || src == R8::R9B);
         if((u8)dst >= 8 || (u8)src >= 8) {
             write8((u8)(0x40 | (((u8)src >= 8) ? 4 : 0) | (((u8)dst >= 8) ? 1 : 0) ));
+        } else {
+            write8((u8)0x40);
         }
         write8((u8)0x30);
         write8((u8)(0b11000000 | (encodeRegister(src) << 3) | encodeRegister(dst)));
     }
 
     void Assembler::xor_(R8 dst, i8 imm) {
-        verify(dst == R8::R8B || dst == R8::R9B);
         if((u8)dst >= 8) {
             write8((u8)(0x40 | (((u8)dst >= 8) ? 1 : 0) ));
+        } else {
+            write8((u8)0x40);
         }
         write8((u8)0x80);
         write8((u8)(0b11000000 | (0b110 << 3) | encodeRegister(dst)));

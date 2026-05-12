@@ -4,6 +4,65 @@
 
 using namespace x64;
 
+void testTest8(R8 dst, R8 src) {
+    Assembler assembler;
+    assembler.test(dst, src);
+    std::vector<u8> code = assembler.code();
+    ZydisWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::TEST_RM8_R8);
+    RM8 disdst = ins.op0<RM8>();
+    R8 dissrc = ins.op1<R8>();
+    verify(disdst.isReg);
+    verify(disdst.reg == dst);
+    verify(dissrc == src);
+}
+
+void testTest8(R8 dst, u8 imm) {
+    Assembler assembler;
+    assembler.test(dst, imm);
+    std::vector<u8> code = assembler.code();
+    ZydisWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::TEST_RM8_IMM);
+    RM8 disdst = ins.op0<RM8>();
+    Imm dissrc = ins.op1<Imm>();
+    verify(disdst.isReg);
+    verify(disdst.reg == dst);
+    verify(dissrc.as<u8>() == imm);
+}
+
+void testTest8() {
+    std::array<R8, 14> regs {{
+        R8::AL,
+        R8::CL,
+        R8::DL,
+        R8::BL,
+        R8::SIL,
+        R8::DIL,
+        R8::R8B,
+        R8::R9B,
+        R8::R10B,
+        R8::R11B,
+        R8::R12B,
+        R8::R13B,
+        R8::R14B,
+        R8::R15B,
+    }};
+    for(auto dst : regs) {
+        for(auto src : regs) {
+            testTest8(dst, src);
+        }
+        for(u16 imm = 0; imm < 0x100; ++imm) {
+            testTest8(dst, (u8)imm);
+        }
+    }
+}
+
 void testTest16(R16 dst, R16 src) {
     Assembler assembler;
     assembler.test(dst, src);
@@ -18,6 +77,22 @@ void testTest16(R16 dst, R16 src) {
     verify(disdst.isReg);
     verify(disdst.reg == dst);
     verify(dissrc == src);
+}
+
+void testTest16(R16 dst, u16 imm) {
+    Assembler assembler;
+    assembler.test(dst, imm);
+    std::vector<u8> code = assembler.code();
+    ZydisWrapper disassembler;
+    auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
+    verify(disassembly.instructions.size() == 1);
+    const auto& ins = disassembly.instructions[0];
+    verify(ins.insn() == Insn::TEST_RM16_IMM);
+    RM16 disdst = ins.op0<RM16>();
+    Imm dissrc = ins.op1<Imm>();
+    verify(disdst.isReg);
+    verify(disdst.reg == dst);
+    verify(dissrc.as<u16>() == imm);
 }
 
 void testTest16() {
@@ -42,6 +117,9 @@ void testTest16() {
     for(auto dst : regs) {
         for(auto src : regs) {
             testTest16(dst, src);
+        }
+        for(u32 imm = 0; imm < 0x10000; ++imm) {
+            testTest16(dst, (u16)imm);
         }
     }
 }
@@ -90,6 +168,7 @@ void testTest64() {
 
 int main() {
     try {
+        testTest8();
         testTest16();
         testTest64();
     } catch(...) {
