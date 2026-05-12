@@ -72,7 +72,8 @@ namespace x64::ir {
             case Op::ROL: return "rol";
             case Op::ROR: return "ror";
             case Op::MUL: return "mul";
-            case Op::IMUL: return "imul";
+            case Op::IMUL1: return "imul1";
+            case Op::IMUL2: return "imul2";
             case Op::DIV: return "div";
             case Op::IDIV: return "idiv";
             case Op::TEST: return "test";

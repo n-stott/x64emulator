@@ -507,7 +507,28 @@ namespace x64 {
                     }
                     break;
                 }
-                case ir::Op::IMUL: {
+                case ir::Op::IMUL1: {
+                    auto r32dst = ins.out().as<R32>();
+                    auto r64dst = ins.out().as<R64>();
+                    auto r32src1 = ins.in1().as<R32>();
+                    auto r64src1 = ins.in1().as<R64>();
+                    auto r32src2 = ins.in2().as<R32>();
+                    auto r64src2 = ins.in2().as<R64>();
+
+                    if(r32dst && r32src1 && r32src2) {
+                        assert(r32dst == r32src1);
+                        assert(r32dst == R32::EAX);
+                        assembler_->imul(r32src2.value());
+                    } else if(r64dst && r64src1 && r64src2) {
+                        assert(r64dst == r64src1);
+                        assert(r64dst == R64::RAX);
+                        assembler_->imul(r64src2.value());
+                    } else {
+                        return fail();
+                    }
+                    break;
+                }
+                case ir::Op::IMUL2: {
                     auto r16dst = ins.out().as<R16>();
                     auto r32dst = ins.out().as<R32>();
                     auto r64dst = ins.out().as<R64>();
@@ -522,25 +543,13 @@ namespace x64 {
                     
                     if(r16dst && r16src1 && r16src2) {
                         assert(r16dst == r16src1);
-                        if(r16src2 == R16::AX) {
-                            return fail();
-                        } else {
-                            assembler_->imul(r16dst.value(), r16src2.value());
-                        }
+                        assembler_->imul(r16dst.value(), r16src2.value());
                     } else if(r32dst && r32src1 && r32src2) {
                         assert(r32dst == r32src1);
-                        if(r32src2 == R32::EAX) {
-                            assembler_->imul(r32dst.value());
-                        } else {
-                            assembler_->imul(r32dst.value(), r32src2.value());
-                        }
+                        assembler_->imul(r32dst.value(), r32src2.value());
                     } else if(r64dst && r64src1 && r64src2) {
                         assert(r64dst == r64src1);
-                        if(r64src2 == R64::RAX) {
-                            assembler_->imul(r64dst.value());
-                        } else {
-                            assembler_->imul(r64dst.value(), r64src2.value());
-                        }
+                        assembler_->imul(r64dst.value(), r64src2.value());
                     } else if(r16dst && r16src1 && imm16src2) {
                         assembler_->imul(r16dst.value(), r16src1.value(), imm16src2.value());
                     } else if(r32dst && r32src1 && imm32src2) {

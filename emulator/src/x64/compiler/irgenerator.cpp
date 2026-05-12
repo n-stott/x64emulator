@@ -141,14 +141,14 @@ namespace x64::ir {
 
     void IrGenerator::mul(R32 src) { emit(Op::MUL, src, src, R32::EAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
     void IrGenerator::mul(R64 src) { emit(Op::MUL, src, src, R64::RAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R32 src) { emit(Op::IMUL, src, src, R32::EAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R64 src) { emit(Op::IMUL, src, src, R64::RAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R16 dst, R16 src) { emit(Op::IMUL, dst, dst, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R32 dst, R32 src) { emit(Op::IMUL, dst, dst, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R64 dst, R64 src) { emit(Op::IMUL, dst, dst, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R16 dst, R16 src, u16 imm) { emit(Op::IMUL, dst, src, imm).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R32 dst, R32 src, u32 imm) { emit(Op::IMUL, dst, src, imm).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
-    void IrGenerator::imul(R64 dst, R64 src, u32 imm) { emit(Op::IMUL, dst, src, imm).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R32 src) { emit(Op::IMUL1, R32::EAX, R32::EAX, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R64 src) { emit(Op::IMUL1, R64::RAX, R64::RAX, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R16 dst, R16 src) { emit(Op::IMUL2, dst, dst, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R32 dst, R32 src) { emit(Op::IMUL2, dst, dst, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R64 dst, R64 src) { emit(Op::IMUL2, dst, dst, src).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R16 dst, R16 src, u16 imm) { emit(Op::IMUL2, dst, src, imm).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R32 dst, R32 src, u32 imm) { emit(Op::IMUL2, dst, src, imm).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
+    void IrGenerator::imul(R64 dst, R64 src, u32 imm) { emit(Op::IMUL2, dst, src, imm).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
     void IrGenerator::div(R32 src) { emit(Op::DIV, src, src, R32::EAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
     void IrGenerator::div(R64 src) { emit(Op::DIV, src, src, R64::RAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
     void IrGenerator::idiv(R32 src) { emit(Op::IDIV, src, src, R32::EAX).addImpactedRegister(R64::RAX).addImpactedRegister(R64::RDX); }
