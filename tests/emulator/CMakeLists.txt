@@ -110,6 +110,8 @@ create_simple_test(forkpipe)
 create_simple_test(failexec)
 create_simple_test(posixspawn)
 create_simple_test(getpgid)
+create_simple_test(global)
+create_simple_test(staticlocal)
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/data/opentwice_testfile.txt ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 create_simple_test(opentwice)
