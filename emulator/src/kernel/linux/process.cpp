@@ -6,6 +6,7 @@
 #include "x64/compiler/compiler.h"
 #include "host/host.h"
 #include "fmt/format.h"
+#include <numeric>
 
 namespace kernel::gnulinux {
 
@@ -409,11 +410,15 @@ namespace kernel::gnulinux {
             if(p.second < q.second) return false;
             return (u32)p.first.insn() < (u32)q.first.insn();
         });
+        u64 totalcalls = std::accumulate(instructionCalls.begin(), instructionCalls.end(), (u64)0, [](u64 count, const auto& p) {
+            return count + p.second;
+        });
+        if(totalcalls == 0) totalcalls = 1;
         auto dummy = std::make_pair(x64::X64Instruction::make(0, x64::Insn::EMMS, 0), 0);
         if(instructionCalls.size() >= 50) instructionCalls.resize(50, dummy);
         fmt::println("Top instructions called:");
         for(const auto& p : instructionCalls) {
-            fmt::println("  {:12} : {}", p.second, p.first.toString());
+            fmt::println("  ({:4f}%) {:12} : {}", (100.0*(double)p.second)/(double)totalcalls, p.second, p.first.toString());
         }
     }
 
