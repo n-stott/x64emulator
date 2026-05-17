@@ -42,9 +42,9 @@ namespace x64 {
 
     std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
 #ifdef COMPILER_DEBUG
-        std::vector<Insn> must {{
-            Insn::REP_MOVS_M8_M8
-        }};
+        std::vector<Insn> must {
+
+        };
 
         for(Insn insn : must) {
             if(std::none_of(basicBlock.instructions().begin(), basicBlock.instructions().end(), [=](const auto& ins) {
