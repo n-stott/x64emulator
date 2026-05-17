@@ -2,6 +2,7 @@
 #define ASSEMBLER_H
 
 #include "x64/types.h"
+#include "smallvector.h"
 #include "utils.h"
 #include <deque>
 #include <vector>
@@ -494,7 +495,7 @@ namespace x64 {
             explicit Label(Assembler&);
             size_t labelIndex { 0 };
             size_t positionInCode { (size_t)(-1) };
-            std::vector<size_t> jumpsToMe;
+            SmallVector<size_t, 3> jumpsToMe;
         };
 
         Label& label();

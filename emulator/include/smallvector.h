@@ -19,7 +19,7 @@ public:
 
     size_t size() const { return size_; }
 
-    void push_back(Value value) {
+    void push_back(const Value& value) {
         if(fullVectorEnabled_) {
             fullVector_.push_back(value);
             size_ = fullVector_.size();
@@ -79,6 +79,22 @@ public:
             for(size_t i = 0; i < size_; ++i) {
                 func(inlineVector_[i]);
             }
+        }
+    }
+
+    const Value* begin() const {
+        if(fullVectorEnabled_) {
+            return fullVector_.data();
+        } else {
+            return inlineVector_.data();
+        }
+    }
+
+    const Value* end() const {
+        if(fullVectorEnabled_) {
+            return fullVector_.data() + size_;
+        } else {
+            return inlineVector_.data() + size_;
         }
     }
 
