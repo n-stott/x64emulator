@@ -631,8 +631,6 @@ namespace x64 {
     }
 
     void Assembler::shl(R32 lhs, R8 rhs) {
-        verify(lhs == R32::R8D || lhs == R32::R9D);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -658,8 +656,6 @@ namespace x64 {
     }
 
     void Assembler::shl(R64 lhs, R8 rhs) {
-        verify(lhs == R64::R8 || lhs == R64::R9);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -685,8 +681,6 @@ namespace x64 {
     }
 
     void Assembler::shr(R8 lhs, R8 rhs) {
-        verify(lhs == R8::R8B || lhs == R8::R9B);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -715,8 +709,6 @@ namespace x64 {
     }
 
     void Assembler::shr(R16 lhs, R8 rhs) {
-        verify(lhs == R16::R8W || lhs == R16::R9W);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -745,8 +737,6 @@ namespace x64 {
     }
 
     void Assembler::shr(R32 lhs, R8 rhs) {
-        verify(lhs == R32::R8D || lhs == R32::R9D);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -772,8 +762,6 @@ namespace x64 {
     }
 
     void Assembler::shr(R64 lhs, R8 rhs) {
-        verify(lhs == R64::R8 || lhs == R64::R9);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -800,8 +788,6 @@ namespace x64 {
     }
 
     void Assembler::sar(R16 lhs, R8 rhs) {
-        verify(lhs == R16::R8W || lhs == R16::R9W);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -830,8 +816,6 @@ namespace x64 {
     }
 
     void Assembler::sar(R32 lhs, R8 rhs) {
-        verify(lhs == R32::R8D || lhs == R32::R9D);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -857,8 +841,6 @@ namespace x64 {
     }
 
     void Assembler::sar(R64 lhs, R8 rhs) {
-        verify(lhs == R64::R8 || lhs == R64::R9);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -895,8 +877,6 @@ namespace x64 {
     }
 
     void Assembler::rol(R16 lhs, R8 rhs) {
-        verify(lhs == R16::R8W || lhs == R16::R9W);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -932,8 +912,6 @@ namespace x64 {
     }
 
     void Assembler::rol(R32 lhs, R8 rhs) {
-        verify(lhs == R32::R8D || lhs == R32::R9D);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -953,8 +931,6 @@ namespace x64 {
     }
 
     void Assembler::ror(R32 lhs, R8 rhs) {
-        verify(lhs == R32::R8D || lhs == R32::R9D);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -984,8 +960,6 @@ namespace x64 {
     }
 
     void Assembler::rol(R64 lhs, R8 rhs) {
-        verify(lhs == R64::R8 || lhs == R64::R9);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
@@ -1003,8 +977,6 @@ namespace x64 {
     }
 
     void Assembler::ror(R64 lhs, R8 rhs) {
-        verify(lhs == R64::R8 || lhs == R64::R9);
-        verify(rhs == R8::R8B || rhs == R8::R9B);
         // set cl
         push64(R64::RCX);
         mov(R8::CL, rhs);
