@@ -931,7 +931,6 @@ namespace x64 {
     }
 
     bool Compiler::tryCompileMovR8R8(R8 dst, R8 src) {
-        checkCompilation(Insn::MOV_R8_R8, static_cast<void(Assembler::*)(R8, R8)>(&Assembler::mov), dst, src, dst, src);
         // allocate register
         auto regalloc = allocateReg(dst, src);
         // read from the source register
