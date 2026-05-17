@@ -136,14 +136,35 @@ namespace emulator {
             verify(currentSegment->start() == cpu_.get(x64::R64::RIP));
             currentSegment->onCall(jit, compilationQueue);
             if(currentSegment->jitBasicBlock()) {
-                currentSegment->onJitCall();
-                jit->exec(&cpu_, &mmu_,
-                          (x64::NativeExecPtr)currentSegment->jitBasicBlock()->callEntrypoint(),
-                          time.ticks(),
-                          (void**)&currentSegment,
-                          currentSegment->jitBasicBlock());
-                if(stats_) ++stats_->jitExits_;
-                updateJitStats(*currentSegment);
+#ifdef VM_JIT_DEBUG
+                {
+                    x64::Cpu::State state;
+                    cpu_.save(&state);
+                    fmt::println("\nbefore {}\n", state.regs.toString(true, false, false));
+                }
+#endif
+                static constexpr bool BYPASS_JIT = false;
+                if(!BYPASS_JIT){
+                    currentSegment->onJitCall();
+                    jit->exec(&cpu_, &mmu_,
+                            (x64::NativeExecPtr)currentSegment->jitBasicBlock()->callEntrypoint(),
+                            time.ticks(),
+                            (void**)&currentSegment,
+                            currentSegment->jitBasicBlock());
+                    if(stats_) ++stats_->jitExits_;
+                    updateJitStats(*currentSegment);
+                } else {
+                    currentSegment->onCpuCall();
+                    cpu_.exec(currentSegment->basicBlock());
+                    time.tick(currentSegment->basicBlock().instructions().size());
+                }
+#ifdef VM_JIT_DEBUG
+                {
+                    x64::Cpu::State state;
+                    cpu_.save(&state);
+                    fmt::println("\nafter {}\n", state.regs.toString(true, false, false));
+                }
+#endif
             } else {
 #ifdef MULTIPROCESSING
                 if(currentSegment->basicBlock().hasAtomicInstruction()) {
