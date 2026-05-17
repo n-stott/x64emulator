@@ -5831,6 +5831,7 @@ namespace x64 {
     void Compiler::writeReg8(R8 dst, Reg src) {
         if(directR64()) {
             if(isDirectReg(src) && get8(src) == dst) return;
+            forceEmulatorRegisterSync(dst);
         }
         M8 d = make8(get(Reg::REG_BASE), registerOffset(dst));
         R8 s = get8(src);
