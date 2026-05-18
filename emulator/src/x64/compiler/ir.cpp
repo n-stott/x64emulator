@@ -348,34 +348,44 @@ namespace x64::ir {
     }
 
     void IR::removeInstructions(std::vector<size_t>& positions) {
-        // sort in reverse order !
-        std::sort(positions.begin(), positions.end(), [](size_t a, size_t b) {
-            return a > b;
-        });
-
-        auto removeInstruction = [&](size_t position) {
+        std::sort(positions.begin(), positions.end());
+        auto moveInstruction = [&](size_t current, size_t offset) {
+            assert(offset <= current);
             for(size_t& label : labels) {
-                if(label > position) --label;
+                if(label > current) --label;
             }
-            if(jumpLanding && jumpLanding.value() > position) {
+            if(jumpLanding && jumpLanding.value() > current) {
                 --jumpLanding.value();
             }
-            if(jumpToNext && jumpToNext.value() > position) {
+            if(jumpToNext && jumpToNext.value() > current) {
                 --jumpToNext.value();
             }
-            if(jumpToOther && jumpToOther.value() > position) {
+            if(jumpToOther && jumpToOther.value() > current) {
                 --jumpToOther.value();
             }
-            if(pushCallstack && pushCallstack->first > position) {
+            if(pushCallstack && pushCallstack->first > current) {
                 --pushCallstack->first;
             }
-            if(popCallstack && popCallstack.value() > position) {
+            if(popCallstack && popCallstack.value() > current) {
                 --popCallstack.value();
             }
-            instructions.erase(instructions.begin() + (ptrdiff_t)position);
+            instructions[current-offset] = instructions[current];
         };
-
-        for(size_t position : positions) removeInstruction(position);
+        size_t pos = 0;
+        size_t offset = 0;
+        for(size_t i = 0; i < instructions.size(); ++i) {
+            if(pos >= positions.size() || positions[pos] != i) {
+                // just move the instruction by the offset
+                moveInstruction(i, offset);
+            } else {
+                // increment the offset and position to skip the instruction
+                ++offset;
+                ++pos;
+            }
+        }
+        assert(offset == positions.size());
+        size_t newSize = instructions.size() - positions.size();
+        instructions.erase(instructions.begin() + newSize, instructions.end());
     }
 
     bool Instruction::readsFrom(R64 reg) const {
