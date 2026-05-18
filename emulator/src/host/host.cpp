@@ -709,7 +709,7 @@ namespace kernel::gnulinux {
         std::vector<gid_t> groups((size_t)size, 0);
         int ret = ::getgroups(size, groups.data());
         if(ret < 0) return ErrnoOrBuffer(-errno);
-        assert(ret <= size);
+        assert(size == 0 || ret <= size);
         Buffer buffer(ret*sizeof(gid_t), 0);
         if(size > 0) {
             std::memcpy(buffer.data(), groups.data(), buffer.size());
