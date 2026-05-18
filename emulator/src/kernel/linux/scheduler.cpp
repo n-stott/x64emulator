@@ -641,7 +641,7 @@ namespace kernel::gnulinux {
     u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
         verifyInKernel();
         u32 nbWoken = 0;
-        std::vector<FutexBlocker*> removableBlockers;
+        SmallVector<FutexBlocker*, 2> removableBlockers;
         for(auto& blocker : futexBlockers_) {
             bool canUnblock = blocker.tryUnblock(wordPtr);
             if(!canUnblock) continue;
