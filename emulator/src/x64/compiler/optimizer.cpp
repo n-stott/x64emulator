@@ -231,6 +231,9 @@ namespace x64::ir {
         a.addresses128.resize(ir.instructions.size()+1, (u32)a.allAddresses128.size());
         a.addresses128.back().setAll();
 
+        std::vector<std::optional<std::vector<u32>>> addresses64InvolvingRegister;
+        std::vector<std::optional<std::vector<u32>>> addresses128InvolvingRegister;
+
         for(size_t i = ir.instructions.size(); i --> 0;) {
             const auto& ins = ir.instructions[i];
             a.gprs[i] = a.gprs[i+1];
@@ -240,17 +243,39 @@ namespace x64::ir {
             a.addresses128[i] = a.addresses128[i+1];
 
             auto markAllAddressesInvolvingRegisterAsAlive = [&](R64 reg) {
-                for(size_t k = 0; k < a.allAddresses64.size(); ++k) {
-                    const M64& address = a.allAddresses64[k];
-                    if(address.encoding.base == reg || address.encoding.index == reg) {
-                        a.addresses64[i].set((u32)k);
-                    }
+                if((u32)reg >= addresses64InvolvingRegister.size()) {
+                    addresses64InvolvingRegister.resize((u32)reg+1);
                 }
-                for(size_t k = 0; k < a.allAddresses128.size(); ++k) {
-                    const M128& address = a.allAddresses128[k];
-                    if(address.encoding.base == reg || address.encoding.index == reg) {
-                        a.addresses128[i].set((u32)k);
+                if(!addresses64InvolvingRegister[(u32)reg]) {
+                    std::vector<u32> positions;
+                    for(size_t k = 0; k < a.allAddresses64.size(); ++k) {
+                        const M64& address = a.allAddresses64[k];
+                        if(address.encoding.base == reg || address.encoding.index == reg) {
+                            positions.push_back((u32)k);
+                        }
                     }
+                    addresses64InvolvingRegister[(u32)reg] = std::move(positions);
+                }
+                for(u32 pos : addresses64InvolvingRegister[(u32)reg].value()) {
+                    a.addresses64[i].set((u32)pos);
+                }
+
+
+                if((u32)reg >= addresses128InvolvingRegister.size()) {
+                    addresses128InvolvingRegister.resize((u32)reg+1);
+                }
+                if(!addresses128InvolvingRegister[(u32)reg]) {
+                    std::vector<u32> positions;
+                    for(size_t k = 0; k < a.allAddresses128.size(); ++k) {
+                        const M128& address = a.allAddresses128[k];
+                        if(address.encoding.base == reg || address.encoding.index == reg) {
+                            positions.push_back((u32)k);
+                        }
+                    }
+                    addresses128InvolvingRegister[(u32)reg] = std::move(positions);
+                }
+                for(u32 pos : addresses128InvolvingRegister[(u32)reg].value()) {
+                    a.addresses128[i].set((u32)pos);
                 }
             };
 
