@@ -80,6 +80,8 @@ namespace x64::ir {
         std::vector<M128> allAddresses128;
         std::vector<BitMask<16>> addresses128;
 
+        bool closed { false };
+
         void clear() {
             gprs.clear();
             xmms.clear();
@@ -88,6 +90,52 @@ namespace x64::ir {
             addresses64.clear();
             allAddresses128.clear();
             addresses128.clear();
+            closed = false;
+        }
+
+        template<Size size>
+        static bool compareAddress(const M<size>& a, const M<size>& b) {
+            if((u8)a.segment < (u8)b.segment) return true;
+            if((u8)a.segment > (u8)b.segment) return false;
+            if((u8)a.encoding.base < (u8)b.encoding.base) return true;
+            if((u8)a.encoding.base > (u8)b.encoding.base) return false;
+            if((u8)a.encoding.index < (u8)b.encoding.index) return true;
+            if((u8)a.encoding.index > (u8)b.encoding.index) return false;
+            if((u8)a.encoding.scale < (u8)b.encoding.scale) return true;
+            if((u8)a.encoding.scale > (u8)b.encoding.scale) return false;
+            if(a.encoding.displacement < b.encoding.displacement) return true;
+            if(a.encoding.displacement > b.encoding.displacement) return false;
+            return false;
+        }
+
+        std::optional<u32> address64Index(const M64& address) const {
+            assert(closed);
+            auto it = std::lower_bound(allAddresses64.begin(), allAddresses64.end(), address, compareAddress<Size::QWORD>);
+            if(it == allAddresses64.end() || !(*it == address)) {
+                return {};
+            } else {
+                return (u32)std::distance(allAddresses64.begin(), it);
+            }
+        };
+
+        std::optional<u32> address128Index(const M128& address) const {
+            assert(closed);
+            auto it = std::lower_bound(allAddresses128.begin(), allAddresses128.end(), address, compareAddress<Size::XWORD>);
+            if(it == allAddresses128.end() || !(*it == address)) {
+                return {};
+            } else {
+                return (u32)std::distance(allAddresses128.begin(), it);
+            }
+        };
+
+        void closeAddresses() {
+            static_assert(sizeof(M64) == 12);
+            static_assert(sizeof(M128) == 12);
+            std::sort(allAddresses64.begin(), allAddresses64.end(), compareAddress<Size::QWORD>);
+            std::sort(allAddresses128.begin(), allAddresses128.end(), compareAddress<Size::XWORD>);
+            allAddresses64.erase(std::unique(allAddresses64.begin(), allAddresses64.end()), allAddresses64.end());
+            allAddresses128.erase(std::unique(allAddresses128.begin(), allAddresses128.end()), allAddresses128.end());
+            closed = true;
         }
     };
 
@@ -152,42 +200,7 @@ namespace x64::ir {
                 a.allAddresses128.push_back(m128out.value());
             }
         }
-        // static_assert(sizeof(M64) == 12);
-        // static_assert(sizeof(M128) == 12);
-        // std::sort(a.allAddresses64.begin(), a.allAddresses64.end(), [](const M64& a, const M64& b) {
-        //     std::array<uint32_t, 3> sa;
-        //     memcpy(sa.data(), &a, sizeof(a));
-        //     std::array<uint32_t, 3> sb;
-        //     memcpy(sb.data(), &b, sizeof(b));
-        //     return std::lexicographical_compare(sa.begin(), sa.end(), sb.begin(), sb.end());
-        // });
-        // std::sort(a.allAddresses128.begin(), a.allAddresses128.end(), [](const M128& a, const M128& b) {
-        //     std::array<uint32_t, 3> sa;
-        //     memcpy(sa.data(), &a, sizeof(a));
-        //     std::array<uint32_t, 3> sb;
-        //     memcpy(sb.data(), &b, sizeof(b));
-        //     return std::lexicographical_compare(sa.begin(), sa.end(), sb.begin(), sb.end());
-        // });
-        // a.allAddresses64.erase(std::unique(a.allAddresses64.begin(), a.allAddresses64.end()), a.allAddresses64.end());
-        // a.allAddresses128.erase(std::unique(a.allAddresses128.begin(), a.allAddresses128.end()), a.allAddresses128.end());
-
-        auto address64Index = [&](const M64& address) -> std::optional<u32> {
-            auto it = std::find(a.allAddresses64.begin(), a.allAddresses64.end(), address);
-            if(it == a.allAddresses64.end()) {
-                return {};
-            } else {
-                return (u32)std::distance(a.allAddresses64.begin(), it);
-            }
-        };
-
-        auto address128Index = [&](const M128& address) -> std::optional<u32> {
-            auto it = std::find(a.allAddresses128.begin(), a.allAddresses128.end(), address);
-            if(it == a.allAddresses128.end()) {
-                return {};
-            } else {
-                return (u32)std::distance(a.allAddresses128.begin(), it);
-            }
-        };
+        a.closeAddresses();
 
         a.gprs.resize(ir.instructions.size()+1);
         for(R64 alwaysLive : alwaysLiveGprs) {
@@ -316,13 +329,13 @@ namespace x64::ir {
                     a.gprs[i].set((u32)arg.encoding.base);
                     a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M64>) {
-                    if(auto index = address64Index(arg)) {
+                    if(auto index = a.address64Index(arg)) {
                         a.addresses64[i].reset(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
                     a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M128>) {
-                    if(auto index = address128Index(arg)) {
+                    if(auto index = a.address128Index(arg)) {
                         a.addresses128[i].reset(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
@@ -352,49 +365,49 @@ namespace x64::ir {
                 } else if constexpr(std::is_same_v<T, XMM>) {
                     a.xmms[i].set((u32)arg);
                 } else if constexpr(std::is_same_v<T, M8>) {
-                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                    if(auto index = a.address64Index(M64{arg.segment, arg.encoding})) {
                         a.addresses64[i].set(index.value());
                     }
-                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                    if(auto index = a.address128Index(M128{arg.segment, arg.encoding})) {
                         a.addresses128[i].set(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
                     a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::BYTE, arg.encoding);
                 } else if constexpr(std::is_same_v<T, M16>) {
-                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                    if(auto index = a.address64Index(M64{arg.segment, arg.encoding})) {
                         a.addresses64[i].set(index.value());
                     }
-                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                    if(auto index = a.address128Index(M128{arg.segment, arg.encoding})) {
                         a.addresses128[i].set(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
                     a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::WORD, arg.encoding);
                 } else if constexpr(std::is_same_v<T, M32>) {
-                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                    if(auto index = a.address64Index(M64{arg.segment, arg.encoding})) {
                         a.addresses64[i].set(index.value());
                     }
-                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                    if(auto index = a.address128Index(M128{arg.segment, arg.encoding})) {
                         a.addresses128[i].set(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
                     a.gprs[i].set((u32)arg.encoding.index);
                     markAllAddressesClashingWithEncodingAsAlive(Size::DWORD, arg.encoding);
                 } else if constexpr(std::is_same_v<T, M64>) {
-                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                    if(auto index = a.address64Index(M64{arg.segment, arg.encoding})) {
                         a.addresses64[i].set(index.value());
                     }
-                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                    if(auto index = a.address128Index(M128{arg.segment, arg.encoding})) {
                         a.addresses128[i].set(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
                     a.gprs[i].set((u32)arg.encoding.index);
                 } else if constexpr(std::is_same_v<T, M128>) {
-                    if(auto index = address64Index(M64{arg.segment, arg.encoding})) {
+                    if(auto index = a.address64Index(M64{arg.segment, arg.encoding})) {
                         a.addresses64[i].set(index.value());
                     }
-                    if(auto index = address128Index(M128{arg.segment, arg.encoding})) {
+                    if(auto index = a.address128Index(M128{arg.segment, arg.encoding})) {
                         a.addresses128[i].set(index.value());
                     }
                     a.gprs[i].set((u32)arg.encoding.base);
