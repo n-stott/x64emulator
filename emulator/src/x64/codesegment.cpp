@@ -48,7 +48,7 @@ namespace x64 {
         return nullptr;
     }
 
-    void CodeSegment::FixedDestinationInfo::addSuccessor(CodeSegment* other) {
+    void CodeSegment::FixedDestinationInfo::addSuccessor(CodeSegment* succ) {
         size_t firstAvailableSlot = next.size()-1;
         bool foundSlot = false;
         for(size_t i = 0; i < next.size(); ++i) {
@@ -59,14 +59,14 @@ namespace x64 {
             }
         }
         verify(foundSlot);
-        next[firstAvailableSlot] = other;
+        next[firstAvailableSlot] = succ;
         nextCount[firstAvailableSlot] = 1;
     }
 
-    void CodeSegment::VariableDestinationInfo::addSuccessor(CodeSegment* other) {
-        next.push_back(other);
-        nextJit.push_back(other->jitBasicBlock());
-        nextStart.push_back(other->start());
+    void CodeSegment::VariableDestinationInfo::addSuccessor(CodeSegment* succ) {
+        next.push_back(succ);
+        nextJit.push_back(succ->jitBasicBlock());
+        nextStart.push_back(succ->start());
         nextCount.push_back(1);
     }
 
@@ -82,27 +82,27 @@ namespace x64 {
                 variableDestinationInfo_.nextCount.data());
     }
 
-    void CodeSegment::addSuccessor(CodeSegment* other) {
+    void CodeSegment::addSuccessor(CodeSegment* succ) {
         if(endsWithFixedDestinationJump_) {
-            fixedDestinationInfo_.addSuccessor(other);
+            fixedDestinationInfo_.addSuccessor(succ);
         }
-        auto inserted = successors_.insert(other->start(), other);
+        auto inserted = successors_.insert(succ->start(), succ);
         if(inserted && !endsWithFixedDestinationJump_) {
-            variableDestinationInfo_.addSuccessor(other);
+            variableDestinationInfo_.addSuccessor(succ);
             syncBlockLookupTable();
         }
-        other->predecessors_.insert(std::make_pair(start(), this));
+        succ->predecessors_.insert(std::make_pair(start(), this));
     }
 
-    void CodeSegment::addReturn(CodeSegment* other) {
-        returnDestinationInfo_.addReturn(other);
-        verify(other->start() == end());
-        other->callPredecessors_.insert(start(), this);
+    void CodeSegment::addReturn(CodeSegment* ret) {
+        returnDestinationInfo_.addReturn(ret);
+        verify(ret->start() == end());
+        ret->callPredecessors_.insert(start(), this);
     }
 
-    void CodeSegment::ReturnDestinationInfo::addReturn(CodeSegment* other) {
-        verify(!ret || ret == other);
-        ret = other;
+    void CodeSegment::ReturnDestinationInfo::addReturn(CodeSegment* retseg) {
+        verify(!ret || ret == retseg);
+        ret = retseg;
     }
 
     void CodeSegment::removePredecessor(CodeSegment* other) {
@@ -113,10 +113,10 @@ namespace x64 {
         callPredecessors_.erase(other->start());
     }
 
-    void CodeSegment::FixedDestinationInfo::removeSuccessor(CodeSegment* other) {
+    void CodeSegment::FixedDestinationInfo::removeSuccessor(CodeSegment* succ) {
         for(size_t i = 0; i < next.size(); ++i) {
             const auto* bb1 = next[i];
-            if(bb1 == other) {
+            if(bb1 == succ) {
                 next[i] = nullptr;
                 nextCount[i] = 0;
             }
@@ -130,14 +130,19 @@ namespace x64 {
         nextCount.clear();
     }
 
-    void CodeSegment::removeSucessor(CodeSegment* other) {
+    void CodeSegment::removeSucessor(CodeSegment* succ) {
         if(endsWithFixedDestinationJump_) {
-            fixedDestinationInfo_.removeSuccessor(other);
+            fixedDestinationInfo_.removeSuccessor(succ);
         } else {
-            variableDestinationInfo_.removeSuccessor(other);
+            variableDestinationInfo_.removeSuccessor(succ);
             syncBlockLookupTable();
         }
-        successors_.erase(other->start());
+        successors_.erase(succ->start());
+    }
+
+    void CodeSegment::removeReturn(CodeSegment* ret) {
+        verify(returnDestinationInfo_.ret == ret);
+        returnDestinationInfo_.ret = nullptr;
     }
 
     void CodeSegment::removeFromCaches() {

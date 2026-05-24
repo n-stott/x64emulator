@@ -31,7 +31,7 @@ namespace x64 {
 
         CodeSegment* findNext(u64 address);
 
-        void addSuccessor(CodeSegment* other);
+        void addSuccessor(CodeSegment* succ);
         void addReturn(CodeSegment* other);
         void removeFromCaches();
 
@@ -48,7 +48,8 @@ namespace x64 {
 
     private:
         void removePredecessor(CodeSegment* other);
-        void removeSucessor(CodeSegment* other);
+        void removeSucessor(CodeSegment* succ);
+        void removeReturn(CodeSegment* ret);
         void removeCallPredecessor(CodeSegment* other);
 
         BasicBlock cpuBasicBlock_;
@@ -60,8 +61,8 @@ namespace x64 {
             std::array<u64, CACHE_SIZE> nextCount;
 
             CodeSegment* findNext(u64 address);
-            void addSuccessor(CodeSegment* other);
-            void removeSuccessor(CodeSegment* other);
+            void addSuccessor(CodeSegment* succ);
+            void removeSuccessor(CodeSegment* succ);
         } fixedDestinationInfo_;
 
         struct VariableDestinationInfo {
@@ -70,8 +71,8 @@ namespace x64 {
             std::vector<u64> nextStart;
             std::vector<u64> nextCount;
 
-            void addSuccessor(CodeSegment* other);
-            void removeSuccessor(CodeSegment* other);
+            void addSuccessor(CodeSegment* succ);
+            void removeSuccessor(CodeSegment* succ);
         } variableDestinationInfo_;
 
         struct ReturnDestinationInfo {
