@@ -1093,11 +1093,19 @@ namespace kernel::gnulinux {
     }
 
     int Sys::fork() {
+        if(!kernel_.isForkEnabled()) {
+            warn("fork disabled");
+            return -ENOTSUP;
+        }
         warn("Sys::fork => Sys::clone");
         return (int)clone(CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID, x64::Ptr::null(), x64::Ptr32::null(), x64::Ptr32::null(), 0);
     }
 
     int Sys::vfork() {
+        if(!kernel_.isForkEnabled()) {
+            warn("vfork disabled");
+            return -ENOTSUP;
+        }
         warn("Sys::vfork => Sys::fork");
         return fork();
     }

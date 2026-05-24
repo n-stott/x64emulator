@@ -55,6 +55,12 @@ int main(int argc, char* argv[], char* envp[]) {
             .implicit_value(true)
             .nargs(0);
 
+    parser.add_argument("--nofork")
+            .help("Disable fork syscall")
+            .default_value(false)
+            .implicit_value(true)
+            .nargs(0);
+
     parser.add_argument("-O0")
             .help("JIT optimization level 0")
             .default_value(false)
@@ -164,6 +170,9 @@ int main(int argc, char* argv[], char* envp[]) {
         }
         if(parser["--shm"] == true) {
             emulator.setEnableShm(true);
+        }
+        if(parser["--nofork"] == true) {
+            emulator.setEnableFork(false);
         }
         emulator.setNbCores(parser.get<int>("-j"));
         emulator.setVirtualMemoryAmount(parser.get<unsigned int>("--mem"));

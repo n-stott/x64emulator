@@ -21,6 +21,7 @@ namespace emulator {
         void setJitStatsLevel(int);
         void setOptimizationLevel(int);
         void setEnableShm(bool);
+        void setEnableFork(bool);
         void setNbCores(int nbCores);
         void setVirtualMemoryAmount(unsigned int virtualMemoryInMB);
 
@@ -33,6 +34,7 @@ namespace emulator {
         int jitStatsLevel_ { 0 };
         int optimizationLevel_ { 1 };
         bool enableShm_ { false };
+        bool enableFork_ { true };
         int nbCores_ { 1 };
         unsigned int virtualMemoryInMB_ { 4096};
     };

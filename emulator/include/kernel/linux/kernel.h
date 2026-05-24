@@ -41,6 +41,7 @@ namespace kernel::gnulinux {
         void setJitStatsLevel(int jitStatsLevel);
         void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
+        void setEnableFork(bool enableFork);
         void setNbCores(int nbCores);
         void setProcessVirtualMemory(unsigned int virtualMemoryInMB);
 
@@ -52,6 +53,7 @@ namespace kernel::gnulinux {
         int jitStatsLevel() const { return jitStatsLevel_; }
         int optimizationLevel() const { return optimizationLevel_; }
         bool isShmEnabled() const { return enableShm_; }
+        bool isForkEnabled() const { return enableFork_; }
         int nbCores() const { return nbCores_; }
 
         FS& fs() {
@@ -100,6 +102,7 @@ namespace kernel::gnulinux {
         int jitStatsLevel_ { 0 };
         int optimizationLevel_ { 0 };
         bool enableShm_ { false };
+        bool enableFork_ { false };
         int nbCores_ { 1 };
         unsigned int virtualMemoryInMB_ { 4096 };
 

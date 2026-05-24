@@ -62,6 +62,10 @@ namespace kernel::gnulinux {
         enableShm_ = enableShm;
     }
 
+    void Kernel::setEnableFork(bool enableFork) {
+        enableFork_ = enableFork;
+    }
+
     void Kernel::setNbCores(int nbCores) {
         nbCores_ = nbCores;
     }

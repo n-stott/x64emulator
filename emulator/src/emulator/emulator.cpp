@@ -51,6 +51,10 @@ namespace emulator {
         enableShm_ = enableShm;
     }
 
+    void Emulator::setEnableFork(bool enableFork) {
+        enableFork_ = enableFork;
+    }
+
     void Emulator::setNbCores(int nbCores) {
         nbCores_ = nbCores;
     }
@@ -70,6 +74,7 @@ namespace emulator {
         kernel.setJitStatsLevel(jitStatsLevel_);
         kernel.setOptimizationLevel(optimizationLevel_);
         kernel.setEnableShm(enableShm_);
+        kernel.setEnableFork(enableFork_);
         kernel.setNbCores(nbCores_);
         kernel.setProcessVirtualMemory(virtualMemoryInMB_);
 
