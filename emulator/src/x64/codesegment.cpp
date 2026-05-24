@@ -153,7 +153,7 @@ namespace x64 {
         });
         successors_.clear();
         callPredecessors_.forEach([&](u64, CodeSegment* prev) {
-            prev->removeCallPredecessor(this);
+            prev->removeReturn(this);
         });
         callPredecessors_.clear();
         jitBasicBlock_ = nullptr;
