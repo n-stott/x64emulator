@@ -22,6 +22,9 @@ namespace kernel::gnulinux {
         int allocatedPid();
         int allocatedTid();
 
+        void terminate(int pid);
+        void cleanup();
+
         void dumpSummary() const;
 
     private:
@@ -31,6 +34,8 @@ namespace kernel::gnulinux {
         unsigned int virtualMemoryInMB_ { 4096 };
         Kernel& kernel_;
         std::vector<std::unique_ptr<Process>> processes_;
+        std::vector<std::unique_ptr<Process>> dyingProcesses_;
+        std::vector<std::unique_ptr<Process>> deadProcesses_;
     };
 
 }

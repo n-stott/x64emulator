@@ -2,6 +2,7 @@
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/syscalls.h"
 #include "kernel/linux/process.h"
+#include "kernel/linux/processtable.h"
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
 #include "emulator/vm.h"
@@ -71,6 +72,7 @@ namespace kernel::gnulinux {
                 if(job.ring == RING::KERNEL) {
                     assert(job.atomic == ATOMIC::NO);
                     runKernel(job.thread);
+                    kernel_.processTable().cleanup();
                 } else {
                     if(job.atomic == ATOMIC::NO) {
                         runUserspace(job.thread);
@@ -557,7 +559,7 @@ namespace kernel::gnulinux {
         runnableThreads_.push_back(thread);
     }
 
-    void Scheduler::terminateGroup(const Process* process, int status) {
+    void Scheduler::destroyThreads(const Process* process, int status) {
         verifyInKernel();
         std::vector<Thread*> allThreads;
         forEachThread([&](Thread& t) {
@@ -565,6 +567,11 @@ namespace kernel::gnulinux {
             allThreads.push_back(&t);
         });
         for(Thread* t : allThreads) terminate(t, status);
+    }
+
+    void Scheduler::terminateGroup(const Process* process, int status) {
+        destroyThreads(process, status);
+        kernel_.processTable().terminate(process->pid());
     }
 
     void Scheduler::terminate(Thread* thread, int status) {
@@ -615,6 +622,7 @@ namespace kernel::gnulinux {
             threads.push_back(&t);
         });
         for(Thread* t : threads) terminate(t, 516);
+        kernel_.processTable().terminate(pid);
     }
 
     void Scheduler::sleep(Thread* thread, Timer* timer, PreciseTime targetTime) {

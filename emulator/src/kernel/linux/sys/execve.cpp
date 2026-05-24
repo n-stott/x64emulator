@@ -364,7 +364,7 @@ namespace kernel::gnulinux {
         auto errnoOrThread = errnoOrObjects.transform<Thread*>([&](const ObjectsToLoad& objects) -> ErrnoOr<Thread*> {
             // If we land here, we are committed to exec
 
-            scheduler_.terminateGroup(&process_, 0);
+            scheduler_.destroyThreads(&process_, 0);
             process_.prepareExec();
 
             Auxiliary aux;

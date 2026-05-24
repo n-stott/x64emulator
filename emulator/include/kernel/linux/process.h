@@ -126,6 +126,8 @@ namespace kernel::gnulinux {
             bool jitEnabled_ { false };
         };
 
+        void releaseMemory();
+
     protected:
         void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
         void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;

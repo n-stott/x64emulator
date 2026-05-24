@@ -44,4 +44,24 @@ namespace kernel::gnulinux {
         }
     }
 
+    void ProcessTable::terminate(int pid) {
+        auto it = std::remove_if(processes_.begin(), processes_.end(), [=](const auto& p) {
+            return p->pid() == pid;
+        });
+        verify(it != processes_.end(), "Could not find process to kill");
+        dyingProcesses_.push_back(std::move(*it));
+        processes_.erase(it, processes_.end());
+    }
+
+    void ProcessTable::cleanup() {
+        if(dyingProcesses_.empty()) return;
+        for(auto& process : dyingProcesses_) {
+            process->releaseMemory();
+        }
+        deadProcesses_.insert(deadProcesses_.end(),
+                std::make_move_iterator(dyingProcesses_.begin()),
+                std::make_move_iterator(dyingProcesses_.end()));
+        dyingProcesses_.clear();
+    }
+
 }

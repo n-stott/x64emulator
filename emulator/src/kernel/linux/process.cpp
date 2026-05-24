@@ -429,4 +429,24 @@ namespace kernel::gnulinux {
         return currentWorkDirectory_;
     }
 
+    template<typename T>
+    static void releaseMemoryFrom(T& t) {
+        T t2;
+        std::swap(t, t2);
+    }
+
+    void Process::releaseMemory() {
+        addressSpace_.reset();
+        threads_.clear();
+        deletedThreads_.clear();
+        fds_.reset();
+        jit_.reset();
+        releaseMemoryFrom(disassemblyCache_);
+        releaseMemoryFrom(blockInstructions_);
+        releaseMemoryFrom(codeSegments_);
+        releaseMemoryFrom(codeSegmentsByAddress_);
+        releaseMemoryFrom(symbolProvider_);
+        releaseMemoryFrom(functionNameCache_);
+    }
+
 }

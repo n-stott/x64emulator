@@ -42,6 +42,7 @@ namespace kernel::gnulinux {
 
         void addThread(Thread* thread);
 
+        void destroyThreads(const Process* process, int status);
         void terminateGroup(const Process* process, int status);
         void terminate(Thread* thread, int status);
 
