@@ -91,7 +91,7 @@ namespace x64 {
         bool endsWithFixedDestinationJump_ { false };
         SmallMap<u64, CodeSegment*, 2> successors_;
         std::unordered_map<u64, CodeSegment*> predecessors_;
-        SmallMap<u64, CodeSegment*, 2> callPredecessors_;
+        SmallMap<u64, CodeSegment*, 4> callPredecessors_;
 
         friend class CodeSegmentTest;
     };
