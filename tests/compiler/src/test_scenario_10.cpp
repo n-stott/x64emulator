@@ -24,7 +24,8 @@ int main(int, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    Compiler compiler(CompilerOptions{4});
+    CompilerOptions compileroptions = CompilerOptions::full();
+    Compiler compiler(compileroptions);
     auto nativebb = compiler.tryCompile(bb);
     if(!nativebb) return 1;
 
@@ -40,8 +41,9 @@ int main(int, char**) {
     std::array<u64, 0x100> jitBasicBlockData;
     std::fill(jitBasicBlockData.begin(), jitBasicBlockData.end(), 0);
 
-    auto jit = Jit::tryCreate();
-    jit->setOptimizationLevel(4);
+    Jit::Options options = Jit::Options::full();
+    // options.directGpr = false;
+    auto jit = Jit::tryCreate(options);
 
     auto compare = [&](u8 bl, u64 rdx, u8 r8b) {
         cpu.set(R8::BL, bl);

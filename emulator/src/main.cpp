@@ -71,18 +71,19 @@ int main(int argc, char* argv[], char* envp[]) {
             .default_value(false)
             .implicit_value(true)
             .nargs(0);
-    parser.add_argument("-O2")
-            .help("JIT optimization level 2")
+
+    parser.add_argument("--jitdirectgpr")
+            .help("Use directly mapped GPRs in the jit")
             .default_value(false)
             .implicit_value(true)
             .nargs(0);
-    parser.add_argument("-O3")
-            .help("JIT optimization level 3")
+    parser.add_argument("--jitdirectmmx")
+            .help("Use directly mapped MMX registers in the jit")
             .default_value(false)
             .implicit_value(true)
             .nargs(0);
-    parser.add_argument("-O4")
-            .help("JIT optimization level 4")
+    parser.add_argument("--jitdirectxmm")
+            .help("Use directly mapped XMM registers in the jit")
             .default_value(false)
             .implicit_value(true)
             .nargs(0);
@@ -159,14 +160,14 @@ int main(int argc, char* argv[], char* envp[]) {
         if(parser["-O1"] == true) {
             emulator.setOptimizationLevel(1);
         }
-        if(parser["-O2"] == true) {
-            emulator.setOptimizationLevel(2);
+        if(parser["--jitdirectgpr"] == true) {
+            emulator.setEnableJitDirectGpr(true);
         }
-        if(parser["-O3"] == true) {
-            emulator.setOptimizationLevel(3);
+        if(parser["--jitdirectmmx"] == true) {
+            emulator.setEnableJitDirectMmx(true);
         }
-        if(parser["-O4"] == true) {
-            emulator.setOptimizationLevel(4);
+        if(parser["--jitdirectxmm"] == true) {
+            emulator.setEnableJitDirectXmm(true);
         }
         if(parser["--shm"] == true) {
             emulator.setEnableShm(true);

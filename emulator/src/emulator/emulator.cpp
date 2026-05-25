@@ -39,6 +39,18 @@ namespace emulator {
         enableJitCallChaining_ = enableJitCallChaining;
     }
 
+    void Emulator::setEnableJitDirectGpr(bool enableJitDirectGpr) {
+        enableJitDirectGpr_ = enableJitDirectGpr;
+    }
+
+    void Emulator::setEnableJitDirectMmx(bool enableJitDirectMmx) {
+        enableJitDirectMmx_ = enableJitDirectMmx;
+    }
+
+    void Emulator::setEnableJitDirectXmm(bool enableJitDirectXmm) {
+        enableJitDirectXmm_ = enableJitDirectXmm;
+    }
+
     void Emulator::setJitStatsLevel(int jitStatsLevel) {
         jitStatsLevel_ = jitStatsLevel;
     }
@@ -64,15 +76,19 @@ namespace emulator {
     }
 
     int Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        kernel::gnulinux::Kernel kernel;
+        kernel::gnulinux::Kernel::Options options;
+        options.jit.enabled = enableJit_;
+        options.jit.chainingEnabled = enableJitChaining_;
+        options.jit.callChainingEnabled = enableJitCallChaining_;
+        options.jit.optimizationLevel = optimizationLevel_;
+        options.jit.directGpr = enableJitDirectGpr_;
+        options.jit.directMmx = enableJitDirectMmx_;
+        options.jit.directXmm = enableJitDirectXmm_;
+        kernel::gnulinux::Kernel kernel(options);
         
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);
-        kernel.setEnableJit(enableJit_);
-        kernel.setEnableJitChaining(enableJitChaining_);
-        kernel.setEnableJitCallChaining(enableJitCallChaining_);
         kernel.setJitStatsLevel(jitStatsLevel_);
-        kernel.setOptimizationLevel(optimizationLevel_);
         kernel.setEnableShm(enableShm_);
         kernel.setEnableFork(enableFork_);
         kernel.setNbCores(nbCores_);

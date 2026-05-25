@@ -299,11 +299,8 @@ namespace kernel::gnulinux {
         symbolProvider_ = {};
         functionNameCache_ = {};
         if(!!jit_) {
-            bool jitChainingEnabled = jit_->jitChainingEnabled();
-            bool jitCallChainingEnabled = jit_->jitCallChainingEnabled();
-            jit_ = x64::Jit::tryCreate();
-            jit_->setEnableJitChaining(jitChainingEnabled);
-            jit_->setEnableJitCallChaining(jitCallChainingEnabled);
+            auto previousOptions = jit_->options();
+            jit_ = x64::Jit::tryCreate(previousOptions);
         }
         children_ = {};
         exitedChildren_ = {};

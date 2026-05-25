@@ -26,7 +26,19 @@ namespace kernel::gnulinux {
 
     class Kernel {
     public:
-        explicit Kernel();
+        struct Options {
+            struct Jit {
+                bool enabled { false };
+                bool chainingEnabled { false };
+                bool callChainingEnabled { false };
+                int optimizationLevel { 0 };
+                bool directGpr { false };
+                bool directMmx { false };
+                bool directXmm { false };
+            } jit;
+        };
+
+        explicit Kernel(Options);
         ~Kernel();
 
         int run(const std::string& programFilePath,
@@ -35,11 +47,7 @@ namespace kernel::gnulinux {
 
         void setProfiling(bool isProfiling);
         void setLogSyscalls(bool logSyscalls);
-        void setEnableJit(bool enableJit);
-        void setEnableJitChaining(bool enableJitChaining);
-        void setEnableJitCallChaining(bool enableJitCallChaining);
         void setJitStatsLevel(int jitStatsLevel);
-        void setOptimizationLevel(int level);
         void setEnableShm(bool enableShm);
         void setEnableFork(bool enableFork);
         void setNbCores(int nbCores);
@@ -47,11 +55,7 @@ namespace kernel::gnulinux {
 
         bool isProfiling() const { return isProfiling_; }
         bool logSyscalls() const { return logSyscalls_; }
-        bool isJitEnabled() const { return enableJit_; }
-        bool isJitChainingEnabled() const { return enableJitChaining_; }
-        bool isJitCallChainingEnabled() const { return enableJitCallChaining_; }
         int jitStatsLevel() const { return jitStatsLevel_; }
-        int optimizationLevel() const { return optimizationLevel_; }
         bool isShmEnabled() const { return enableShm_; }
         bool isForkEnabled() const { return enableFork_; }
         int nbCores() const { return nbCores_; }
@@ -96,11 +100,8 @@ namespace kernel::gnulinux {
 
         bool logSyscalls_ { false };
         bool isProfiling_ { false };
-        bool enableJit_ { false };
-        bool enableJitChaining_ { false };
-        bool enableJitCallChaining_ { false };
+        Options options_;
         int jitStatsLevel_ { 0 };
-        int optimizationLevel_ { 0 };
         bool enableShm_ { false };
         bool enableFork_ { false };
         int nbCores_ { 1 };

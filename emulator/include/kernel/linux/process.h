@@ -64,18 +64,12 @@ namespace kernel::gnulinux {
         x64::CompilationQueue& compilationQueue() { return compilationQueue_; }
     
         bool jitEnabled() const { return !!jit_; }
-        void setEnableJit(bool enable) {
-            if(!enable) {
+        void setJitOptions(const x64::Jit::Options& options) {
+            if(!options.enabled) {
                 jit_.reset();
+            } else {
+                jit_ = x64::Jit::tryCreate(options);
             }
-        }
-
-        void setEnableJitChaining(bool enable) {
-            if(!!jit_) jit_->setEnableJitChaining(enable);
-        }
-
-        void setEnableJitCallChaining(bool enable) {
-            if(!!jit_) jit_->setEnableJitCallChaining(enable);
         }
 
         bool jitChainingEnabled() const {
@@ -86,10 +80,6 @@ namespace kernel::gnulinux {
         void setJitStatsLevel(int level) { jitStatsLevel_ = level; }
         int jitStatsLevel() const { return jitStatsLevel_; }
         x64::JitStats* jitStats() { return &jitStats_; }
-
-        void setOptimizationLevel(int level) {
-            if(!!jit_) jit_->setOptimizationLevel(level);
-        }
 
         Process* tryGetChild(int pid) const {
             auto it = std::find_if(children_.begin(), children_.end(), [&](Process* process) {

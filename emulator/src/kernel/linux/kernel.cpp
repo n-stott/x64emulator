@@ -10,6 +10,7 @@
 #include "kernel/linux/thread.h"
 #include "kernel/timers.h"
 #include "host/host.h"
+#include "x64/compiler/jit.h"
 #include "x64/mmu.h"
 #include "scopeguard.h"
 #include "verify.h"
@@ -19,7 +20,7 @@
 
 namespace kernel::gnulinux {
 
-    Kernel::Kernel() {
+    Kernel::Kernel(Options options) : options_(options) {
         fs_ = std::make_unique<FS>();
         shm_ = std::make_unique<SharedMemory>();
         scheduler_ = std::make_unique<Scheduler>(*this);
@@ -38,24 +39,8 @@ namespace kernel::gnulinux {
         isProfiling_ = isProfiling;
     }
 
-    void Kernel::setEnableJit(bool enableJit) {
-        enableJit_ = enableJit;
-    }
-
-    void Kernel::setEnableJitChaining(bool enableJitChaining) {
-        enableJitChaining_ = enableJitChaining;
-    }
-
-    void Kernel::setEnableJitCallChaining(bool enableJitCallChaining) {
-        enableJitCallChaining_ = enableJitCallChaining;
-    }
-
     void Kernel::setJitStatsLevel(int jitStatsLevel) {
         jitStatsLevel_ = jitStatsLevel;
-    }
-
-    void Kernel::setOptimizationLevel(int level) {
-        optimizationLevel_ = level;
     }
 
     void Kernel::setEnableShm(bool enableShm) {
@@ -89,10 +74,15 @@ namespace kernel::gnulinux {
                 return errnoOrThread.value_or(nullptr);
             }();
             verify(mainThread, fmt::format("Unable to exec \"{}\"", programFilePath));
-            mainProcess->setEnableJit(isJitEnabled());
-            mainProcess->setEnableJitChaining(isJitChainingEnabled());
-            mainProcess->setEnableJitCallChaining(isJitCallChainingEnabled());
-            mainProcess->setOptimizationLevel(optimizationLevel());
+            x64::Jit::Options jitoptions;
+            jitoptions.enabled = options_.jit.enabled;
+            jitoptions.chainingEnabled = options_.jit.chainingEnabled;
+            jitoptions.callChainingEnabled = options_.jit.callChainingEnabled;
+            jitoptions.optimizationLevel = options_.jit.optimizationLevel;
+            jitoptions.directGpr = options_.jit.directGpr;
+            jitoptions.directMmx = options_.jit.directMmx;
+            jitoptions.directXmm = options_.jit.directXmm;
+            mainProcess->setJitOptions(jitoptions);
             mainProcess->setJitStatsLevel(jitStatsLevel());
             scheduler().run();
             exitCode = mainThread->exitStatus();

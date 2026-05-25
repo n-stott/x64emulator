@@ -1043,7 +1043,6 @@ namespace kernel::gnulinux {
                 verify(!!process, "Unable to create new process");
                 return kernel_.processTable().addProcess(std::move(process));
             }();
-            newProcess->setEnableJit(currentProcess_->jitEnabled());
             bool flagsOk = checkCloneFlagsFork(cloneFlags);
             if(!flagsOk) {
                 if(kernel_.logSyscalls()) {
@@ -2531,7 +2530,6 @@ namespace kernel::gnulinux {
                 verify(!!process, "Unable to create new process");
                 return kernel_.processTable().addProcess(std::move(process));
             }();
-            newProcess->setEnableJit(currentProcess_->jitEnabled());
             bool flagsOk = checkCloneFlagsFork(cloneFlags);
             if(!flagsOk) {
                 if(kernel_.logSyscalls()) {

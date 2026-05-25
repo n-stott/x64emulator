@@ -22,6 +22,18 @@ namespace x64 {
 
     struct CompilerOptions {
         int optimizationLevel { 0 };
+        bool directGpr { false };
+        bool directMmx { false };
+        bool directXmm { false };
+
+        static CompilerOptions full() {
+            return CompilerOptions {
+                1,
+                true,
+                true,
+                true,
+            };
+        }
     };
 
     class Compiler {
@@ -633,9 +645,9 @@ namespace x64 {
         std::unique_ptr<Assembler> assembler_;
         CompilerOptions options_;
 
-        bool directR64() const { return options_.optimizationLevel >= 4; }
-        bool directMmx() const { return options_.optimizationLevel >= 3; }
-        bool directXmm() const { return options_.optimizationLevel >= 2; }
+        bool directR64() const { return options_.directGpr; }
+        bool directMmx() const { return options_.directMmx; }
+        bool directXmm() const { return options_.directXmm; }
 
         void readReg8(Reg dst, R8 src);
         void writeReg8(R8 dst, Reg src);

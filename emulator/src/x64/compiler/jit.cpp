@@ -12,8 +12,25 @@ namespace x64 {
         return jit;
     }
 
+    std::unique_ptr<Jit> Jit::tryCreate(Options options) {
+        auto jit = std::unique_ptr<Jit>(new Jit(options));
+        jit->tryCreateJitTrampoline();
+        if(!jit->jitTrampoline_) return {};
+        return jit;
+    }
+
     Jit::Jit() {
         compiler_ = std::make_unique<x64::Compiler>(x64::CompilerOptions { optimizationLevel_ });
+        std::fill(callstack_.begin(), callstack_.end(), nullptr);
+    }
+
+    Jit::Jit(Options options) : options_(options) {
+        compiler_ = std::make_unique<x64::Compiler>(CompilerOptions {
+            options.optimizationLevel,
+            options.directGpr,
+            options.directMmx,
+            options.directXmm,
+        });
         std::fill(callstack_.begin(), callstack_.end(), nullptr);
     }
 
@@ -29,17 +46,7 @@ namespace x64 {
         auto jit = Jit::tryCreate();
         if(!jit) return {};
         jit->callstackSize_ = callstackSize_;
-        jit->jitChainingEnabled_ = jitChainingEnabled_;
-        jit->optimizationLevel_ = optimizationLevel_;
         return jit;
-    }
-
-    void Jit::setOptimizationLevel(int level) {
-        optimizationLevel_ = level;
-        compiler_ = std::make_unique<x64::Compiler>(x64::CompilerOptions { optimizationLevel_ });
-        blocks_.clear();
-        jitTrampoline_.reset();
-        tryCreateJitTrampoline();
     }
 
     void Jit::tryCreateJitTrampoline() {

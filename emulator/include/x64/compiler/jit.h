@@ -182,18 +182,37 @@ namespace x64 {
     class Jit {
     public:
         static std::unique_ptr<Jit> tryCreate();
+
+        struct Options {
+            bool enabled { false };
+            bool chainingEnabled { false };
+            bool callChainingEnabled { false };
+            int optimizationLevel { 0 };
+            bool directGpr { false };
+            bool directMmx { false };
+            bool directXmm { false };
+
+            static Options full() {
+                return Options {
+                    true,
+                    true,
+                    true,
+                    1,
+                    true,
+                    true,
+                    true,
+                };
+            }
+        };
+        static std::unique_ptr<Jit> tryCreate(Options options);
+
         ~Jit();
 
         std::unique_ptr<Jit> clone() const;
 
-        void setEnableJitChaining(bool enable) { jitChainingEnabled_ = enable; }
-        bool jitChainingEnabled() const { return jitChainingEnabled_; }
-
-        void setEnableJitCallChaining(bool enable) { jitCallChainingEnabled_ = enable; }
-        bool jitCallChainingEnabled() const { return jitCallChainingEnabled_; }
-
-        void setOptimizationLevel(int level);
-        int optimizationLevel() const { return optimizationLevel_; }
+        const Options& options() const { return options_; }
+        bool jitChainingEnabled() const { return options_.chainingEnabled; }
+        bool jitCallChainingEnabled() const { return options_.callChainingEnabled; }
 
         JitBasicBlock* tryCompile(const x64::BasicBlock& bb, void* currentBb);
 
@@ -212,6 +231,7 @@ namespace x64 {
             
     private:
         Jit();
+        explicit Jit(Options);
         void tryCreateJitTrampoline();
 
         ExecutableMemoryAllocator allocator_;
@@ -220,8 +240,7 @@ namespace x64 {
         std::unique_ptr<x64::Compiler> compiler_;
 
         std::vector<std::unique_ptr<JitBasicBlock>> blocks_;
-        bool jitChainingEnabled_ { false };
-        bool jitCallChainingEnabled_ { false };
+        Options options_;
 
         std::array<JitBasicBlock*, 0x1000> callstack_;
         u64 callstackSize_ { 0 };
