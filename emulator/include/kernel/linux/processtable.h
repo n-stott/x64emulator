@@ -19,6 +19,8 @@ namespace kernel::gnulinux {
         Process* createMainProcess();
         Process* addProcess(std::unique_ptr<Process>);
 
+        Process* findByPid(int pid);
+
         int allocatedPid();
         int allocatedTid();
 

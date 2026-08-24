@@ -64,4 +64,14 @@ namespace kernel::gnulinux {
         dyingProcesses_.clear();
     }
 
+    Process* ProcessTable::findByPid(int pid) {
+        auto it = std::find_if(processes_.begin(), processes_.end(), [=](const auto& p) {
+            return p->pid() == pid;
+        });
+        if(it != processes_.end()) {
+            return it->get();
+        }
+        return nullptr;
+    }
+
 }

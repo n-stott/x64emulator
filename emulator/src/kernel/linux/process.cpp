@@ -44,6 +44,8 @@ namespace kernel::gnulinux {
 
     Process::Process(int pid, std::shared_ptr<x64::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
             pid_(pid),
+            pgid_(pid),
+            sid_(pid),
             addressSpace_(std::move(addressSpace)),
             fs_(fs),
             fds_(fds),
@@ -83,6 +85,8 @@ namespace kernel::gnulinux {
         int newpid = processTable.allocatedPid();
         auto fds = fds_->clone();
         auto process = std::unique_ptr<Process>(new Process(newpid, std::move(addressSpace), fs_, std::move(fds), currentWorkDirectory_));
+        process->pgid_ = pgid_;
+        process->sid_ = sid_;
         if(flags.test(CloneFlags::VM)) {
             process->blockInstructions_ = blockInstructions_;
             codeSegments_.forEachInterval([&](u64 start, u64 end) {

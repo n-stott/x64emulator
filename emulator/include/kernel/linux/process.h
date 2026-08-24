@@ -36,9 +36,10 @@ namespace kernel::gnulinux {
         std::unique_ptr<Process> clone(ProcessTable&, BitFlags<CloneFlags> flags);
         void prepareExec();
 
-        int pid() const {
-            return pid_;
-        }
+        int pid() const { return pid_; }
+        int pgid() const { return pgid_; }
+        void setpgid(int pgid) { pgid_ = pgid; }
+        int sid() const { return sid_; }
     
         x64::AddressSpace& addressSpace() { return *addressSpace_; }
         size_t addressSpaceRefCount() const { return addressSpace_.use_count(); }
@@ -133,7 +134,9 @@ namespace kernel::gnulinux {
         void dumpInstructionStats(const std::vector<const x64::CodeSegment*>& blocks) const;
         
         // Information
-        int pid_;
+        int pid_ { 0 };
+        int pgid_ { 0 };
+        int sid_ { 0 };
 
         // Memory
         std::shared_ptr<x64::AddressSpace> addressSpace_;

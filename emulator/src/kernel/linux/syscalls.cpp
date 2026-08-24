@@ -1473,8 +1473,11 @@ namespace kernel::gnulinux {
     int Sys::setpgid(pid_t pid, pid_t pgid) {
         verify(!!currentThread_);
         if(pid == 0 || pid == currentThread_->description().pid) {
-            verify(pgid == 0 || pgid == currentThread_->description().pid, "setpgid non-process pgid not supported");
-            // nothing to do
+            Process* other = kernel_.processTable().findByPid(pgid);
+            if(!other) return -ESRCH;
+            if(other->sid() != currentProcess_->sid()) return -EPERM;
+            currentProcess_->setpgid(pgid);
+            return 0;
         }
         if(Process* child = currentProcess_->tryGetChild(pid)) {
             warn("setpgid of child not implemented");
