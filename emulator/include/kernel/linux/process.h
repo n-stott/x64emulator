@@ -5,11 +5,11 @@
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
+#include "mem/mmu.h"
 #include "x64/compiler/jit.h"
 #include "x64/compiler/jitstats.h"
 #include "x64/disassembler/disassemblycache.h"
 #include "x64/codesegment.h"
-#include "x64/mmu.h"
 #include "intervalvector.h"
 #include "verify.h"
 #include <memory>
@@ -24,7 +24,7 @@ namespace kernel::gnulinux {
 
     class ProcessTable;
 
-    class Process : public x64::Mmu::Callback {
+    class Process : public mem::Mmu::Callback {
     public:
         static std::unique_ptr<Process> tryCreate(ProcessTable&, u32 addressSpaceSizeInMB, FS& fs);
         ~Process();
@@ -41,7 +41,7 @@ namespace kernel::gnulinux {
         void setpgid(int pgid) { pgid_ = pgid; }
         int sid() const { return sid_; }
     
-        x64::AddressSpace& addressSpace() { return *addressSpace_; }
+        mem::AddressSpace& addressSpace() { return *addressSpace_; }
         size_t addressSpaceRefCount() const { return addressSpace_.use_count(); }
 
         Thread* addThread(ProcessTable& processTable);
@@ -57,7 +57,7 @@ namespace kernel::gnulinux {
         std::string functionName(u64 address);
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols);
 
-        x64::CodeSegment* fetchSegment(x64::Mmu& mmu, u64 address);
+        x64::CodeSegment* fetchSegment(mem::Mmu& mmu, u64 address);
 
         void dumpGraphviz(std::ostream&) const;
 
@@ -120,12 +120,12 @@ namespace kernel::gnulinux {
         void releaseMemory();
 
     protected:
-        void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
-        void onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) override;
-        void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) override;
+        void onRegionCreation(u64 base, u64 length, BitFlags<mem::PROT> prot) override;
+        void onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) override;
+        void onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) override;
 
     private:
-        Process(int pid, std::shared_ptr<x64::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
+        Process(int pid, std::shared_ptr<mem::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
 
         void notifyChildCreated(Process* process);
         void notifyChildExited(Process* process, int status, std::optional<int> signal);
@@ -139,7 +139,7 @@ namespace kernel::gnulinux {
         int sid_ { 0 };
 
         // Memory
-        std::shared_ptr<x64::AddressSpace> addressSpace_;
+        std::shared_ptr<mem::AddressSpace> addressSpace_;
 
         // Tasks
         std::vector<std::unique_ptr<Thread>> threads_;

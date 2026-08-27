@@ -2,10 +2,10 @@
 #define VM_H
 
 #include "emulator/vmthread.h"
+#include "mem/mmu.h"
 #include "x64/compiler/jit.h"
 #include "x64/codesegment.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "intervalvector.h"
 #include "utils.h"
 #include <deque>
@@ -30,7 +30,7 @@ namespace emulator {
 
     class VM {
     public:
-        explicit VM(x64::Mmu& mmu, x64::JitStats* stats);
+        explicit VM(mem::Mmu& mmu, x64::JitStats* stats);
         ~VM();
 
         void execute(VMThread* thread);
@@ -60,7 +60,7 @@ namespace emulator {
         void updateJitStats(const x64::CodeSegment&);
 
         x64::Cpu cpu_;
-        x64::Mmu& mmu_;
+        mem::Mmu& mmu_;
 
         VMThread* currentThread_ { nullptr };
         x64::JitStats* stats_ { nullptr };

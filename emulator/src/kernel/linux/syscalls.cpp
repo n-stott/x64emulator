@@ -9,9 +9,9 @@
 #include "kernel/linux/syscalls.h"
 #include "kernel/linux/thread.h"
 #include "host/host.h"
+#include "mem/mmu.h"
 #include "scopeguard.h"
 #include "verify.h"
-#include "x64/mmu.h"
 #include "x64/cpu.h"
 #include <fmt/ranges.h>
 #include <fmt/color.h>
@@ -42,7 +42,7 @@ namespace kernel::gnulinux {
 
     void Sys::syscall(Process* process, Thread* thread) {
         std::scoped_lock<std::mutex> lock(mutex_);
-        x64::Mmu mmu(process->addressSpace());
+        mem::Mmu mmu(process->addressSpace());
         currentProcess_ = process;
         currentThread_ = thread;
         mmu_ = &mmu;
@@ -238,7 +238,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    ssize_t Sys::read(int fd, x64::Ptr8 buf, size_t count) {
+    ssize_t Sys::read(int fd, mem::Ptr8 buf, size_t count) {
         auto descriptor = currentProcess_->fds()[fd];
         auto readResult = kernel_.fs().read(descriptor, count);
 
@@ -265,7 +265,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    ssize_t Sys::write(int fd, x64::Ptr8 buf, size_t count) {
+    ssize_t Sys::write(int fd, mem::Ptr8 buf, size_t count) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         auto descriptor = currentProcess_->fds()[fd];
         ssize_t ret = kernel_.fs().write(descriptor, buffer.data(), buffer.size());
@@ -276,7 +276,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::open(x64::Ptr pathname, int flags, mode_t mode) {
+    int Sys::open(mem::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         BitFlags<AccessMode> accessMode = FS::toAccessMode(flags);
         BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
@@ -308,7 +308,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::stat(x64::Ptr pathname, x64::Ptr statbuf) {
+    int Sys::stat(mem::Ptr pathname, mem::Ptr statbuf) {
         std::string pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         auto errnoOrBuffer = [&]() {
@@ -325,7 +325,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::fstat(int fd, x64::Ptr8 statbuf) {
+    int Sys::fstat(int fd, mem::Ptr8 statbuf) {
         auto descriptor = currentProcess_->fds()[fd];
         ErrnoOrBuffer errnoOrBuffer = kernel_.fs().fstat(descriptor);
         if(kernel_.logSyscalls()) {
@@ -338,7 +338,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::lstat(x64::Ptr pathname, x64::Ptr statbuf) {
+    int Sys::lstat(mem::Ptr pathname, mem::Ptr statbuf) {
         std::string path = mmu_->readString(pathname);
         ErrnoOrBuffer errnoOrBuffer = Host::lstat(path);
         if(kernel_.logSyscalls()) {
@@ -351,7 +351,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::poll(x64::Ptr fds, size_t nfds, int timeout) {
+    int Sys::poll(mem::Ptr fds, size_t nfds, int timeout) {
         assert(sizeof(FS::PollFd) == Host::pollRequiredBufferSize(1));
         std::vector<FS::PollFd> pollfds = mmu_->readFromMmu<FS::PollFd>(fds, nfds);
         if(timeout == 0) {
@@ -400,27 +400,27 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    x64::Ptr Sys::mmap(x64::Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
-        BitFlags<x64::MAP> mmapFlags;
-        if(Host::Mmap::isAnonymous(flags)) mmapFlags.add(x64::MAP::ANONYMOUS);
-        if(Host::Mmap::isFixed(flags)) mmapFlags.add(x64::MAP::FIXED);
+    mem::Ptr Sys::mmap(mem::Ptr addr, size_t length, int prot, int flags, int fd, off_t offset) {
+        BitFlags<mem::MAP> mmapFlags;
+        if(Host::Mmap::isAnonymous(flags)) mmapFlags.add(mem::MAP::ANONYMOUS);
+        if(Host::Mmap::isFixed(flags)) mmapFlags.add(mem::MAP::FIXED);
         if(Host::Mmap::isFixedNoReplace(flags)) {
-            mmapFlags.add(x64::MAP::FIXED);
-            mmapFlags.add(x64::MAP::NO_REPLACE);
+            mmapFlags.add(mem::MAP::FIXED);
+            mmapFlags.add(mem::MAP::NO_REPLACE);
         }
-        if(Host::Mmap::isPrivate(flags)) mmapFlags.add(x64::MAP::PRIVATE);
-        if(Host::Mmap::isShared(flags)) mmapFlags.add(x64::MAP::SHARED);
+        if(Host::Mmap::isPrivate(flags)) mmapFlags.add(mem::MAP::PRIVATE);
+        if(Host::Mmap::isShared(flags)) mmapFlags.add(mem::MAP::SHARED);
 
-        BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
+        BitFlags<mem::PROT> protFlags = BitFlags<mem::PROT>::fromIntegerType(prot);
 
-        if(mmapFlags.test(x64::MAP::SHARED) && protFlags.test(x64::PROT::WRITE)) {
+        if(mmapFlags.test(mem::MAP::SHARED) && protFlags.test(mem::PROT::WRITE)) {
             warn("mmap: writable and shared mapping not supported. Making mapping private.");
-            mmapFlags.remove(x64::MAP::SHARED);
-            mmapFlags.add(x64::MAP::PRIVATE);
+            mmapFlags.remove(mem::MAP::SHARED);
+            mmapFlags.add(mem::MAP::PRIVATE);
         }
 
         auto base = mmu_->mmap(addr.address(), length, protFlags, mmapFlags);
-        if(base && !mmapFlags.test(x64::MAP::ANONYMOUS)) {
+        if(base && !mmapFlags.test(mem::MAP::ANONYMOUS)) {
             u64 regionBase = base.value();
             verify(fd >= 0);
             auto descriptor = currentProcess_->fds()[fd];
@@ -431,12 +431,12 @@ namespace kernel::gnulinux {
                 base = (u64)data.errorOr(0);
             }
             data.errorOrWith<int>([&](const Buffer& buffer) {
-                BitFlags<x64::PROT> saved = mmu_->prot(regionBase);
-                BitFlags<x64::PROT> savedAndWriteable = saved;
-                savedAndWriteable.add(x64::PROT::WRITE);
-                savedAndWriteable.remove(x64::PROT::EXEC);
+                BitFlags<mem::PROT> saved = mmu_->prot(regionBase);
+                BitFlags<mem::PROT> savedAndWriteable = saved;
+                savedAndWriteable.add(mem::PROT::WRITE);
+                savedAndWriteable.remove(mem::PROT::EXEC);
                 verify(mmu_->mprotect(regionBase, length, savedAndWriteable) >= 0, "mprotect failed");
-                mmu_->copyToMmu(x64::Ptr8{regionBase}, buffer.data(), buffer.size());
+                mmu_->copyToMmu(mem::Ptr8{regionBase}, buffer.data(), buffer.size());
                 verify(mmu_->mprotect(regionBase, length, saved) >= 0, "mprotect failed");
                 auto filename = kernel_.fs().filename(descriptor);
                 mmu_->setRegionName(regionBase, filename);
@@ -444,32 +444,32 @@ namespace kernel::gnulinux {
             });
         }
         if(kernel_.logSyscalls()) {
-            BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
-            bool protRead = protFlags.test(x64::PROT::READ);
-            bool protWrite = protFlags.test(x64::PROT::WRITE);
-            bool protExec = protFlags.test(x64::PROT::EXEC);
+            BitFlags<mem::PROT> protFlags = BitFlags<mem::PROT>::fromIntegerType(prot);
+            bool protRead = protFlags.test(mem::PROT::READ);
+            bool protWrite = protFlags.test(mem::PROT::WRITE);
+            bool protExec = protFlags.test(mem::PROT::EXEC);
             std::string protString = fmt::format("{}{}{}",
                     protRead  ? "R" : "",
                     protWrite ? "W" : "",
                     protExec  ? "X" : "");
             std::string flagsString = fmt::format("{}{}{}{}",
-                    mmapFlags.test(x64::MAP::ANONYMOUS) ? "ANONYMOUS " : "",
-                    mmapFlags.test(x64::MAP::FIXED) ? "FIXED " : "",
-                    mmapFlags.test(x64::MAP::PRIVATE) ? "PRIVATE " : "",
-                    mmapFlags.test(x64::MAP::SHARED) ? "SHARED " : "");
+                    mmapFlags.test(mem::MAP::ANONYMOUS) ? "ANONYMOUS " : "",
+                    mmapFlags.test(mem::MAP::FIXED) ? "FIXED " : "",
+                    mmapFlags.test(mem::MAP::PRIVATE) ? "PRIVATE " : "",
+                    mmapFlags.test(mem::MAP::SHARED) ? "SHARED " : "");
             print("Sys::mmap(addr={:#x}, length={}, prot={}, flags={}, fd={}, offset={}) = {:#x}",
                     addr.address(), length, protString, flagsString, fd, offset, base.value_or(-ENOMEM));
         }
-        return x64::Ptr{base.value_or(-ENOMEM)};
+        return mem::Ptr{base.value_or(-ENOMEM)};
     }
 
-    int Sys::mprotect(x64::Ptr addr, size_t length, int prot) {
-        BitFlags<x64::PROT> protFlags = BitFlags<x64::PROT>::fromIntegerType(prot);
+    int Sys::mprotect(mem::Ptr addr, size_t length, int prot) {
+        BitFlags<mem::PROT> protFlags = BitFlags<mem::PROT>::fromIntegerType(prot);
         int ret = mmu_->mprotect(addr.address(), length, protFlags);
         if(kernel_.logSyscalls()) {
-            bool protRead = protFlags.test(x64::PROT::READ);
-            bool protWrite = protFlags.test(x64::PROT::WRITE);
-            bool protExec = protFlags.test(x64::PROT::EXEC);
+            bool protRead = protFlags.test(mem::PROT::READ);
+            bool protWrite = protFlags.test(mem::PROT::WRITE);
+            bool protExec = protFlags.test(mem::PROT::EXEC);
             std::string protString = fmt::format("{}{}{}",
                     protRead  ? "R" : "",
                     protWrite ? "W" : "",
@@ -479,19 +479,19 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::munmap(x64::Ptr addr, size_t length) {
+    int Sys::munmap(mem::Ptr addr, size_t length) {
         int ret = mmu_->munmap(addr.address(), length);
         if(kernel_.logSyscalls()) print("Sys::munmap(addr={:#x}, length={}) = {}", addr.address(), length, ret);
         return ret;
     }
 
-    x64::Ptr Sys::brk(x64::Ptr addr) {
+    mem::Ptr Sys::brk(mem::Ptr addr) {
         u64 newBrk = mmu_->brk(addr.address());
         if(kernel_.logSyscalls()) print("Sys::brk(addr={:#x}) = {:#x}", addr.address(), newBrk);
-        return x64::Ptr{newBrk};
+        return mem::Ptr{newBrk};
     }
 
-    int Sys::rt_sigaction(int sig, x64::Ptr act, x64::Ptr oact, size_t sigsetsize) {
+    int Sys::rt_sigaction(int sig, mem::Ptr act, mem::Ptr oact, size_t sigsetsize) {
         if(kernel_.logSyscalls()) print("Sys::rt_sigaction({}, {:#x}, {:#x}, {}) = 0", sig, act.address(), oact.address(), sigsetsize);
         (void)sig;
         (void)act;
@@ -500,7 +500,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::rt_sigprocmask(int how, x64::Ptr nset, x64::Ptr oset, size_t sigsetsize) {
+    int Sys::rt_sigprocmask(int how, mem::Ptr nset, mem::Ptr oset, size_t sigsetsize) {
         if(kernel_.logSyscalls()) print("Sys::rt_sigprocmask({}, {:#x}, {:#x}, {}) = 0", how, nset.address(), oset.address(), sigsetsize);
         (void)how;
         (void)nset;
@@ -509,7 +509,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::ioctl(int fd, unsigned long request, x64::Ptr argp) {
+    int Sys::ioctl(int fd, unsigned long request, mem::Ptr argp) {
         // We need to ask the host for the expected buffer size behind argp.
         auto bufferSize = Host::ioctlRequiredBufferSize(request);
         if(!bufferSize) {
@@ -551,7 +551,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    ssize_t Sys::pread64(int fd, x64::Ptr buf, size_t count, off_t offset) {
+    ssize_t Sys::pread64(int fd, mem::Ptr buf, size_t count, off_t offset) {
         auto descriptor = currentProcess_->fds()[fd];
         auto errnoOrBuffer = kernel_.fs().pread(descriptor, count, offset);
         if(kernel_.logSyscalls()) {
@@ -565,7 +565,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    ssize_t Sys::pwrite64(int fd, x64::Ptr buf, size_t count, off_t offset) {
+    ssize_t Sys::pwrite64(int fd, mem::Ptr buf, size_t count, off_t offset) {
         std::vector<u8> buffer = mmu_->readFromMmu<u8>(buf, count);
         auto descriptor = currentProcess_->fds()[fd];
         auto errnoOrNbytes = kernel_.fs().pwrite(descriptor, buffer.data(), buffer.size(), offset);
@@ -576,13 +576,13 @@ namespace kernel::gnulinux {
         return errnoOrNbytes;
     }
 
-    ssize_t Sys::readv(int fd, x64::Ptr iov, int iovcnt) {
+    ssize_t Sys::readv(int fd, mem::Ptr iov, int iovcnt) {
         Buffer iovecBuffer(((size_t)iovcnt) * Host::iovecRequiredBufferSize(), 0x0);
         mmu_->copyFromMmu(iovecBuffer.data(), iov, iovecBuffer.size());
         std::vector<Buffer> buffers;
         buffers.reserve((size_t)iovcnt);
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
-            x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
+            mem::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
             Buffer data(len, 0x0);
             mmu_->copyFromMmu(data.data(), base, len);
@@ -592,7 +592,7 @@ namespace kernel::gnulinux {
         ssize_t nbytes = kernel_.fs().readv(descriptor, &buffers);
         if(nbytes >= 0) {
             for(size_t i = 0; i < (size_t)iovcnt; ++i) {
-                x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
+                mem::Ptr base{Host::iovecBase(iovecBuffer, i)};
                 mmu_->copyToMmu(base, buffers[i].data(), buffers[i].size());
             }
         }
@@ -600,13 +600,13 @@ namespace kernel::gnulinux {
         return nbytes;
     }
 
-    ssize_t Sys::writev(int fd, x64::Ptr iov, int iovcnt) {
+    ssize_t Sys::writev(int fd, mem::Ptr iov, int iovcnt) {
         Buffer iovecs(((size_t)iovcnt) * Host::iovecRequiredBufferSize(), 0x0);
         mmu_->copyFromMmu(iovecs.data(), iov, iovecs.size());
         Buffer iovecBuffer(std::move(iovecs));
         std::vector<Buffer> buffers;
         for(size_t i = 0; i < (size_t)iovcnt; ++i) {
-            x64::Ptr base{Host::iovecBase(iovecBuffer, i)};
+            mem::Ptr base{Host::iovecBase(iovecBuffer, i)};
             size_t len = Host::iovecLen(iovecBuffer, i);
             Buffer data(len, 0x0);
             mmu_->copyFromMmu(data.data(), base, len);
@@ -618,7 +618,7 @@ namespace kernel::gnulinux {
         return nbytes;
     }
 
-    int Sys::access(x64::Ptr pathname, int mode) {
+    int Sys::access(mem::Ptr pathname, int mode) {
         std::string pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         int ret = [&]() {
@@ -631,11 +631,11 @@ namespace kernel::gnulinux {
         return ret;
     }
     
-    int Sys::pipe(x64::Ptr32 pipefd) {
+    int Sys::pipe(mem::Ptr32 pipefd) {
         auto errnoOrFds = currentProcess_->fds().pipe2(0);
         int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FD, FD> fds) {
             std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
-            x64::Ptr ptr { pipefd.address() };
+            mem::Ptr ptr { pipefd.address() };
             mmu_->writeToMmu(ptr, fdsbuf);
             return 0;
         });
@@ -657,7 +657,7 @@ namespace kernel::gnulinux {
         return fd.fd;
     }
 
-    int Sys::setitimer(int which, const x64::Ptr new_value, x64::Ptr old_value) {
+    int Sys::setitimer(int which, const mem::Ptr new_value, mem::Ptr old_value) {
         if(kernel_.logSyscalls()) {
             print("Sys::setitimer(which={}, new_value={:#x}, old_value={:#x}) = {}",
                                     which, new_value.address(), old_value.address(), -ENOTSUP);
@@ -673,7 +673,7 @@ namespace kernel::gnulinux {
         return pid;
     }
 
-    int Sys::select(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
+    int Sys::select(int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout) {
         // assert(sizeof(FS::PollData) == Host::pollRequiredBufferSize(1));
         // std::vector<FS::PollData> pollfds = mmu_->readFromMmu<FS::PollData>(fds, nfds);
         // if(timeout == 0) {
@@ -726,16 +726,16 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    x64::Ptr Sys::mremap(x64::Ptr old_address, size_t old_size, size_t new_size, int flags, x64::Ptr new_address) {
+    mem::Ptr Sys::mremap(mem::Ptr old_address, size_t old_size, size_t new_size, int flags, mem::Ptr new_address) {
         if(kernel_.logSyscalls()) {
             print("Sys::mremap(old_address={:#x}, old_size={}, new_size={}, flags={}, new_address={:#x}) = {}",
                                     old_address.address(), old_size, new_size, flags, new_address.address(), -ENOTSUP);
         }
         warn("mremap not implemented");
-        return x64::Ptr{(u64)-ENOTSUP};
+        return mem::Ptr{(u64)-ENOTSUP};
     }
 
-    int Sys::msync(x64::Ptr addr, size_t length, int flags) {
+    int Sys::msync(mem::Ptr addr, size_t length, int flags) {
         if(kernel_.logSyscalls()) {
             print("Sys::msync(addr={:#x}, length={:#x}, flags={:#x}) = {}",
                                     addr.address(), length, flags, -ENOTSUP);
@@ -744,7 +744,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::mincore(x64::Ptr addr, size_t length, x64::Ptr8 vec) {
+    int Sys::mincore(mem::Ptr addr, size_t length, mem::Ptr8 vec) {
         auto res = mmu_->mincore(addr.address(), length);
         mmu_->copyToMmu(vec, res.data(), res.size());
         if(kernel_.logSyscalls()) {
@@ -754,7 +754,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::madvise(x64::Ptr addr, size_t length, int advice) {
+    int Sys::madvise(mem::Ptr addr, size_t length, int advice) {
         if(Host::Madvise::isDontNeed(advice)) {
             if(kernel_.logSyscalls()) {
                 print("Sys::madvise(addr={:#x}, length={}, advice=DONT_NEED) = {}",
@@ -806,7 +806,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    x64::Ptr Sys::shmat(int shmid, x64::Ptr shmaddr, int shmflg) {
+    mem::Ptr Sys::shmat(int shmid, mem::Ptr shmaddr, int shmflg) {
         u64 ret = (u64)-ENOTSUP;
         if(kernel_.isShmEnabled()) {
             BitFlags<SharedMemory::AtFlags> flags;
@@ -821,10 +821,10 @@ namespace kernel::gnulinux {
         if(kernel_.logSyscalls()) {
             print("Sys::shmat(shmid={}, shmaddr={:#x}, shmflg={:#x}) = {}", shmid, shmaddr.address(), shmflg, ret);
         }
-        return x64::Ptr{ret};
+        return mem::Ptr{ret};
     }
 
-    int Sys::shmctl(int shmid, int cmd, x64::Ptr buf) {
+    int Sys::shmctl(int shmid, int cmd, mem::Ptr buf) {
         int ret = -ENOTSUP;
         if(kernel_.isShmEnabled()) {
             if(Host::ShmCtl::isRmid(cmd)) {
@@ -846,7 +846,7 @@ namespace kernel::gnulinux {
         return fd.fd;
     }
 
-    int Sys::connect(int sockfd, x64::Ptr addr, size_t addrlen) {
+    int Sys::connect(int sockfd, mem::Ptr addr, size_t addrlen) {
         Buffer buffer(addrlen, 0x0);
         mmu_->copyFromMmu(buffer.data(), addr, buffer.size());
         auto descriptor = currentProcess_->fds()[sockfd];
@@ -858,7 +858,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    ssize_t Sys::sendto(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr dest_addr, socklen_t addrlen) {
+    ssize_t Sys::sendto(int sockfd, mem::Ptr buf, size_t len, int flags, mem::Ptr dest_addr, socklen_t addrlen) {
         verify(dest_addr.address() == 0);
         verify(addrlen == 0);
         Buffer buffer(len, 0x0);
@@ -872,7 +872,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::getsockname(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
+    int Sys::getsockname(int sockfd, mem::Ptr addr, mem::Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
         auto descriptor = currentProcess_->fds()[sockfd];
         ErrnoOrBuffer sockname = kernel_.fs().getsockname(descriptor, buffersize);
@@ -891,7 +891,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::getpeername(int sockfd, x64::Ptr addr, x64::Ptr32 addrlen) {
+    int Sys::getpeername(int sockfd, mem::Ptr addr, mem::Ptr32 addrlen) {
         u32 buffersize = mmu_->read32(addrlen);
         auto descriptor = currentProcess_->fds()[sockfd];
         ErrnoOrBuffer peername = kernel_.fs().getpeername(descriptor, buffersize);
@@ -910,9 +910,9 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::socketpair(int domain, int type, int protocol, x64::Ptr32 sv) {
+    int Sys::socketpair(int domain, int type, int protocol, mem::Ptr32 sv) {
         if(kernel_.logSyscalls()) {
-            std::vector<int> svs = mmu_->readFromMmu<int>(x64::Ptr8{sv.address()}, 2);
+            std::vector<int> svs = mmu_->readFromMmu<int>(mem::Ptr8{sv.address()}, 2);
             print("Sys::socketpair(domain={}, type={}, protocol={}, sv=[{},{}]) = {}",
                 domain, type, protocol, svs[0], svs[1], -ENOTSUP);
         }
@@ -920,7 +920,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::setsockopt(int sockfd, int level, int optname, x64::Ptr optval, socklen_t optlen) {
+    int Sys::setsockopt(int sockfd, int level, int optname, mem::Ptr optval, socklen_t optlen) {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         verify(!!optval, "getsockopt with null optval not implemented");
         Buffer buf((size_t)optlen, 0x0);
@@ -934,7 +934,7 @@ namespace kernel::gnulinux {
         return ret;
     }
     
-    int Sys::getsockopt(int sockfd, int level, int optname, x64::Ptr optval, x64::Ptr32 optlen) {
+    int Sys::getsockopt(int sockfd, int level, int optname, mem::Ptr optval, mem::Ptr32 optlen) {
         static_assert(sizeof(socklen_t) == sizeof(u32));
         verify(!!optval, "getsockopt with null optval not implemented");
         verify(!!optlen, "getsockopt with null optlen not implemented");
@@ -1021,7 +1021,7 @@ namespace kernel::gnulinux {
         return true;
     }
 
-    long Sys::clone(unsigned long flags, x64::Ptr stack, x64::Ptr32 parent_tid, x64::Ptr32 child_tid, unsigned long tls) {
+    long Sys::clone(unsigned long flags, mem::Ptr stack, mem::Ptr32 parent_tid, mem::Ptr32 child_tid, unsigned long tls) {
         Host::CloneFlags cloneFlags = Host::fromCloneFlags(flags);
         Thread* newThread { nullptr };
         if(cloneFlags.cloneThread) {
@@ -1059,7 +1059,7 @@ namespace kernel::gnulinux {
 
 
         verify(!!newThread);
-        x64::Mmu childMmu(newThread->process()->addressSpace());
+        mem::Mmu childMmu(newThread->process()->addressSpace());
         newThread->reportInfoFrom(*currentThread_);
         newThread->savedCpuState().regs.set(x64::R64::RAX, 0);
         if(stack.address() != 0) { // using nullptr for stack means keeping the same stack
@@ -1097,7 +1097,7 @@ namespace kernel::gnulinux {
             return -ENOTSUP;
         }
         warn("Sys::fork => Sys::clone");
-        return (int)clone(CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID, x64::Ptr::null(), x64::Ptr32::null(), x64::Ptr32::null(), 0);
+        return (int)clone(CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID, mem::Ptr::null(), mem::Ptr32::null(), mem::Ptr32::null(), 0);
     }
 
     int Sys::vfork() {
@@ -1109,7 +1109,7 @@ namespace kernel::gnulinux {
         return fork();
     }
 
-    int Sys::execve(x64::Ptr pathname, x64::Ptr64 argv, x64::Ptr64 envp) {
+    int Sys::execve(mem::Ptr pathname, mem::Ptr64 argv, mem::Ptr64 envp) {
         verify(!!pathname, "cannot exec with null pathname");
         verify(!!argv, "cannot exec with null argv");
         std::string path = mmu_->readString(pathname);
@@ -1117,7 +1117,7 @@ namespace kernel::gnulinux {
         while(true) {
             u64 arg = mmu_->read64(argv);
             if(arg == 0) break;
-            args.push_back(mmu_->readString(x64::Ptr{arg}));
+            args.push_back(mmu_->readString(mem::Ptr{arg}));
             ++argv;
         }
         verify(!args.empty(), "unexpected empty argv list in exec");
@@ -1127,7 +1127,7 @@ namespace kernel::gnulinux {
             while(true) {
                 u64 env = mmu_->read64(envp);
                 if(env == 0) break;
-                envs.push_back(mmu_->readString(x64::Ptr{env}));
+                envs.push_back(mmu_->readString(mem::Ptr{env}));
                 ++envp;
             }
         } else {
@@ -1163,7 +1163,7 @@ namespace kernel::gnulinux {
         return status;
     }
 
-    int Sys::wait4(pid_t pid, x64::Ptr32 wstatus, int options, x64::Ptr rusage) {
+    int Sys::wait4(pid_t pid, mem::Ptr32 wstatus, int options, mem::Ptr rusage) {
         Host::WaitOptions opt = Host::fromWaitOptions(options);
         if(opt.continued) warn("continued option unsupported in wait4");
         verify(!rusage, "non-null rusage unsupported in wait4");
@@ -1192,7 +1192,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::uname(x64::Ptr buf) {
+    int Sys::uname(mem::Ptr buf) {
         ErrnoOrBuffer errnoOrBuffer = Host::uname();
         if(kernel_.logSyscalls()) {
             print("Sys::uname(buf={:#x}) = {}",
@@ -1204,7 +1204,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::shmdt(x64::Ptr shmaddr) {
+    int Sys::shmdt(mem::Ptr shmaddr) {
         if(!kernel_.isShmEnabled()) return -ENOTSUP;
         int ret = kernel_.shm().detach(mmu_, shmaddr.address());
         if(kernel_.logSyscalls()) {
@@ -1249,7 +1249,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::truncate(x64::Ptr8 path_, off_t length) {
+    int Sys::truncate(mem::Ptr8 path_, off_t length) {
         auto pathname = mmu_->readString(path_);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname);
         int ret = [&]() {
@@ -1267,7 +1267,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::getcwd(x64::Ptr buf, size_t size) {
+    int Sys::getcwd(mem::Ptr buf, size_t size) {
         ErrnoOrBuffer errnoOrBuffer = Host::getcwd(size);
         if(kernel_.logSyscalls()) {
             print("Sys::getcwd(buf={:#x}, size={}) = {:#x}",
@@ -1281,7 +1281,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::chdir(x64::Ptr pathname) {
+    int Sys::chdir(mem::Ptr pathname) {
         auto newpath = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), newpath);
         int ret = 0;
@@ -1297,7 +1297,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::rename(x64::Ptr oldpathname, x64::Ptr newpathname) {
+    int Sys::rename(mem::Ptr oldpathname, mem::Ptr newpathname) {
         auto oldname = mmu_->readString(oldpathname);
         auto newname = mmu_->readString(newpathname);
         auto oldpath = kernel_.fs().resolvePath(currentProcess_->cwd(), oldname);
@@ -1314,7 +1314,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::mkdir(x64::Ptr pathname, mode_t mode) {
+    int Sys::mkdir(mem::Ptr pathname, mode_t mode) {
         auto pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         auto ret = [&]() {
@@ -1327,7 +1327,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::unlink([[maybe_unused]] x64::Ptr pathname) {
+    int Sys::unlink([[maybe_unused]] mem::Ptr pathname) {
         auto pathname_ = mmu_->readString(pathname);
         auto path = kernel_.fs().resolvePath(currentProcess_->cwd(), pathname_);
         int ret = [&]() {
@@ -1340,7 +1340,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    ssize_t Sys::readlink(x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
+    ssize_t Sys::readlink(mem::Ptr pathname, mem::Ptr buf, size_t bufsiz) {
         std::string path = mmu_->readString(pathname);
         auto linkpath = kernel_.fs().resolvePath(currentProcess_->cwd(), path);
         auto errnoOrBuffer = [&]() {
@@ -1361,7 +1361,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::chmod(x64::Ptr pathname, mode_t mode) {
+    int Sys::chmod(mem::Ptr pathname, mode_t mode) {
         if(kernel_.logSyscalls()) {
             std::string path = mmu_->readString(pathname);
             print("Sys::chmod(path={}, mode={}) = {}",
@@ -1379,7 +1379,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::chown(x64::Ptr pathname, uid_t owner, gid_t group) {
+    int Sys::chown(mem::Ptr pathname, uid_t owner, gid_t group) {
         if(kernel_.logSyscalls()) {
             std::string path = mmu_->readString(pathname);
             print("Sys::chown(path={}, owner={}, group={}) = {}",
@@ -1407,7 +1407,7 @@ namespace kernel::gnulinux {
         return 0777;
     }
 
-    int Sys::gettimeofday(x64::Ptr tv, x64::Ptr tz) {
+    int Sys::gettimeofday(mem::Ptr tv, mem::Ptr tz) {
         PreciseTime time = kernel_.scheduler().kernelTime();
         if(kernel_.logSyscalls()) {
             print("Sys::gettimeofday(tv={:#x}, tz={:#x}) = {:#x}",
@@ -1424,7 +1424,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::getrusage(int who, x64::Ptr usage) {
+    int Sys::getrusage(int who, mem::Ptr usage) {
         if(kernel_.logSyscalls()) {
             print("Sys::getrusage(who={}, usage={:#x}) = {}",
                         who, usage.address(), -ENOTSUP);
@@ -1433,7 +1433,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::sysinfo(x64::Ptr info) {
+    int Sys::sysinfo(mem::Ptr info) {
         auto errnoOrBuffer = Host::sysinfo();
         if(kernel_.logSyscalls()) {
             print("Sys::sysinfo(info={:#x}) = {}",
@@ -1445,7 +1445,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    clock_t Sys::times(x64::Ptr buf) {
+    clock_t Sys::times(mem::Ptr buf) {
         if(kernel_.logSyscalls()) {
             print("Sys::times(buf={:#x}) = {}",
                         buf.address(), -ENOTSUP);
@@ -1497,7 +1497,7 @@ namespace kernel::gnulinux {
         return Host::getpgrp();
     }
 
-    int Sys::getgroups(int size, x64::Ptr list) {
+    int Sys::getgroups(int size, mem::Ptr list) {
         ErrnoOrBuffer groups = Host::getgroups(size);
         int ret = groups.errorOrWith<int>([&](const Buffer& buf) {
             if(size > 0) {
@@ -1511,7 +1511,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::getresuid(x64::Ptr32 ruid, x64::Ptr32 euid, x64::Ptr32 suid) {
+    int Sys::getresuid(mem::Ptr32 ruid, mem::Ptr32 euid, mem::Ptr32 suid) {
         Host::UserCredentials creds = Host::getUserCredentials();
         mmu_->write32(ruid, (u32)creds.ruid);
         mmu_->write32(euid, (u32)creds.euid);
@@ -1519,7 +1519,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::getresgid(x64::Ptr32 rgid, x64::Ptr32 egid, x64::Ptr32 sgid) {
+    int Sys::getresgid(mem::Ptr32 rgid, mem::Ptr32 egid, mem::Ptr32 sgid) {
         Host::UserCredentials creds = Host::getUserCredentials();
         mmu_->write32(rgid, (u32)creds.rgid);
         mmu_->write32(egid, (u32)creds.egid);
@@ -1537,7 +1537,7 @@ namespace kernel::gnulinux {
         return pgid;
     }
 
-    int Sys::rt_sigtimedwait(x64::Ptr set, x64::Ptr info, x64::Ptr timeout) {
+    int Sys::rt_sigtimedwait(mem::Ptr set, mem::Ptr info, mem::Ptr timeout) {
         if(kernel_.logSyscalls()) {
             print("Sys::rt_sigtimedwait(set={:#x}, info={:#x}, timeout={:#x}) = {})", set.address(), info.address(), timeout.address(), -ENOTSUP);
         }
@@ -1545,7 +1545,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::sigaltstack(x64::Ptr ss, x64::Ptr old_ss) {
+    int Sys::sigaltstack(mem::Ptr ss, mem::Ptr old_ss) {
         if(kernel_.logSyscalls()) {
             print("Sys::sigaltstack(ss={:#x}, old_ss={:#x}) = {}", ss.address(), old_ss.address(), -ENOTSUP);
         }
@@ -1553,7 +1553,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::utime(x64::Ptr filename, x64::Ptr times) {
+    int Sys::utime(mem::Ptr filename, mem::Ptr times) {
         if(kernel_.logSyscalls()) {
             std::string path = mmu_->readString(filename);
             print("Sys::utime(filename={}, times={:#x} = {})", path, times.address(), -ENOTSUP);
@@ -1562,7 +1562,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::statfs(x64::Ptr pathname, x64::Ptr buf) {
+    int Sys::statfs(mem::Ptr pathname, mem::Ptr buf) {
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::statfs(path);
         if(kernel_.logSyscalls()) {
@@ -1574,7 +1574,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::fstatfs(int fd, x64::Ptr buf) {
+    int Sys::fstatfs(int fd, mem::Ptr buf) {
         auto descriptor = currentProcess_->fds()[fd];
         auto errnoOrBuffer = kernel_.fs().fstatfs(descriptor);
         if(kernel_.logSyscalls()) {
@@ -1602,7 +1602,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::sched_getparam(pid_t pid, x64::Ptr param) {
+    int Sys::sched_getparam(pid_t pid, mem::Ptr param) {
         if(kernel_.logSyscalls()) {
             print("Sys::sched_getparam(pid={}, param={:#x}) = {}", pid, param.address(), -ENOTSUP);
         }
@@ -1610,7 +1610,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::sched_setscheduler(pid_t pid, int policy, x64::Ptr param) {
+    int Sys::sched_setscheduler(pid_t pid, int policy, mem::Ptr param) {
         if(kernel_.logSyscalls()) {
             print("Sys::sched_setscheduler(pid={}, policy={}, param={:#x}) = {}", pid, policy, param.address(), -ENOTSUP);
         }
@@ -1642,14 +1642,14 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::mlock(x64::Ptr addr, size_t len) {
+    int Sys::mlock(mem::Ptr addr, size_t len) {
         if(kernel_.logSyscalls()) {
             print("Sys::mlock(addr={:#x}, len={}) = {}", addr.address(), len, 0);
         }
         return 0;
     }
 
-    int Sys::munlock(x64::Ptr addr, size_t len) {
+    int Sys::munlock(mem::Ptr addr, size_t len) {
         if(kernel_.logSyscalls()) {
             print("Sys::munlock(addr={:#x}, len={}) = {}", addr.address(), len, 0);
         }
@@ -1682,7 +1682,7 @@ namespace kernel::gnulinux {
         u64 data;
     };
 
-    int Sys::epoll_wait(int epfd, x64::Ptr events, int maxevents, int timeout) {
+    int Sys::epoll_wait(int epfd, mem::Ptr events, int maxevents, int timeout) {
         if(!events) return -EFAULT;
         if(maxevents <= 0) return -EINVAL;
         if(timeout == 0) {
@@ -1716,7 +1716,7 @@ namespace kernel::gnulinux {
         }
     }
 
-    int Sys::epoll_ctl(int epfd, int op, int fd, x64::Ptr event) {
+    int Sys::epoll_ctl(int epfd, int op, int fd, mem::Ptr event) {
         verify(!!event, "Null event in epoll_ctl not supported");
         EpollEvent ee = mmu_->readFromMmu<EpollEvent>(event);
         auto epDescriptor = currentProcess_->fds()[epfd];
@@ -1734,7 +1734,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::mbind(unsigned long start, unsigned long len, unsigned long mode, x64::Ptr64 nmask, unsigned long maxnode, unsigned flags) {
+    int Sys::mbind(unsigned long start, unsigned long len, unsigned long mode, mem::Ptr64 nmask, unsigned long maxnode, unsigned flags) {
         if(kernel_.logSyscalls()) {
             print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})", start, len, mode, nmask.address(), maxnode, flags);
         }
@@ -1742,7 +1742,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::waitid(int idtype, id_t id, x64::Ptr infop, int options, x64::Ptr rusage) {
+    int Sys::waitid(int idtype, id_t id, mem::Ptr infop, int options, mem::Ptr rusage) {
         if(kernel_.logSyscalls()) {
             print("Sys::waitid(idtype={}, id={}, infop={:#x}, options={}, rusage={:#x}) = {}",
                     idtype, id, infop.address(), options, rusage.address(), -ENOTSUP);
@@ -1757,13 +1757,13 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::inotify_add_watch(int fd, x64::Ptr pathname, uint32_t mask) {
+    int Sys::inotify_add_watch(int fd, mem::Ptr pathname, uint32_t mask) {
         if(kernel_.logSyscalls()) print("Sys::inotify_add_watch(fd={}, pathname={}, mask={}) = {}", fd, mmu_->readString(pathname), mask, -ENOTSUP);
         warn("inotify_add_watch not implemented");
         return -ENOTSUP;
     }
 
-    ssize_t Sys::getxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
+    ssize_t Sys::getxattr(mem::Ptr path, mem::Ptr name, mem::Ptr value, size_t size) {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::getxattr(spath, sname, size);
@@ -1779,7 +1779,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    ssize_t Sys::lgetxattr(x64::Ptr path, x64::Ptr name, x64::Ptr value, size_t size) {
+    ssize_t Sys::lgetxattr(mem::Ptr path, mem::Ptr name, mem::Ptr value, size_t size) {
         auto spath = mmu_->readString(path);
         auto sname = mmu_->readString(name);
         auto errnoOrBuffer = Host::lgetxattr(spath, sname, size);
@@ -1795,7 +1795,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    ssize_t Sys::listxattr(x64::Ptr path, x64::Ptr list, size_t size) {
+    ssize_t Sys::listxattr(mem::Ptr path, mem::Ptr list, size_t size) {
         // auto spath = mmu_->readString(path);
         // auto slist = mmu_->readString(list);
         if(kernel_.logSyscalls()) {
@@ -1805,14 +1805,14 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    time_t Sys::time(x64::Ptr tloc) {
+    time_t Sys::time(mem::Ptr tloc) {
         time_t t = (time_t)kernel_.scheduler().kernelTime().seconds;
         if(kernel_.logSyscalls()) print("Sys::time({:#x}) = {}", tloc.address(), t);
         if(tloc.address()) mmu_->copyToMmu(tloc, (const u8*)&t, sizeof(t));
         return t;
     }
 
-    long Sys::futex(x64::Ptr32 uaddr, int futex_op, uint32_t val, x64::Ptr timeout, x64::Ptr32 uaddr2, uint32_t val3) {
+    long Sys::futex(mem::Ptr32 uaddr, int futex_op, uint32_t val, mem::Ptr timeout, mem::Ptr32 uaddr2, uint32_t val3) {
         auto onExit = [&](long ret) -> long {
             if(!kernel_.logSyscalls()) return ret;
             std::string op;
@@ -1871,7 +1871,7 @@ namespace kernel::gnulinux {
         return 1;
     }
 
-    int Sys::sched_setaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask) {
+    int Sys::sched_setaffinity(pid_t pid, size_t cpusetsize, mem::Ptr mask) {
         if(kernel_.logSyscalls()) {
             print("Sys::sched_setaffinity(pid={}, cpusetsize={}, mask={:#x}) = {}", pid, cpusetsize, mask.address(), -ENOTSUP);
         }
@@ -1879,7 +1879,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::sched_getaffinity(pid_t pid, size_t cpusetsize, x64::Ptr mask) {
+    int Sys::sched_getaffinity(pid_t pid, size_t cpusetsize, mem::Ptr mask) {
         int ret = 0;
         if(pid == 0) {
             // pretend that only cpu 0 is available.
@@ -1899,7 +1899,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    ssize_t Sys::recvfrom(int sockfd, x64::Ptr buf, size_t len, int flags, x64::Ptr src_addr, x64::Ptr32 addrlen) {
+    ssize_t Sys::recvfrom(int sockfd, mem::Ptr buf, size_t len, int flags, mem::Ptr src_addr, mem::Ptr32 addrlen) {
         bool requireSrcAddress = !!src_addr && !!addrlen;
         auto descriptor = currentProcess_->fds()[sockfd];
         ErrnoOr<std::pair<Buffer, Buffer>> ret = kernel_.fs().recvfrom(descriptor, len, flags, requireSrcAddress);
@@ -1920,7 +1920,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    ssize_t Sys::sendmsg(int sockfd, x64::Ptr msg, int flags) {
+    ssize_t Sys::sendmsg(int sockfd, mem::Ptr msg, int flags) {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -1937,22 +1937,22 @@ namespace kernel::gnulinux {
         // read Message::msg_name
         if(!!header.msg_name && header.msg_namelen > 0) {
             Buffer msg_name_buffer(header.msg_namelen, 0x0);
-            mmu_->copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
+            mmu_->copyFromMmu(msg_name_buffer.data(), mem::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
             message.msg_name = std::move(msg_name_buffer);
         }
 
         // read Message::msg_iov
-        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(mem::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             Buffer msg_iovec_buffer(msg_iovecs[i].iov_len, 0x0);
-            mmu_->copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
+            mmu_->copyFromMmu(msg_iovec_buffer.data(), mem::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
             message.msg_iov.push_back(std::move(msg_iovec_buffer));
         }
 
         // read Message::control
         if(!!header.msg_control && header.msg_controllen > 0) {
             Buffer msg_control_buffer(header.msg_controllen, 0x0);
-             mmu_->copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
+             mmu_->copyFromMmu(msg_control_buffer.data(), mem::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
             message.msg_control = std::move(msg_control_buffer);
         }
 
@@ -1968,7 +1968,7 @@ namespace kernel::gnulinux {
         return nbytes;
     }
 
-    ssize_t Sys::recvmsg(int sockfd, x64::Ptr msg, int flags) {
+    ssize_t Sys::recvmsg(int sockfd, mem::Ptr msg, int flags) {
         // struct msghdr {
         //     void*         msg_name;       /* Optional address */
         //     socklen_t     msg_namelen;    /* Size of address */
@@ -1985,22 +1985,22 @@ namespace kernel::gnulinux {
         // read Message::msg_name
         if(!!header.msg_name && header.msg_namelen > 0) {
             Buffer msg_name_buffer(header.msg_namelen, 0x0);
-            mmu_->copyFromMmu(msg_name_buffer.data(), x64::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
+            mmu_->copyFromMmu(msg_name_buffer.data(), mem::Ptr8{(u64)header.msg_name}, msg_name_buffer.size());
             message.msg_name = std::move(msg_name_buffer);
         }
 
         // read Message::msg_iov
-        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(x64::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
+        std::vector<iovec> msg_iovecs = mmu_->readFromMmu<iovec>(mem::Ptr8{(u64)header.msg_iov}, header.msg_iovlen);
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
             Buffer msg_iovec_buffer(msg_iovecs[i].iov_len, 0x0);
-            mmu_->copyFromMmu(msg_iovec_buffer.data(), x64::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
+            mmu_->copyFromMmu(msg_iovec_buffer.data(), mem::Ptr8{(u64)msg_iovecs[i].iov_base}, msg_iovec_buffer.size());
             message.msg_iov.push_back(Buffer(std::move(msg_iovec_buffer)));
         }
 
         // read Message::control
         if(!!header.msg_control && header.msg_controllen > 0) {
             Buffer msg_control_buffer(header.msg_controllen, 0x0);
-            mmu_->copyFromMmu(msg_control_buffer.data(), x64::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
+            mmu_->copyFromMmu(msg_control_buffer.data(), mem::Ptr8{(u64)header.msg_control}, msg_control_buffer.size());
             message.msg_control = std::move(msg_control_buffer);
         }
 
@@ -2014,16 +2014,16 @@ namespace kernel::gnulinux {
         // write back to header
         header.msg_namelen = (socklen_t)message.msg_name.size();
         if(!!header.msg_name) {
-            mmu_->copyToMmu(x64::Ptr8{(u64)header.msg_name}, message.msg_name.data(), message.msg_name.size());
+            mmu_->copyToMmu(mem::Ptr8{(u64)header.msg_name}, message.msg_name.data(), message.msg_name.size());
         }
         header.msg_iovlen = message.msg_iov.size();
         verify(header.msg_iovlen == message.msg_iov.size(), "message iov changed length...");
         for(size_t i = 0; i < header.msg_iovlen; ++i) {
-            mmu_->copyToMmu(x64::Ptr8{(u64)msg_iovecs[i].iov_base}, message.msg_iov[i].data(), message.msg_iov[i].size());
+            mmu_->copyToMmu(mem::Ptr8{(u64)msg_iovecs[i].iov_base}, message.msg_iov[i].data(), message.msg_iov[i].size());
         }
         header.msg_controllen = message.msg_control.size();
         if(!!header.msg_control) {
-            mmu_->copyToMmu(x64::Ptr8{(u64)header.msg_control}, message.msg_control.data(), message.msg_control.size());
+            mmu_->copyToMmu(mem::Ptr8{(u64)header.msg_control}, message.msg_control.data(), message.msg_control.size());
         }
         header.msg_flags = message.msg_flags;
 
@@ -2060,7 +2060,7 @@ namespace kernel::gnulinux {
         return rc;
     }
 
-    int Sys::bind(int sockfd, x64::Ptr addr, socklen_t addrlen) {
+    int Sys::bind(int sockfd, mem::Ptr addr, socklen_t addrlen) {
         Buffer saddr(addrlen, 0x0);
         mmu_->copyFromMmu(saddr.data(), addr, saddr.size());
         auto descriptor = currentProcess_->fds()[sockfd];
@@ -2080,7 +2080,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    ssize_t Sys::getdents64(int fd, x64::Ptr dirp, size_t count) {
+    ssize_t Sys::getdents64(int fd, mem::Ptr dirp, size_t count) {
         auto descriptor = currentProcess_->fds()[fd];
         auto errnoOrBuffer = kernel_.fs().getdents64(descriptor, count);
         if(kernel_.logSyscalls()) {
@@ -2093,7 +2093,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    pid_t Sys::set_tid_address(x64::Ptr32 ptr) {
+    pid_t Sys::set_tid_address(mem::Ptr32 ptr) {
         if(kernel_.logSyscalls()) print("Sys::set_tid_address({:#x}) = {}", ptr.address(), currentThread_->description().tid);
         currentThread_->setClearChildTid(ptr);
         return currentThread_->description().tid;
@@ -2107,7 +2107,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::clock_gettime(clockid_t clockid, x64::Ptr tp) {
+    int Sys::clock_gettime(clockid_t clockid, mem::Ptr tp) {
         // create the timer for future reference
         auto* timer = kernel_.timers().getOrTryCreate(clockid);
         if(!timer) return -EINVAL;
@@ -2123,7 +2123,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::clock_getres(clockid_t clockid, x64::Ptr res) {
+    int Sys::clock_getres(clockid_t clockid, mem::Ptr res) {
         auto buffer = Host::clock_getres();
         if(kernel_.logSyscalls()) {
             print("Sys::clock_getres({}, {:#x}) = {}",
@@ -2133,7 +2133,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::clock_nanosleep(clockid_t clockid, int flags, x64::Ptr request, x64::Ptr remain) {
+    int Sys::clock_nanosleep(clockid_t clockid, int flags, mem::Ptr request, mem::Ptr remain) {
         verify(flags == 0, "clock_nanosleep with nonzero flags not supported (relative only)");
         Timer* timer = kernel_.timers().getOrTryCreate(clockid);
         if(!timer) { return -EINVAL; }
@@ -2151,7 +2151,7 @@ namespace kernel::gnulinux {
     int Sys::prctl(int option, unsigned long arg2, unsigned long arg3, unsigned long arg4, unsigned long arg5) {
         int ret = -ENOTSUP;
         if(Host::Prctl::isSetName(option)) {
-            x64::Ptr8 ptr { arg2 };
+            mem::Ptr8 ptr { arg2 };
             std::string threadName = mmu_->readString(ptr);
             if(threadName.size() >= 15) threadName.resize(15);
             currentThread_->setName(threadName);
@@ -2170,7 +2170,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::arch_prctl(int code, x64::Ptr addr) {
+    int Sys::arch_prctl(int code, mem::Ptr addr) {
         bool isSetFS = Host::ArchPrctl::isSetFS(code);
         if(kernel_.logSyscalls()) print("Sys::arch_prctl(code={}, addr={:#x}) = {}", code, addr.address(), isSetFS ? 0 : -EINVAL);
         if(!isSetFS) return -EINVAL;
@@ -2186,7 +2186,7 @@ namespace kernel::gnulinux {
         return tid;
     }
 
-    int Sys::openat(int dirfd, x64::Ptr pathname, int flags, mode_t mode) {
+    int Sys::openat(int dirfd, mem::Ptr pathname, int flags, mode_t mode) {
         std::string path = mmu_->readString(pathname);
         BitFlags<AccessMode> accessMode = FS::toAccessMode(flags);
         BitFlags<CreationFlags> creationFlags = FS::toCreationFlags(flags);
@@ -2212,7 +2212,7 @@ namespace kernel::gnulinux {
         return fd.fd;
     }
 
-    int Sys::fstatat64(int dirfd, x64::Ptr pathname, x64::Ptr statbuf, int flags) {
+    int Sys::fstatat64(int dirfd, mem::Ptr pathname, mem::Ptr statbuf, int flags) {
         std::string pathname_ = mmu_->readString(pathname);
         auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
         auto dirFd = currentProcess_->fds().dirfd(FD{dirfd}, currentProcess_->cwd());
@@ -2231,7 +2231,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::unlinkat(int dirfd, x64::Ptr pathname, int flags) {
+    int Sys::unlinkat(int dirfd, mem::Ptr pathname, int flags) {
         if(kernel_.logSyscalls()) {
             std::string path = mmu_->readString(pathname);
             print("Sys::unlinkat(dirfd={}, path={}, flags={}) = {}",
@@ -2241,7 +2241,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::linkat(int olddirfd, x64::Ptr oldpath, int newdirfd, x64::Ptr newpath, int flags) {
+    int Sys::linkat(int olddirfd, mem::Ptr oldpath, int newdirfd, mem::Ptr newpath, int flags) {
         if(kernel_.logSyscalls()) {
             print("Sys::linkat(olddirfd={}, oldpath={:#x}, newdirfd={:#x}, newpath={:#x}, flags={}) = {}",
                 olddirfd, oldpath.address(), newdirfd, newpath.address(), flags, -ENOTSUP);
@@ -2250,7 +2250,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    ssize_t Sys::readlinkat(int dirfd, x64::Ptr pathname, x64::Ptr buf, size_t bufsiz) {
+    ssize_t Sys::readlinkat(int dirfd, mem::Ptr pathname, mem::Ptr buf, size_t bufsiz) {
         verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
         std::string path = mmu_->readString(pathname);
         auto errnoOrBuffer = Host::readlink(path, bufsiz);
@@ -2264,7 +2264,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::faccessat(int dirfd, x64::Ptr pathname, int mode) {
+    int Sys::faccessat(int dirfd, mem::Ptr pathname, int mode) {
         std::string pathname_ = mmu_->readString(pathname);
         auto dirFd = currentProcess_->fds().dirfd(FD{dirfd}, currentProcess_->cwd());
         auto path = kernel_.fs().resolvePath(dirFd, pathname_);
@@ -2278,7 +2278,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::pselect6(int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout, x64::Ptr sigmask) {
+    int Sys::pselect6(int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout, mem::Ptr sigmask) {
         fd_set rfds;
         if(readfds.address() != 0) mmu_->copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
         fd_set wfds;
@@ -2306,7 +2306,7 @@ namespace kernel::gnulinux {
         return ret;
     }
 
-    int Sys::ppoll(x64::Ptr fds, int nfds, x64::Ptr tmo_p, x64::Ptr sigmask, size_t sigsetsize) {
+    int Sys::ppoll(mem::Ptr fds, int nfds, mem::Ptr tmo_p, mem::Ptr sigmask, size_t sigsetsize) {
         verify(!sigmask, "Sys::ppoll does not support non-null sigmask");
         assert(sizeof(FS::PollFd) == Host::pollRequiredBufferSize(1));
         std::vector<FS::PollFd> pollfds = mmu_->readFromMmu<FS::PollFd>(fds, (size_t)nfds);
@@ -2325,13 +2325,13 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    long Sys::set_robust_list(x64::Ptr head, size_t len) {
+    long Sys::set_robust_list(mem::Ptr head, size_t len) {
         if(kernel_.logSyscalls()) print("Sys::set_robust_list({:#x}, {}) = 0", head.address(), len);
         currentThread_->setRobustList(head, len);
         return 0;
     }
 
-    long Sys::get_robust_list(int pid, x64::Ptr64 head_ptr, x64::Ptr64 len_ptr) {
+    long Sys::get_robust_list(int pid, mem::Ptr64 head_ptr, mem::Ptr64 len_ptr) {
         if(kernel_.logSyscalls()) print("Sys::get_robust_list({}, {:#x}, {:#x}) = 0", pid, head_ptr.address(), len_ptr.address());
         (void)pid;
         (void)head_ptr;
@@ -2340,7 +2340,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::utimensat(int dirfd, x64::Ptr pathname, x64::Ptr times, int flags) {
+    int Sys::utimensat(int dirfd, mem::Ptr pathname, mem::Ptr times, int flags) {
         if(kernel_.logSyscalls()) {
             std::string path = !!pathname ? mmu_->readString(pathname) : "NULL";
             print("Sys::utimensat(dirfd={}, pathname={}, times={:#x}, flags={}) = -ENOTSUP",
@@ -2384,11 +2384,11 @@ namespace kernel::gnulinux {
         return fd.fd;
     }
     
-    int Sys::pipe2(x64::Ptr32 pipefd, int flags) {
+    int Sys::pipe2(mem::Ptr32 pipefd, int flags) {
         auto errnoOrFds = currentProcess_->fds().pipe2(flags);
         int ret = errnoOrFds.errorOrWith<int>([&](std::pair<FD, FD> fds) {
             std::vector<u32> fdsbuf {{ (u32)fds.first.fd, (u32)fds.second.fd }};
-            x64::Ptr ptr { pipefd.address() };
+            mem::Ptr ptr { pipefd.address() };
             mmu_->writeToMmu(ptr, fdsbuf);
             return 0;
         });
@@ -2405,7 +2405,7 @@ namespace kernel::gnulinux {
         return -ENOTSUP;
     }
 
-    int Sys::prlimit64(pid_t pid, int resource, x64::Ptr new_limit, x64::Ptr old_limit) {
+    int Sys::prlimit64(pid_t pid, int resource, mem::Ptr new_limit, mem::Ptr old_limit) {
         if(kernel_.logSyscalls()) 
             print("Sys::prlimit64(pid={}, resource={}, new_limit={:#x}, old_limit={:#x})", pid, resource, new_limit.address(), old_limit.address());
         if(!old_limit.address()) {
@@ -2420,7 +2420,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::sched_setattr(pid_t pid, x64::Ptr attr, unsigned int flags) {
+    int Sys::sched_setattr(pid_t pid, mem::Ptr attr, unsigned int flags) {
         if(kernel_.logSyscalls()) {
             Host::SchedAttr attributes = mmu_->readFromMmu<Host::SchedAttr>(attr);
             std::string attributeString = fmt::format("policy={} flags={} nice={} priority={}", attributes.schedPolicy, attributes.schedFlags, attributes.schedNice, attributes.schedPriority);
@@ -2429,7 +2429,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    int Sys::sched_getattr(pid_t pid, x64::Ptr attr, unsigned int size, unsigned int flags) {
+    int Sys::sched_getattr(pid_t pid, mem::Ptr attr, unsigned int size, unsigned int flags) {
         Host::SchedAttr attributes = Host::getSchedulerAttributes();
         if(size < sizeof(attributes)) {
             if(kernel_.logSyscalls()) 
@@ -2442,7 +2442,7 @@ namespace kernel::gnulinux {
         return 0;
     }
 
-    ssize_t Sys::getrandom(x64::Ptr buf, size_t len, int flags) {
+    ssize_t Sys::getrandom(mem::Ptr buf, size_t len, int flags) {
         if(kernel_.logSyscalls()) 
             print("Sys::getrandom(buf={:#x}, len={}, flags={})", buf.address(), len, flags);
         std::vector<u8> buffer(len);
@@ -2451,7 +2451,7 @@ namespace kernel::gnulinux {
         return (ssize_t)len;
     }
 
-    int Sys::memfd_create(x64::Ptr name, unsigned int flags) {
+    int Sys::memfd_create(mem::Ptr name, unsigned int flags) {
         auto filename = mmu_->readString(name);
         FD fd = currentProcess_->fds().memfd_create(filename, flags);
         if(kernel_.logSyscalls()) {
@@ -2461,7 +2461,7 @@ namespace kernel::gnulinux {
         return fd.fd;
     }
 
-    int Sys::statx(int dirfd, x64::Ptr pathname, int flags, unsigned int mask, x64::Ptr statxbuf) {
+    int Sys::statx(int dirfd, mem::Ptr pathname, int flags, unsigned int mask, mem::Ptr statxbuf) {
         std::string pathname_ = mmu_->readString(pathname);
         auto allowEmptyPath = Host::Fstatat::isEmptyPath(flags) ? FS::AllowEmptyPathname::YES : FS::AllowEmptyPathname::NO;
         auto dirFd = currentProcess_->fds().dirfd(FD{dirfd}, currentProcess_->cwd());
@@ -2483,7 +2483,7 @@ namespace kernel::gnulinux {
         });
     }
 
-    int Sys::clone3(x64::Ptr uargs, size_t size) {
+    int Sys::clone3(mem::Ptr uargs, size_t size) {
         // struct clone_args {
         //     u64 flags;        /* Flags bit mask */
         //     u64 pidfd;        /* Where to store PID file descriptor
@@ -2507,8 +2507,8 @@ namespace kernel::gnulinux {
         std::vector<u64> args = mmu_->readFromMmu<u64>(uargs, size / sizeof(u64));
         verify(args.size() >= 8);
         u64 flags { args[0] };
-        x64::Ptr32 child_tid { args[2] };
-        x64::Ptr32 parent_tid { args[3] };
+        mem::Ptr32 child_tid { args[2] };
+        mem::Ptr32 parent_tid { args[3] };
         u64 stackAddress = args[5] + args[6];
         u64 tls = args[7];
 
@@ -2548,7 +2548,7 @@ namespace kernel::gnulinux {
         }
 
         verify(!!newThread);
-        x64::Mmu childMmu(newThread->process()->addressSpace());
+        mem::Mmu childMmu(newThread->process()->addressSpace());
         newThread->reportInfoFrom(*currentThread_);
         newThread->savedCpuState().regs.set(x64::R64::RAX, 0);
         newThread->savedCpuState().regs.rsp() = stackAddress;

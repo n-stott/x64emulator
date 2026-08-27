@@ -1,10 +1,10 @@
 #ifndef DISASSEMBLYCACHE_H
 #define DISASSEMBLYCACHE_H
 
+#include "mem/mmu.h"
 #include "x64/disassembler/disassembler.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/instructions/x64instruction.h"
-#include "x64/mmu.h"
 #include "utils.h"
 #include <algorithm>
 #include <map>
@@ -42,14 +42,14 @@ namespace x64 {
         virtual void onNewDisassembly(const std::string& filename, u64 base) = 0;
     };
 
-    class DisassemblyCache : public Mmu::Callback {
+    class DisassemblyCache : public mem::Mmu::Callback {
     public:
         DisassemblyCache();
         void getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<X64Instruction>* instructions);
 
-        void onRegionCreation(u64, u64, BitFlags<PROT>) override { }
-        void onRegionProtectionChange(u64 base, u64 length, BitFlags<PROT> protBefore, BitFlags<PROT> protAfter) override;
-        void onRegionDestruction(u64 base, u64 length, BitFlags<PROT> prot) override;
+        void onRegionCreation(u64, u64, BitFlags<mem::PROT>) override { }
+        void onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) override;
+        void onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) override;
 
         std::optional<std::string> tryFindContainingFile(u64 address);
 
@@ -86,13 +86,13 @@ namespace x64 {
 
     class MmuBytecodeRetriever : public x64::BytecodeRetriever {
     public:
-        explicit MmuBytecodeRetriever(x64::Mmu& mmu, DisassemblyCache& disassemblyCache) :
+        explicit MmuBytecodeRetriever(mem::Mmu& mmu, DisassemblyCache& disassemblyCache) :
                 mmu_(mmu), disassemblyCache_(disassemblyCache) { }
 
         bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) override;
     
     private:
-        x64::Mmu& mmu_;
+        mem::Mmu& mmu_;
         DisassemblyCache& disassemblyCache_;
     };
 

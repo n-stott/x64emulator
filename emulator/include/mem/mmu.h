@@ -2,9 +2,9 @@
 #define MMU_H
 
 #include "host/hostmemory.h"
-#include "x64/spinlock.h"
+#include "mem/mmutypes.h"
+#include "mem/spinlock.h"
 #include "bitflags.h"
-#include "types.h"
 #include "utils.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -18,7 +18,7 @@
 #include <string>
 #include <vector>
 
-namespace x64 {
+namespace mem {
 
     class Host;
     class Mmu;
@@ -279,9 +279,9 @@ namespace x64 {
         class Callback {
         public:
             virtual ~Callback() = default;
-            virtual void onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) = 0;
+            virtual void onRegionCreation(u64 base, u64 length, BitFlags<PROT> prot) = 0;
             virtual void onRegionProtectionChange(u64 base, u64 length, BitFlags<PROT> protBefore, BitFlags<PROT> protAfter) = 0;
-            virtual void onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) = 0;
+            virtual void onRegionDestruction(u64 base, u64 length, BitFlags<PROT> prot) = 0;
         };
 
         void addCallback(Callback* callback) {

@@ -7,7 +7,7 @@
 #include <memory>
 #include <optional>
 
-namespace x64 {
+namespace mem {
     class Mmu;
 }
 
@@ -26,8 +26,8 @@ namespace kernel::gnulinux {
         int id() const { return id_; }
         std::optional<u64> attachedAddress() const { return attachedAddress_; }
         
-        ErrnoOr<u64> attach(x64::Mmu* mmu, bool readonly, bool executable);
-        int detach(x64::Mmu* mmu);
+        ErrnoOr<u64> attach(mem::Mmu* mmu, bool readonly, bool executable);
+        int detach(mem::Mmu* mmu);
 
         void rm();
         

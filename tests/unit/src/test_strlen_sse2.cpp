@@ -1,5 +1,5 @@
+#include "mem/mmu.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "verify.h"
 #include "fmt/core.h"
 #include <vector>
@@ -9,6 +9,7 @@ std::vector<char> string {{
 }};
 
 int main() {
+    using namespace mem;
     using namespace x64;
     auto addressSpace = AddressSpace::tryCreate(1);
     if(!addressSpace) return 1;

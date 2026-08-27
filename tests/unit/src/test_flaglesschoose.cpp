@@ -1,11 +1,12 @@
+#include "mem/mmu.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "verify.h"
 #include "fmt/core.h"
 #include <optional>
 #include <vector>
 
 std::optional<u64> test_choice(u64 value, u64 value_if_zero, u64 value_if_nonzero) {
+    using namespace mem;
     using namespace x64;
     auto addressSpace = AddressSpace::tryCreate(1);
     if(!addressSpace) return 1;

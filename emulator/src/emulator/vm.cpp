@@ -2,10 +2,10 @@
 #include "emulator/vmthread.h"
 #include "kernel/linux/process.h"
 #include "kernel/linux/thread.h"
+#include "mem/mmu.h"
 #include "x64/compiler/compiler.h"
 #include "x64/compiler/jitstats.h"
 #include "x64/disassembler/disassemblycache.h"
-#include "x64/mmu.h"
 #include "x64/registers.h"
 #include "host/hostmemory.h"
 #include "scopeguard.h"
@@ -16,7 +16,7 @@
 
 namespace emulator {
 
-    VM::VM(x64::Mmu& mmu, x64::JitStats* stats) : cpu_(mmu), mmu_(mmu), stats_(stats) { }
+    VM::VM(mem::Mmu& mmu, x64::JitStats* stats) : cpu_(mmu), mmu_(mmu), stats_(stats) { }
 
     VM::~VM() {
 #ifdef VM_ATOMIC_TELEMETRY

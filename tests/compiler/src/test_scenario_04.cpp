@@ -1,10 +1,11 @@
+#include "mem/mmu.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "x64/compiler/compiler.h"
 #include "x64/compiler/jit.h"
 #include <sys/mman.h>
 
 int main(int argc, char**) {
+    using namespace mem;
     using namespace x64;
     auto addressSpace = AddressSpace::tryCreate(1);
     if(!addressSpace) return 1;
@@ -27,8 +28,8 @@ int main(int argc, char**) {
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());
 
-    auto stack1base = mmu.mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
-    auto stack2base = mmu.mmap(0, 0x1000, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+    auto stack1base = mmu.mmap(0, 0x1000, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
+    auto stack2base = mmu.mmap(0, 0x1000, BitFlags<PROT>{PROT::READ, PROT::WRITE}, BitFlags<MAP>{MAP::PRIVATE, MAP::ANONYMOUS});
 
     if(!stack1base) return 1;
     if(!stack2base) return 1;

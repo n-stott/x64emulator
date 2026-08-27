@@ -1,6 +1,6 @@
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 
-using namespace x64;
+using namespace mem;
 
 int main() {
     auto addressSpace = AddressSpace::tryCreate(128);

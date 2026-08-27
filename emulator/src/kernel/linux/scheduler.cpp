@@ -5,12 +5,12 @@
 #include "kernel/linux/processtable.h"
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
+#include "mem/mmu.h"
 #include "emulator/vm.h"
 #include "x64/disassembler/disassemblycache.h"
 #include "scopeguard.h"
 #include "profilingdata.h"
 #include "verify.h"
-#include "x64/mmu.h"
 #include <algorithm>
 #include <thread>
 
@@ -132,7 +132,7 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
-        x64::Mmu mmu(thread->process()->addressSpace());
+        mem::Mmu mmu(thread->process()->addressSpace());
         emulator::VM vm(mmu, thread->process()->jitStats());
         Process::SymbolRetriever retriever(thread->process());
         while(!thread->time().isStopAsked()) {
@@ -156,7 +156,7 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), ATOMIC_TIME_SLICE);
 
-        x64::Mmu mmu(thread->process()->addressSpace());
+        mem::Mmu mmu(thread->process()->addressSpace());
         emulator::VM vm(mmu, thread->process()->jitStats());
         Process::SymbolRetriever retriever(thread->process());
         while(!thread->time().isStopAsked()) {
@@ -482,7 +482,7 @@ namespace kernel::gnulinux {
 
         std::vector<FutexBlocker*> removableFutexBlockers;
         for(FutexBlocker& blocker : futexBlockers_) {
-            bool canUnblock = blocker.tryUnblock(x64::Ptr32{0});
+            bool canUnblock = blocker.tryUnblock(mem::Ptr32{0});
             if(canUnblock) {
                 unblock(blocker.thread(), &lock);
                 removableFutexBlockers.push_back(&blocker);
@@ -602,7 +602,7 @@ namespace kernel::gnulinux {
         }), readBlockers_.end());
 
         if(!!thread->clearChildTid()) {
-            x64::Mmu mmu(thread->process()->addressSpace());
+            mem::Mmu mmu(thread->process()->addressSpace());
             mmu.write32(thread->clearChildTid(), 0);
             wake(thread->clearChildTid(), 1);
         }
@@ -632,21 +632,21 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
-    void Scheduler::wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr relativeTimeout) {
+    void Scheduler::wait(Thread* thread, mem::Ptr32 wordPtr, u32 expected, mem::Ptr relativeTimeout) {
         verifyInKernel();
         futexBlockers_.push_back(FutexBlocker::withRelativeTimeout(thread, kernel_.timers(), wordPtr, expected, relativeTimeout));
         block(thread);
         thread->yield();
     }
 
-    void Scheduler::waitBitset(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr absoluteTimeout) {
+    void Scheduler::waitBitset(Thread* thread, mem::Ptr32 wordPtr, u32 expected, mem::Ptr absoluteTimeout) {
         verifyInKernel();
         futexBlockers_.push_back(FutexBlocker::withAbsoluteTimeout(thread, kernel_.timers(), wordPtr, expected, absoluteTimeout));
         block(thread);
         thread->yield();
     }
 
-    u32 Scheduler::wake(x64::Ptr32 wordPtr, u32 nbWaiters) {
+    u32 Scheduler::wake(mem::Ptr32 wordPtr, u32 nbWaiters) {
         verifyInKernel();
         u32 nbWoken = 0;
         SmallVector<FutexBlocker*, 2> removableBlockers;
@@ -666,7 +666,7 @@ namespace kernel::gnulinux {
         return nbWoken;
     }
 
-    u32 Scheduler::wakeOp(Thread* thread, x64::Ptr32 uaddr, u32 val, x64::Ptr32 uaddr2, u32 val2, u32 val3) {
+    u32 Scheduler::wakeOp(Thread* thread, mem::Ptr32 uaddr, u32 val, mem::Ptr32 uaddr2, u32 val2, u32 val3) {
         verifyInKernel();
         struct FutexOp {
             enum OP : u8 {
@@ -705,7 +705,7 @@ namespace kernel::gnulinux {
         // operations on any of the two supplied futex words:
 
         // uint32_t oldval = *(uint32_t *) uaddr2;
-        x64::Mmu mmu(thread->process()->addressSpace());
+        mem::Mmu mmu(thread->process()->addressSpace());
         u32 oldval = mmu.read32(uaddr2);
 
         // *(uint32_t *) uaddr2 = oldval op oparg;
@@ -745,7 +745,7 @@ namespace kernel::gnulinux {
         return nbWoken;
     }
 
-    void Scheduler::poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout) {
+    void Scheduler::poll(Thread* thread, mem::Ptr fds, size_t nfds, int timeout) {
         verifyInKernel();
         verify(timeout != 0, "poll with zero timeout should not reach the scheduler");
         pollBlockers_.push_back(PollBlocker(thread->process(), thread, kernel_.timers(), fds, nfds, timeout));
@@ -753,7 +753,7 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
-    void Scheduler::select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout) {
+    void Scheduler::select(Thread* thread, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout) {
         verifyInKernel();
         // verify(!timeout || (timeout->seconds + timeout->nanoseconds > 0), "select with zero timeout should not reach the scheduler");
         selectBlockers_.push_back(SelectBlocker(thread->process(), thread, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
@@ -761,21 +761,21 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
-    void Scheduler::epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout) {
+    void Scheduler::epoll_wait(Thread* thread, int epfd, mem::Ptr events, size_t maxevents, int timeout) {
         verifyInKernel();
         epollWaitBlockers_.push_back(EpollWaitBlocker(thread->process(), thread, kernel_.timers(), epfd, events, maxevents, timeout));
         block(thread);
         thread->yield();
     }
 
-    void Scheduler::wait4(Thread* thread, int pid, x64::Ptr32 wstatus) {
+    void Scheduler::wait4(Thread* thread, int pid, mem::Ptr32 wstatus) {
         verifyInKernel();
         waitBlockers_.push_back(WaitBlocker(thread, pid, wstatus));
         block(thread);
         thread->yield();
     }
 
-    void Scheduler::blockingRead(Thread* thread, int fd, x64::Ptr buf, size_t count) {
+    void Scheduler::blockingRead(Thread* thread, int fd, mem::Ptr buf, size_t count) {
         verifyInKernel();
         readBlockers_.push_back(ReadBlocker(thread, fd, buf, count));
         block(thread);

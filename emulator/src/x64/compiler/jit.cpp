@@ -1,7 +1,7 @@
 #include "x64/compiler/jit.h"
 #include "x64/compiler/compiler.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 
 namespace x64 {
 
@@ -72,7 +72,7 @@ namespace x64 {
         return ptr;
     }
 
-    void Jit::exec(Cpu* cpu, Mmu* mmu, NativeExecPtr nativeBasicBlock, u64* ticks,
+    void Jit::exec(Cpu* cpu, mem::Mmu* mmu, NativeExecPtr nativeBasicBlock, u64* ticks,
             void** currentlyExecutingSegmentPtr, const void* currentlyExecutingJitBasicBlock) {
         assert(!!cpu);
         assert(!!mmu);

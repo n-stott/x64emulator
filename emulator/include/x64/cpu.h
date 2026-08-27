@@ -10,14 +10,17 @@
 #include "smallvector.h"
 #include <vector>
 
+namespace mem {
+    class Mmu;
+}
+
 namespace x64 {
 
-    class Mmu;
     class Cpu;
 
     class Cpu {
     public:
-        explicit Cpu(Mmu& mmu);
+        explicit Cpu(mem::Mmu& mmu);
 
         class Callback {
         public:
@@ -54,40 +57,40 @@ namespace x64 {
         void set(MMX reg, u64 value) { regs_.set(reg, value); }
         void set(XMM reg, Xmm value) { regs_.set(reg, value); }
 
-        template<Size size>
+        template<mem::Size size>
         U<size> xchg(R<size> reg, U<size> value) {
             U<size> regValue = regs_.get(reg);
             regs_.set(reg, value);
             return regValue;
         }
 
-        u8  get(Ptr8 ptr) const;
-        u16 get(Ptr16 ptr) const;
-        u32 get(Ptr32 ptr) const;
-        u64 get(Ptr64 ptr) const;
-        f80 get(Ptr80 ptr) const;
-        Xmm get(Ptr128 ptr) const;
-        Xmm getUnaligned(Ptr128 ptr) const;
+        u8  get(mem::Ptr8 ptr) const;
+        u16 get(mem::Ptr16 ptr) const;
+        u32 get(mem::Ptr32 ptr) const;
+        u64 get(mem::Ptr64 ptr) const;
+        f80 get(mem::Ptr80 ptr) const;
+        Xmm get(mem::Ptr128 ptr) const;
+        Xmm getUnaligned(mem::Ptr128 ptr) const;
 
-        void set(Ptr8 ptr, u8 value);
-        void set(Ptr16 ptr, u16 value);
-        void set(Ptr32 ptr, u32 value);
-        void set(Ptr64 ptr, u64 value);
-        void set(Ptr80 ptr, f80 value);
-        void set(Ptr128 ptr, Xmm value);
-        void setUnaligned(Ptr128 ptr, Xmm value);
+        void set(mem::Ptr8 ptr, u8 value);
+        void set(mem::Ptr16 ptr, u16 value);
+        void set(mem::Ptr32 ptr, u32 value);
+        void set(mem::Ptr64 ptr, u64 value);
+        void set(mem::Ptr80 ptr, f80 value);
+        void set(mem::Ptr128 ptr, Xmm value);
+        void setUnaligned(mem::Ptr128 ptr, Xmm value);
 
-        u8  xchg(Ptr8 ptr, u8 value);
-        u16 xchg(Ptr16 ptr, u16 value);
-        u32 xchg(Ptr32 ptr, u32 value);
-        u64 xchg(Ptr64 ptr, u64 value);
+        u8  xchg(mem::Ptr8 ptr, u8 value);
+        u16 xchg(mem::Ptr16 ptr, u16 value);
+        u32 xchg(mem::Ptr32 ptr, u32 value);
+        u64 xchg(mem::Ptr64 ptr, u64 value);
 
-        template<Size size>
+        template<mem::Size size>
         inline U<size> get(const RM<size>& rm) const {
             return rm.isReg ? get(rm.reg) : get(resolve(rm.mem));
         }
         
-        template<Size size>
+        template<mem::Size size>
         inline void set(const RM<size>& rm, U<size> value) {
             return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
         }
@@ -104,7 +107,7 @@ namespace x64 {
             return rm.isReg ? set(rm.reg, value) : set(resolve(rm.mem), value);
         }
         
-        template<Size size>
+        template<mem::Size size>
         inline U<size> xchg(const RM<size>& rm, U<size> value) {
             return rm.isReg ? xchg<size>(rm.reg, value) : xchg(resolve(rm.mem), value);
         }
@@ -132,7 +135,7 @@ namespace x64 {
         
     private:
         friend class Jit;
-        Mmu* mmu_;
+        mem::Mmu* mmu_;
         Flags flags_;
         Registers regs_;
         X87Fpu x87fpu_;
@@ -193,9 +196,9 @@ namespace x64 {
         u32 resolve(Encoding32 addr) const { return regs_.resolve(addr); }
         u64 resolve(Encoding64 addr) const { return regs_.resolve(addr); }
 
-        template<Size size>
-        SPtr<size> resolve(M<size> addr) const {
-            return SPtr<size>{getSegmentBase(addr.segment) + resolve(addr.encoding)};
+        template<mem::Size size>
+        mem::SPtr<size> resolve(M<size> addr) const {
+            return mem::SPtr<size>{getSegmentBase(addr.segment) + resolve(addr.encoding)};
         }
 
         template<typename Dst>
@@ -213,10 +216,10 @@ namespace x64 {
         template<typename Dst>
         void execCmpxchg64Impl(Dst dst, u64 src);
 
-        void execLockCmpxchg8Impl(Ptr8 dst, u8 src);
-        void execLockCmpxchg16Impl(Ptr16 dst, u16 src);
-        void execLockCmpxchg32Impl(Ptr32 dst, u32 src);
-        void execLockCmpxchg64Impl(Ptr64 dst, u64 src);
+        void execLockCmpxchg8Impl(mem::Ptr8 dst, u8 src);
+        void execLockCmpxchg16Impl(mem::Ptr16 dst, u16 src);
+        void execLockCmpxchg32Impl(mem::Ptr32 dst, u32 src);
+        void execLockCmpxchg64Impl(mem::Ptr64 dst, u64 src);
 
         static const std::array<CpuExecPtr, (size_t)Insn::UNKNOWN+1> execFunctions_;
 
@@ -359,21 +362,21 @@ namespace x64 {
         void execLockXaddM32R32(const X64Instruction&);
         void execLockXaddM64R64(const X64Instruction&);
 
-        template<Size size>
+        template<mem::Size size>
         void execMovRR(const X64Instruction&);
 
         void execMovMMXMMX(const X64Instruction&);
 
-        template<Size size>
+        template<mem::Size size>
         void execMovRM(const X64Instruction&);
 
-        template<Size size>
+        template<mem::Size size>
         void execMovMR(const X64Instruction&);
 
-        template<Size size>
+        template<mem::Size size>
         void execMovRImm(const X64Instruction&);
 
-        template<Size size>
+        template<mem::Size size>
         void execMovMImm(const X64Instruction&);
 
         void execMovq2dq(const X64Instruction&);

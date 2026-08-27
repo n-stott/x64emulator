@@ -15,7 +15,6 @@
 #include <vector>
 
 namespace x64 {
-    class Mmu;
     class Cpu;
 }
 
@@ -50,18 +49,18 @@ namespace kernel::gnulinux {
 
         void sleep(Thread* thread, Timer* timer, PreciseTime targetTime);
 
-        void wait(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr relativeTimeout);
-        void waitBitset(Thread* thread, x64::Ptr32 wordPtr, u32 expected, x64::Ptr absoluteTimeout);
-        u32 wake(x64::Ptr32 wordPtr, u32 nbWaiters);
-        u32 wakeOp(Thread* thread, x64::Ptr32 uaddr, u32 val, x64::Ptr32 uaddr2, u32 val2, u32 val3);
+        void wait(Thread* thread, mem::Ptr32 wordPtr, u32 expected, mem::Ptr relativeTimeout);
+        void waitBitset(Thread* thread, mem::Ptr32 wordPtr, u32 expected, mem::Ptr absoluteTimeout);
+        u32 wake(mem::Ptr32 wordPtr, u32 nbWaiters);
+        u32 wakeOp(Thread* thread, mem::Ptr32 uaddr, u32 val, mem::Ptr32 uaddr2, u32 val2, u32 val3);
 
-        void poll(Thread* thread, x64::Ptr fds, size_t nfds, int timeout);
-        void select(Thread* thread, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
-        void epoll_wait(Thread* thread, int epfd, x64::Ptr events, size_t maxevents, int timeout);
+        void poll(Thread* thread, mem::Ptr fds, size_t nfds, int timeout);
+        void select(Thread* thread, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout);
+        void epoll_wait(Thread* thread, int epfd, mem::Ptr events, size_t maxevents, int timeout);
 
-        void wait4(Thread* thread, int pid, x64::Ptr32 wstatus);
+        void wait4(Thread* thread, int pid, mem::Ptr32 wstatus);
 
-        void blockingRead(Thread* thread, int fd, x64::Ptr buf, size_t count);
+        void blockingRead(Thread* thread, int fd, mem::Ptr buf, size_t count);
 
         void suspendUntilVmReleased(Thread* thread);
 

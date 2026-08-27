@@ -1,7 +1,8 @@
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "x64/cpu.h"
 
 int testXchgRegReg() {
+    using namespace mem;
     using namespace x64;
     auto addressSpace = AddressSpace::tryCreate(16);
     if(!addressSpace) return 1;
@@ -27,6 +28,7 @@ int testXchgRegReg() {
 }
 
 int testXchgMemReg() {
+    using namespace mem;
     using namespace x64;
     auto addressSpace = AddressSpace::tryCreate(16);
     if(!addressSpace) return 1;

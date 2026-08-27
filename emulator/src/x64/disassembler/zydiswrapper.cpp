@@ -278,7 +278,7 @@ namespace x64 {
                         (i32)operand.mem.disp.value};
     }
 
-    template<Size size>
+    template<mem::Size size>
     std::optional<M<size>> asMemory(const ZydisDecodedOperand& operand) {
         if(operand.type != ZYDIS_OPERAND_TYPE_MEMORY) return {};
         if(operand.size != 8*pointerSize(size)) return {};
@@ -289,19 +289,19 @@ namespace x64 {
         return M<size>{segment.value(), enc.value()};
     }
 
-    std::optional<M8> asMemory8(const ZydisDecodedOperand& operand) { return asMemory<Size::BYTE>(operand); }
-    std::optional<M16> asMemory16(const ZydisDecodedOperand& operand) { return asMemory<Size::WORD>(operand); }
-    std::optional<M32> asMemory32(const ZydisDecodedOperand& operand) { return asMemory<Size::DWORD>(operand); }
-    std::optional<M64> asMemory64(const ZydisDecodedOperand& operand) { return asMemory<Size::QWORD>(operand); }
-    std::optional<M80> asMemory80(const ZydisDecodedOperand& operand) { return asMemory<Size::TWORD>(operand); }
-    std::optional<M128> asMemory128(const ZydisDecodedOperand& operand) { return asMemory<Size::XWORD>(operand); }
-    std::optional<M224> asMemory224(const ZydisDecodedOperand& operand) { return asMemory<Size::FPUENV>(operand); }
-    std::optional<M4096> asMemory4096(const ZydisDecodedOperand& operand) { return asMemory<Size::FPUSTATE>(operand); }
+    std::optional<M8> asMemory8(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::BYTE>(operand); }
+    std::optional<M16> asMemory16(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::WORD>(operand); }
+    std::optional<M32> asMemory32(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::DWORD>(operand); }
+    std::optional<M64> asMemory64(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::QWORD>(operand); }
+    std::optional<M80> asMemory80(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::TWORD>(operand); }
+    std::optional<M128> asMemory128(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::XWORD>(operand); }
+    std::optional<M224> asMemory224(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::FPUENV>(operand); }
+    std::optional<M4096> asMemory4096(const ZydisDecodedOperand& operand) { return asMemory<mem::Size::FPUSTATE>(operand); }
 
     std::optional<RM8> asRM8(const ZydisDecodedOperand& operand) {
         auto asreg = asRegister8(operand);
         if(asreg) return RM8{true, asreg.value(), M8{}};
-        auto asmem = asMemory<Size::BYTE>(operand);
+        auto asmem = asMemory<mem::Size::BYTE>(operand);
         if(asmem) return RM8{false, R8{}, asmem.value()};
         return {};
     }
@@ -309,7 +309,7 @@ namespace x64 {
     std::optional<RM16> asRM16(const ZydisDecodedOperand& operand) {
         auto asreg = asRegister16(operand);
         if(asreg) return RM16{true, asreg.value(), M16{}};
-        auto asmem = asMemory<Size::WORD>(operand);
+        auto asmem = asMemory<mem::Size::WORD>(operand);
         if(asmem) return RM16{false, R16{}, asmem.value()};
         return {};
     }
@@ -317,7 +317,7 @@ namespace x64 {
     std::optional<RM32> asRM32(const ZydisDecodedOperand& operand) {
         auto asreg = asRegister32(operand);
         if(asreg) return RM32{true, asreg.value(), M32{}};
-        auto asmem = asMemory<Size::DWORD>(operand);
+        auto asmem = asMemory<mem::Size::DWORD>(operand);
         if(asmem) return RM32{false, R32{}, asmem.value()};
         return {};
     }
@@ -325,7 +325,7 @@ namespace x64 {
     std::optional<RM64> asRM64(const ZydisDecodedOperand& operand) {
         auto asreg = asRegister64(operand);
         if(asreg) return RM64{true, asreg.value(), M64{}};
-        auto asmem = asMemory<Size::QWORD>(operand);
+        auto asmem = asMemory<mem::Size::QWORD>(operand);
         if(asmem) return RM64{false, R64{}, asmem.value()};
         return {};
     }
@@ -333,7 +333,7 @@ namespace x64 {
     std::optional<XMMM128> asRM128(const ZydisDecodedOperand& operand) {
         auto asreg = asRegister128(operand);
         if(asreg) return XMMM128{true, asreg.value(), M128{}};
-        auto asmem = asMemory<Size::XWORD>(operand);
+        auto asmem = asMemory<mem::Size::XWORD>(operand);
         if(asmem) return XMMM128{false, XMM{}, asmem.value()};
         return {};
     }
@@ -341,7 +341,7 @@ namespace x64 {
     std::optional<MMXM32> asMMXM32(const ZydisDecodedOperand& operand) {
         auto asreg = asMMX(operand);
         if(asreg) return MMXM32{true, asreg.value(), M32{}};
-        auto asmem = asMemory<Size::DWORD>(operand);
+        auto asmem = asMemory<mem::Size::DWORD>(operand);
         if(asmem) return MMXM32{false, MMX{}, asmem.value()};
         return {};
     }
@@ -349,7 +349,7 @@ namespace x64 {
     std::optional<MMXM64> asMMXM64(const ZydisDecodedOperand& operand) {
         auto asreg = asMMX(operand);
         if(asreg) return MMXM64{true, asreg.value(), M64{}};
-        auto asmem = asMemory<Size::QWORD>(operand);
+        auto asmem = asMemory<mem::Size::QWORD>(operand);
         if(asmem) return MMXM64{false, MMX{}, asmem.value()};
         return {};
     }

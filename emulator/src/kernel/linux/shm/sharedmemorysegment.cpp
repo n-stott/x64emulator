@@ -1,5 +1,5 @@
 #include "kernel/linux/shm/sharedmemorysegment.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "verify.h"
 #include <sys/shm.h>
 
@@ -25,19 +25,19 @@ namespace kernel::gnulinux {
         verify(markedForRemoval_, "Segment was not marked for removal !");
     }
 
-    ErrnoOr<u64> SharedMemorySegment::attach(x64::Mmu* mmu, bool readonly, bool executable) {
+    ErrnoOr<u64> SharedMemorySegment::attach(mem::Mmu* mmu, bool readonly, bool executable) {
         verify(!!mmu);
-        BitFlags<x64::PROT> prot;
-        prot.add(x64::PROT::READ);
+        BitFlags<mem::PROT> prot;
+        prot.add(mem::PROT::READ);
         if(!readonly) {
-            prot.add(x64::PROT::WRITE);
+            prot.add(mem::PROT::WRITE);
         }
         if(executable) {
-            prot.add(x64::PROT::EXEC);
+            prot.add(mem::PROT::EXEC);
         }
-        BitFlags<x64::MAP> flags;
-        flags.add(x64::MAP::ANONYMOUS);
-        flags.add(x64::MAP::PRIVATE);
+        BitFlags<mem::MAP> flags;
+        flags.add(mem::MAP::ANONYMOUS);
+        flags.add(mem::MAP::PRIVATE);
 
         // THIS IS A MASSIVE HACK :-p
         // We reserve the range in the Mmu and in host memory and remap the shared region on top.
@@ -53,7 +53,7 @@ namespace kernel::gnulinux {
         return ErrnoOr<u64>(addr.value());
     }
 
-    int SharedMemorySegment::detach(x64::Mmu* mmu) {
+    int SharedMemorySegment::detach(mem::Mmu* mmu) {
         verify(!!mmu);
         verify(numAttach_ > 0);
         verify(attachedAddress_.has_value(), "Detaching non-attached SharedMemorySegment");

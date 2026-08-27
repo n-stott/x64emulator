@@ -2,7 +2,7 @@
 #include "kernel/linux/kernel.h"
 #include "kernel/linux/scheduler.h"
 #include "kernel/linux/thread.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "verify.h"
 #include "profilingdata.h"
 #include <fmt/core.h>

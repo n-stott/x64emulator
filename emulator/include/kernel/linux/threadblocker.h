@@ -9,10 +9,6 @@
 #include <string>
 #include <vector>
 
-namespace x64 {
-    class Mmu;
-}
-
 namespace kernel::gnulinux {
 
     class FS;
@@ -21,10 +17,10 @@ namespace kernel::gnulinux {
 
     class FutexBlocker {
     public:
-        static FutexBlocker withAbsoluteTimeout(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
-        static FutexBlocker withRelativeTimeout(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout);
+        static FutexBlocker withAbsoluteTimeout(Thread* thread, Timers& timers, mem::Ptr32 wordPtr, u32 expected, mem::Ptr timeout);
+        static FutexBlocker withRelativeTimeout(Thread* thread, Timers& timers, mem::Ptr32 wordPtr, u32 expected, mem::Ptr timeout);
 
-        [[nodiscard]] bool tryUnblock(x64::Ptr32 ptr) const;
+        [[nodiscard]] bool tryUnblock(mem::Ptr32 ptr) const;
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
 
         Thread* thread() const { return thread_; }
@@ -32,18 +28,18 @@ namespace kernel::gnulinux {
         std::string toString() const;
 
     private:
-        FutexBlocker(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout, bool absoluteTimeout);
+        FutexBlocker(Thread* thread, Timers& timers, mem::Ptr32 wordPtr, u32 expected, mem::Ptr timeout, bool absoluteTimeout);
 
         Thread* thread_;
         Timers* timers_;
-        x64::Ptr32 wordPtr_;
+        mem::Ptr32 wordPtr_;
         u32 expected_;
         std::optional<PreciseTime> timeLimit_;
     };
 
     class PollBlocker {
     public:
-        PollBlocker(Process* process, Thread* thread, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs);
+        PollBlocker(Process* process, Thread* thread, Timers& timers, mem::Ptr pollfds, size_t nfds, int timeoutInMs);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -56,7 +52,7 @@ namespace kernel::gnulinux {
         Process* process_;
         Thread* thread_;
         Timers* timers_;
-        x64::Ptr pollfds_;
+        mem::Ptr pollfds_;
         size_t nfds_;
         std::optional<PreciseTime> timeLimit_;
         std::vector<FS::PollFd> allpollfds_; // cached vector
@@ -65,7 +61,7 @@ namespace kernel::gnulinux {
 
     class SelectBlocker {
     public:
-        SelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout);
+        SelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -79,17 +75,17 @@ namespace kernel::gnulinux {
         Thread* thread_;
         Timers* timers_;
         int nfds_;
-        x64::Ptr readfds_;
-        x64::Ptr writefds_;
-        x64::Ptr exceptfds_;
-        x64::Ptr timeout_;
+        mem::Ptr readfds_;
+        mem::Ptr writefds_;
+        mem::Ptr exceptfds_;
+        mem::Ptr timeout_;
         std::optional<PreciseTime> timeLimit_;
         FS::SelectData selectData_; // cached vector
     };
 
     class EpollWaitBlocker {
     public:
-        EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs);
+        EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, mem::Ptr events, size_t maxevents, int timeoutInMs);
         
         [[nodiscard]] bool tryUnblock(FS& fs);
         [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
@@ -103,7 +99,7 @@ namespace kernel::gnulinux {
         Thread* thread_;
         Timers* timers_;
         int epfd_;
-        x64::Ptr events_;
+        mem::Ptr events_;
         size_t maxevents_;
         std::optional<PreciseTime> timeLimit_;
     };
@@ -127,7 +123,7 @@ namespace kernel::gnulinux {
 
     class WaitBlocker {
     public:
-        WaitBlocker(Thread* thread, int pid, x64::Ptr32 wstatus)
+        WaitBlocker(Thread* thread, int pid, mem::Ptr32 wstatus)
             : thread_(thread), pid_(pid), wstatus_(wstatus) { }
 
         [[nodiscard]] bool tryUnblock();
@@ -139,12 +135,12 @@ namespace kernel::gnulinux {
     private:
         Thread* thread_;
         int pid_;
-        x64::Ptr32 wstatus_;
+        mem::Ptr32 wstatus_;
     };
 
     class ReadBlocker {
     public:
-        ReadBlocker(Thread* thread, int fd, x64::Ptr buf, size_t count)
+        ReadBlocker(Thread* thread, int fd, mem::Ptr buf, size_t count)
             : thread_(thread), fd_(fd), buf_(buf), count_(count) { }
 
         [[nodiscard]] bool tryUnblock(FS& fs);
@@ -156,7 +152,7 @@ namespace kernel::gnulinux {
     private:
         Thread* thread_;
         int fd_;
-        x64::Ptr buf_;
+        mem::Ptr buf_;
         size_t count_;
     };
 

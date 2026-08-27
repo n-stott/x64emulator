@@ -6058,7 +6058,7 @@ namespace x64 {
         generator_->mov(reg, make64(get(Reg::REG_BASE), registerOffset(reg)));
     }
 
-    template<Size size>
+    template<mem::Size size>
     void Compiler::forceEncodingSync(const M<size>& mem) {
         (void)mem;
     }
@@ -6355,7 +6355,7 @@ namespace x64 {
         return assembler_->code();
     }
 
-    template<Size size>
+    template<mem::Size size>
     Compiler::Mem Compiler::getAddress(Reg dst, TmpReg tmp, const M<size>& mem) {
         assert(dst != tmp.reg);
         if(mem.segment == Segment::FS) {

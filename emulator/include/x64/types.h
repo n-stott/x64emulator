@@ -1,6 +1,7 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include "mem/mmutypes.h"
 #include "utils.h"
 #include <cassert>
 #include <cstddef>
@@ -286,133 +287,58 @@ namespace x64 {
         i32 displacement;
     };
 
-    enum class Size : u8 {
-        BYTE,
-        WORD,
-        DWORD,
-        QWORD,
-        TWORD,
-        XWORD,
-        FPUENV,
-        FPUSTATE,
-    };
 
-    inline constexpr u16 pointerSize(Size size) {
-        switch(size) {
-            case Size::BYTE: return 1;
-            case Size::WORD: return 2;
-            case Size::DWORD: return 4;
-            case Size::QWORD: return 8;
-            case Size::TWORD: return 10;
-            case Size::XWORD: return 16;
-            case Size::FPUENV: return 28;
-            case Size::FPUSTATE: return 512;
-        }
-        return 0;
-    }
-
-    template<Size size>
+    template<mem::Size size>
     struct M {
         Segment segment;
         Encoding64 encoding;
     };
 
-    template<Size size>
-    class SPtr {
-    public:
-        explicit SPtr(u64 address) : address_(address) { }
-
-        static SPtr null() { return SPtr{0}; }
-
-        explicit operator bool() const {
-            return !!address();
-        }
-
-        SPtr& operator++() {
-            address_ += pointerSize(size);
-            return *this;
-        }
-
-        SPtr operator++(int) {
-            SPtr current = *this;
-            address_ += pointerSize(size);
-            return current;
-        }
-
-        SPtr& operator+=(size_t count) {
-            address_ += count*pointerSize(size);
-            return *this;
-        }
-
-        bool operator==(SPtr other) const {
-            return address_ == other.address_;
-        }
-
-        bool operator!=(SPtr other) const {
-            return !(*this == other);
-        }
-
-        u64 address() const { return address_; }
-
-    private:
-        u64 address_;
-    };
-
-    template<Size size>
+    template<mem::Size size>
     struct Unsigned;
 
-    template<> struct Unsigned<Size::BYTE> { using type = u8; };
-    template<> struct Unsigned<Size::WORD> { using type = u16; };
-    template<> struct Unsigned<Size::DWORD> { using type = u32; };
-    template<> struct Unsigned<Size::QWORD> { using type = u64; };
-    template<> struct Unsigned<Size::XWORD> { using type = u128; };
+    template<> struct Unsigned<mem::Size::BYTE> { using type = u8; };
+    template<> struct Unsigned<mem::Size::WORD> { using type = u16; };
+    template<> struct Unsigned<mem::Size::DWORD> { using type = u32; };
+    template<> struct Unsigned<mem::Size::QWORD> { using type = u64; };
+    template<> struct Unsigned<mem::Size::XWORD> { using type = u128; };
 
-    template<Size size>
+    template<mem::Size size>
     struct Register;
 
-    template<> struct Register<Size::BYTE> { using value = R8; };
-    template<> struct Register<Size::WORD> { using value = R16; };
-    template<> struct Register<Size::DWORD> { using value = R32; };
-    template<> struct Register<Size::QWORD> { using value = R64; };
-    template<> struct Register<Size::XWORD> { using value = XMM; };
+    template<> struct Register<mem::Size::BYTE> { using value = R8; };
+    template<> struct Register<mem::Size::WORD> { using value = R16; };
+    template<> struct Register<mem::Size::DWORD> { using value = R32; };
+    template<> struct Register<mem::Size::QWORD> { using value = R64; };
+    template<> struct Register<mem::Size::XWORD> { using value = XMM; };
 
 
-    template<Size size>
+    template<mem::Size size>
     using U = typename Unsigned<size>::type;
 
-    template<Size size>
+    template<mem::Size size>
     using R = typename Register<size>::value;
 
-    using Ptr = SPtr<Size::BYTE>;
-    using Ptr8 = SPtr<Size::BYTE>;
-    using Ptr16 = SPtr<Size::WORD>;
-    using Ptr32 = SPtr<Size::DWORD>;
-    using Ptr64 = SPtr<Size::QWORD>;
-    using Ptr80 = SPtr<Size::TWORD>;
-    using Ptr128 = SPtr<Size::XWORD>;
-    using Ptr224 = SPtr<Size::FPUENV>;
-    using Ptr4096 = SPtr<Size::FPUSTATE>;
-
-    template<Size size>
+    template<mem::Size size>
     struct RM {
         bool isReg;
         R<size> reg;
         M<size> mem;
     };
 
-    using M8 = M<Size::BYTE>;
-    using RM8 = RM<Size::BYTE>;
+    using M8 = M<mem::Size::BYTE>;
+    using RM8 = RM<mem::Size::BYTE>;
 
-    using M16 = M<Size::WORD>;
-    using RM16 = RM<Size::WORD>;
+    using M16 = M<mem::Size::WORD>;
+    using RM16 = RM<mem::Size::WORD>;
 
-    using M32 = M<Size::DWORD>;
-    using RM32 = RM<Size::DWORD>;
+    using M32 = M<mem::Size::DWORD>;
+    using RM32 = RM<mem::Size::DWORD>;
 
-    using M64 = M<Size::QWORD>;
-    using RM64 = RM<Size::QWORD>;
+    using M64 = M<mem::Size::QWORD>;
+    using RM64 = RM<mem::Size::QWORD>;
 
-    using M80 = M<Size::TWORD>;
+    using M80 = M<mem::Size::TWORD>;
 
     struct MMXM32 {
         bool isReg;
@@ -426,13 +352,13 @@ namespace x64 {
         M64 mem;
     };
 
-    using M128 = M<Size::XWORD>;
-    using XMMM128 = RM<Size::XWORD>;
+    using M128 = M<mem::Size::XWORD>;
+    using XMMM128 = RM<mem::Size::XWORD>;
 
-    using M224 = M<Size::FPUENV>;
-    using M4096 = M<Size::FPUSTATE>;
+    using M224 = M<mem::Size::FPUENV>;
+    using M4096 = M<mem::Size::FPUSTATE>;
 
-    template<Size size>
+    template<mem::Size size>
     inline bool operator==(const M<size>& a, const M<size>& b) {
         return a.segment == b.segment
             && a.encoding.base == b.encoding.base

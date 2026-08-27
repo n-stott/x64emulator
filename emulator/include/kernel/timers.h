@@ -1,13 +1,14 @@
 #ifndef TIMERS_H
 #define TIMERS_H
 
+#include "mem/mmutypes.h"
 #include "x64/types.h"
 #include "utils.h"
 #include <memory>
 #include <optional>
 #include <vector>
 
-namespace x64 {
+namespace mem {
     class Mmu;
 }
 
@@ -76,14 +77,14 @@ namespace kernel {
         void update(PreciseTime kernelTime);
         PreciseTime now() const { return now_; }
         
-        static std::optional<PreciseTime> readTimespec(x64::Mmu& mmu, x64::Ptr ptr);
-        static std::optional<PreciseTime> readTimeval(x64::Mmu& mmu, x64::Ptr ptr);
+        static std::optional<PreciseTime> readTimespec(mem::Mmu& mmu, mem::Ptr ptr);
+        static std::optional<PreciseTime> readTimeval(mem::Mmu& mmu, mem::Ptr ptr);
 
-        static std::optional<TimeDifference> readRelativeTimespec(x64::Mmu& mmu, x64::Ptr ptr);
-        static std::optional<TimeDifference> readRelativeTimeval(x64::Mmu& mmu, x64::Ptr ptr);
+        static std::optional<TimeDifference> readRelativeTimespec(mem::Mmu& mmu, mem::Ptr ptr);
+        static std::optional<TimeDifference> readRelativeTimeval(mem::Mmu& mmu, mem::Ptr ptr);
 
-        static void writeTimespec(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time);
-        static void writeTimeval(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time);
+        static void writeTimespec(mem::Mmu& mmu, mem::Ptr ptr, PreciseTime time);
+        static void writeTimeval(mem::Mmu& mmu, mem::Ptr ptr, PreciseTime time);
 
     private:
         explicit Timer(int id) : id_(id) { }

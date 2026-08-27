@@ -1,5 +1,5 @@
+#include "mem/mmu.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "x64/compiler/compiler.h"
 #include "x64/compiler/jit.h"
 #include <sys/mman.h>
@@ -7,6 +7,7 @@
 
 
 int main(int, char**) {
+    using namespace mem;
     using namespace x64;
     auto addressSpace = AddressSpace::tryCreate(1);
     if(!addressSpace) return 1;

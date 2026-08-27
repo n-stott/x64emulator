@@ -1,9 +1,10 @@
+#include "mem/mmu.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "x64/compiler/jit.h"
 #include "x64/codesegment.h"
 
+using namespace mem;
 using namespace x64;
 
 int main() {

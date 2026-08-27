@@ -677,7 +677,7 @@ namespace x64 {
         void forceJitRegisterSync(R16 reg);
         void forceJitRegisterSync(R32 reg);
         void forceJitRegisterSync(R64 reg);
-        template<Size size>
+        template<mem::Size size>
         void forceEncodingSync(const M<size>& reg);
 
         void readRegMM(RegMM dst, MMX src);
@@ -702,7 +702,7 @@ namespace x64 {
         const std::vector<u8>& pushCallstackCode(const void* dst, TmpReg tmp1, TmpReg tmp2);
         const std::vector<u8>& popCallstackCode(Reg dst, TmpReg tmp1, TmpReg tmp2);
 
-        template<Size size>
+        template<mem::Size size>
         Mem getAddress(Reg dst, TmpReg tmp, const M<size>& mem);
 
         void add8(Reg dst, Reg src);

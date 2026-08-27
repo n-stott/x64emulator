@@ -1,6 +1,6 @@
 #include "pe-reader/pe-reader.h"
+#include "mem/mmu.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include <fmt/format.h>
 
 
@@ -57,15 +57,15 @@ int main(int argc, char* argv[]) {
     // fmt::println("loaderFlags                 : {:#x}", optionalHeader.content.loaderFlags);
     // fmt::println("numberOfRvaAndSizes         : {}", optionalHeader.content.numberOfRvaAndSizes);
 
-    auto addressspace = x64::AddressSpace::tryCreate(6);
+    auto addressspace = mem::AddressSpace::tryCreate(6);
     if (!addressspace) {
         fmt::print(stderr, "Unable to create AddressSpace\n");
         return 1;
     }
-    x64::Mmu mmu(*addressspace);
+    mem::Mmu mmu(*addressspace);
 
     u32 sectionAlignment = pe->imageNtHeaders64()->optionalHeader.content.sectionAlignment;
-    if (sectionAlignment % x64::Mmu::PAGE_SIZE != 0) {
+    if (sectionAlignment % mem::Mmu::PAGE_SIZE != 0) {
         fmt::print(stderr, "Section alignment ({:#x}) is not a multiple of the page size\n", sectionAlignment);
         return 1;
     }
@@ -74,7 +74,7 @@ int main(int argc, char* argv[]) {
     u32 maxAddress = 0;
     for (const auto& section : pe->sectionHeaders()) {
         u32 sectionStart = section.virtualAddress;
-        u32 sectionEnd = (u32)x64::Mmu::pageRoundUp(section.virtualAddress + section.misc.virtualSize);
+        u32 sectionEnd = (u32)mem::Mmu::pageRoundUp(section.virtualAddress + section.misc.virtualSize);
         minAddress = std::min(minAddress, sectionStart);
         maxAddress = std::max(minAddress, sectionEnd);
     }
@@ -85,35 +85,35 @@ int main(int argc, char* argv[]) {
     }
     u32 sizeInMemory = maxAddress - minAddress;
 
-    auto imageBaseInMemory = mmu.mmap(0, sizeInMemory, BitFlags<x64::PROT>{x64::PROT::NONE}, BitFlags<x64::MAP>{x64::MAP::ANONYMOUS, x64::MAP::PRIVATE});
+    auto imageBaseInMemory = mmu.mmap(0, sizeInMemory, BitFlags<mem::PROT>{mem::PROT::NONE}, BitFlags<mem::MAP>{mem::MAP::ANONYMOUS, mem::MAP::PRIVATE});
     mmu.munmap(imageBaseInMemory.value(), sizeInMemory);
 
     for (const auto& section : pe->sectionHeaders()) {
         u32 sectionStart = section.virtualAddress;
         u32 sectionBaseInMemory = (u32)imageBaseInMemory.value() + sectionStart - minAddress;
-        u32 sectionSize = (u32)x64::Mmu::pageRoundUp(section.misc.virtualSize);
+        u32 sectionSize = (u32)mem::Mmu::pageRoundUp(section.misc.virtualSize);
 
-        BitFlags<x64::MAP> map{ x64::MAP::ANONYMOUS, x64::MAP::FIXED, x64::MAP::PRIVATE };
-        auto ptr = mmu.mmap(sectionBaseInMemory, sectionSize, BitFlags<x64::PROT>{x64::PROT::WRITE}, map);
+        BitFlags<mem::MAP> map{ mem::MAP::ANONYMOUS, mem::MAP::FIXED, mem::MAP::PRIVATE };
+        auto ptr = mmu.mmap(sectionBaseInMemory, sectionSize, BitFlags<mem::PROT>{mem::PROT::WRITE}, map);
         auto span = pe->sectionSpan(section);
         if (!span) {
             fmt::print(stderr, "Unable to get span for section {}\n", section.nameAsString());
             return 1;
         }
         u32 copiedSize = std::min(section.misc.virtualSize, (u32)span->size);
-        mmu.copyToMmu(x64::Ptr{ ptr.value()}, span->data, copiedSize);
+        mmu.copyToMmu(mem::Ptr{ ptr.value()}, span->data, copiedSize);
 
-        BitFlags<x64::PROT> prot;
-        if (section.canBeRead()) prot.add(x64::PROT::READ);
-        if (section.canBeWritten()) prot.add(x64::PROT::WRITE);
-        if (section.canBeExecuted()) prot.add(x64::PROT::EXEC);
+        BitFlags<mem::PROT> prot;
+        if (section.canBeRead()) prot.add(mem::PROT::READ);
+        if (section.canBeWritten()) prot.add(mem::PROT::WRITE);
+        if (section.canBeExecuted()) prot.add(mem::PROT::EXEC);
         mmu.mprotect(sectionBaseInMemory, sectionSize, prot);
 
         mmu.setRegionName(sectionBaseInMemory, section.nameAsString());
     }
 
     u64 stackSize = 0x1000;
-    auto stackBase = mmu.mmap(0, stackSize, BitFlags<x64::PROT>{x64::PROT::READ, x64::PROT::WRITE}, BitFlags<x64::MAP>{x64::MAP::PRIVATE, x64::MAP::ANONYMOUS});
+    auto stackBase = mmu.mmap(0, stackSize, BitFlags<mem::PROT>{mem::PROT::READ, mem::PROT::WRITE}, BitFlags<mem::MAP>{mem::MAP::PRIVATE, mem::MAP::ANONYMOUS});
     [[maybe_unused]] u64 stackTop = stackSize + stackBase.value();
 
     auto cpu = x64::Cpu(mmu);

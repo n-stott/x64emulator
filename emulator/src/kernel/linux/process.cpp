@@ -1,8 +1,8 @@
 #include "kernel/linux/process.h"
 #include "kernel/linux/processtable.h"
 #include "kernel/linux/fs/fs.h"
+#include "mem/mmu.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
 #include "x64/compiler/compiler.h"
 #include "host/host.h"
 #include "fmt/format.h"
@@ -11,7 +11,7 @@
 namespace kernel::gnulinux {
 
     std::unique_ptr<Process> Process::tryCreate(ProcessTable& processTable, u32 addressSpaceSizeInMB, FS& fs) {
-        auto addressSpace = x64::AddressSpace::tryCreate(addressSpaceSizeInMB);
+        auto addressSpace = mem::AddressSpace::tryCreate(addressSpaceSizeInMB);
         if(!addressSpace) {
             fmt::println("Unable to create address space");
             return {};
@@ -42,7 +42,7 @@ namespace kernel::gnulinux {
         return std::unique_ptr<Process>(new Process(pid, std::move(addressSpace), fs, std::move(fds), currentWorkDirectory));
     }
 
-    Process::Process(int pid, std::shared_ptr<x64::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
+    Process::Process(int pid, std::shared_ptr<mem::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
             pid_(pid),
             pgid_(pid),
             sid_(pid),
@@ -75,11 +75,11 @@ namespace kernel::gnulinux {
     }
 
     std::unique_ptr<Process> Process::clone(ProcessTable& processTable, BitFlags<CloneFlags> flags) {
-        std::shared_ptr<x64::AddressSpace> addressSpace;
+        std::shared_ptr<mem::AddressSpace> addressSpace;
         if(flags.test(CloneFlags::VM)) {
             addressSpace = addressSpace_;
         } else {
-            addressSpace = x64::AddressSpace::tryCreate(processTable.availableVirtualMemoryInMB());
+            addressSpace = mem::AddressSpace::tryCreate(processTable.availableVirtualMemoryInMB());
         }
         if(!addressSpace) return {};
         int newpid = processTable.allocatedPid();
@@ -98,7 +98,7 @@ namespace kernel::gnulinux {
             process->symbolProvider_ = symbolProvider_;
             process->functionNameCache_ = functionNameCache_;
         } else {
-            x64::Mmu mmu(process->addressSpace(), x64::Mmu::WITHOUT_SIDE_EFFECTS::YES);
+            mem::Mmu mmu(process->addressSpace(), mem::Mmu::WITHOUT_SIDE_EFFECTS::YES);
             mmu.addCallback(process.get());
             mmu.addCallback(process->disassemblyCache());
             process->addressSpace().clone(mmu, *addressSpace_);
@@ -137,16 +137,16 @@ namespace kernel::gnulinux {
         }
     }
 
-    void Process::onRegionCreation(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        if(!prot.test(x64::PROT::EXEC)) return;
+    void Process::onRegionCreation(u64 base, u64 length, BitFlags<mem::PROT> prot) {
+        if(!prot.test(mem::PROT::EXEC)) return;
         codeSegments_.reserve(base, base+length);
     }
 
-    void Process::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+    void Process::onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) {
         // if executable flag didn't change, we don't need to to anything
-        if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
+        if(protBefore.test(mem::PROT::EXEC) == protAfter.test(mem::PROT::EXEC)) return;
 
-        if(!protAfter.test(x64::PROT::EXEC)) {
+        if(!protAfter.test(mem::PROT::EXEC)) {
             // if we become non-executable, purge the basic blocks
             if(jitStatsLevel() >= 2) {
                 std::vector<const x64::CodeSegment*> segments;
@@ -166,8 +166,8 @@ namespace kernel::gnulinux {
         }
     }
 
-    void Process::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        if(!prot.test(x64::PROT::EXEC)) return;
+    void Process::onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) {
+        if(!prot.test(mem::PROT::EXEC)) return;
 
         if(jitStatsLevel() >= 2) {
             std::vector<const x64::CodeSegment*> segments;
@@ -183,7 +183,7 @@ namespace kernel::gnulinux {
         codeSegments_.remove(base, base+length);
     }
 
-    x64::CodeSegment* Process::fetchSegment(x64::Mmu& mmu, u64 address) {
+    x64::CodeSegment* Process::fetchSegment(mem::Mmu& mmu, u64 address) {
 #ifdef MULTIPROCESSING
         std::unique_lock lock(segmentGuard_);
 #endif
@@ -282,12 +282,12 @@ namespace kernel::gnulinux {
 
     void Process::prepareExec() {
         u64 size = [&]() -> u64 {
-            x64::Mmu mmu(addressSpace());
+            mem::Mmu mmu(addressSpace());
             return mmu.memorySize();
         }();
-        addressSpace_ = x64::AddressSpace::tryCreate((u32)(size / 1024 / 1024));
+        addressSpace_ = mem::AddressSpace::tryCreate((u32)(size / 1024 / 1024));
         {
-            x64::Mmu mmu(addressSpace());
+            mem::Mmu mmu(addressSpace());
             mmu.addCallback(this);
             mmu.addCallback(disassemblyCache());
             mmu.clearAllRegions();
@@ -340,7 +340,7 @@ namespace kernel::gnulinux {
                 100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
                 100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
         const size_t topCount = 50;
-        const x64::Mmu mmu(*addressSpace_);
+        const mem::Mmu mmu(*addressSpace_);
         if(jitStatsLevel() >= 5) {
             std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
                 return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();

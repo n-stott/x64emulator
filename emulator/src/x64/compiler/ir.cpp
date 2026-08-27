@@ -696,7 +696,7 @@ namespace x64::ir {
         return false;
     }
 
-    template<Size Size1, Size Size2>
+    template<mem::Size Size1, mem::Size Size2>
     static bool addressesMayAlias(const M<Size1>& mem1, const M<Size2>& mem2) {
 
         // don't trust memory locations in fs segment (essentially)

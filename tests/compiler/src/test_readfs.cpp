@@ -4,9 +4,10 @@
 #include "x64/disassembler/zydiswrapper.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/cpu.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "verify.h"
 
+using namespace mem;
 using namespace x64;
 
 static BasicBlock create(Cpu* cpu, R64 dst, R64 base, R64 index) {

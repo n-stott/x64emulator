@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace x64 {
+namespace mem {
     class Mmu;
 }
 
@@ -43,8 +43,8 @@ namespace kernel::gnulinux {
         };
 
         ErrnoOr<Id> get(Key key, size_t size, int mode, BitFlags<GetFlags> flags);
-        ErrnoOr<u64> attach(x64::Mmu* mmu, Id id, u64 preferredAddress, BitFlags<AtFlags> flags);
-        int detach(x64::Mmu* mmu, u64 address);
+        ErrnoOr<u64> attach(mem::Mmu* mmu, Id id, u64 preferredAddress, BitFlags<AtFlags> flags);
+        int detach(mem::Mmu* mmu, u64 address);
         int rmid(Id id);
 
     private:

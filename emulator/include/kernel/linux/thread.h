@@ -34,11 +34,11 @@ namespace kernel::gnulinux {
         int exitStatus() const { return exitStatus_; }
         void setExitStatus(int status) { exitStatus_ = status; }
 
-        x64::Ptr32 setChildTid() const { return setChildTid_; }
-        x64::Ptr32 clearChildTid() const { return clearChildTid_; }
-        void setClearChildTid(x64::Ptr32 clearChildTid) { clearChildTid_ = clearChildTid; }
+        mem::Ptr32 setChildTid() const { return setChildTid_; }
+        mem::Ptr32 clearChildTid() const { return clearChildTid_; }
+        void setClearChildTid(mem::Ptr32 clearChildTid) { clearChildTid_ = clearChildTid; }
 
-        void setRobustList(x64::Ptr robustListHead, size_t len) {
+        void setRobustList(mem::Ptr robustListHead, size_t len) {
             robustListHead_ = robustListHead;
             robustListSize_ = len;
         }
@@ -53,10 +53,10 @@ namespace kernel::gnulinux {
         Process* process_ { nullptr };
         Description description_;
 
-        x64::Ptr32 setChildTid_ { 0 };
-        x64::Ptr32 clearChildTid_ { 0 };
+        mem::Ptr32 setChildTid_ { 0 };
+        mem::Ptr32 clearChildTid_ { 0 };
 
-        x64::Ptr robustListHead_ { 0 };
+        mem::Ptr robustListHead_ { 0 };
         size_t robustListSize_ { 0 };
 
         std::string name_;

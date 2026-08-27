@@ -9,9 +9,12 @@
 #include <optional>
 #include <vector>
 
+namespace mem {
+    class Mmu;
+}
+
 namespace x64 {
     class Cpu;
-    class Mmu;
     class Compiler;
     class Jit;
     class BasicBlock;
@@ -216,7 +219,7 @@ namespace x64 {
 
         JitBasicBlock* tryCompile(const x64::BasicBlock& bb, void* currentBb);
 
-        void exec(Cpu* cpu, Mmu* mmu, NativeExecPtr nativeBasicBlock, u64* ticks,
+        void exec(Cpu* cpu, mem::Mmu* mmu, NativeExecPtr nativeBasicBlock, u64* ticks,
             void** currentlyExecutingBasicBlockPtr, const void* currentlyExecutingJitBasicBlock);
             
         x64::Compiler* compiler() { return compiler_.get(); }

@@ -1,5 +1,5 @@
 #include "kernel/timers.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "verify.h"
 #include <stdio.h>
 #include <time.h>
@@ -14,7 +14,7 @@ namespace kernel {
         now_ = kernelTime;
     }
 
-    std::optional<PreciseTime> Timer::readTimespec(x64::Mmu& mmu, x64::Ptr ptr) {
+    std::optional<PreciseTime> Timer::readTimespec(mem::Mmu& mmu, mem::Ptr ptr) {
         if(!!ptr) {
             struct timespec ts = mmu.readFromMmu<struct timespec>(ptr);
             PreciseTime time;
@@ -26,7 +26,7 @@ namespace kernel {
         }
     }
 
-    std::optional<PreciseTime> Timer::readTimeval(x64::Mmu& mmu, x64::Ptr ptr) {
+    std::optional<PreciseTime> Timer::readTimeval(mem::Mmu& mmu, mem::Ptr ptr) {
         if(!!ptr) {
             struct timeval tv = mmu.readFromMmu<struct timeval>(ptr);
             PreciseTime time;
@@ -38,7 +38,7 @@ namespace kernel {
         }
     }
 
-    std::optional<TimeDifference> Timer::readRelativeTimespec(x64::Mmu& mmu, x64::Ptr ptr) {
+    std::optional<TimeDifference> Timer::readRelativeTimespec(mem::Mmu& mmu, mem::Ptr ptr) {
         if(!!ptr) {
             struct timespec ts = mmu.readFromMmu<struct timespec>(ptr);
             TimeDifference dt;
@@ -50,7 +50,7 @@ namespace kernel {
         }
     }
 
-    std::optional<TimeDifference> Timer::readRelativeTimeval(x64::Mmu& mmu, x64::Ptr ptr) {
+    std::optional<TimeDifference> Timer::readRelativeTimeval(mem::Mmu& mmu, mem::Ptr ptr) {
         if(!!ptr) {
             struct timeval tv = mmu.readFromMmu<struct timeval>(ptr);
             TimeDifference dt;
@@ -62,14 +62,14 @@ namespace kernel {
         }
     }
 
-    void Timer::writeTimespec(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time) {
+    void Timer::writeTimespec(mem::Mmu& mmu, mem::Ptr ptr, PreciseTime time) {
         struct timespec ts;
         ts.tv_nsec = (long)time.nanoseconds;
         ts.tv_sec = (time_t)time.seconds;
         mmu.writeToMmu<struct timespec>(ptr, ts);
     }
 
-    void Timer::writeTimeval(x64::Mmu& mmu, x64::Ptr ptr, PreciseTime time) {
+    void Timer::writeTimeval(mem::Mmu& mmu, mem::Ptr ptr, PreciseTime time) {
         struct timeval tv;
         tv.tv_usec = (suseconds_t)(time.nanoseconds/1'000);
         tv.tv_sec = (time_t)time.seconds;

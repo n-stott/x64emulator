@@ -1,4 +1,4 @@
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "host/hostmemory.h"
 #include "verify.h"
 #include <algorithm>
@@ -6,7 +6,7 @@
 #include <cstring>
 #include <optional>
 
-namespace x64 {
+namespace mem {
     static std::string protectionToString(BitFlags<PROT> prot) {
         return fmt::format("{}{}{}", prot.test(PROT::READ)  ? "R" : " ",
                                         prot.test(PROT::WRITE) ? "W" : " ",

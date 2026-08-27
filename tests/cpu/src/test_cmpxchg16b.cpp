@@ -1,6 +1,6 @@
+#include "mem/mmu.h"
 #include "x64/cpu.h"
 #include "x64/flags.h"
-#include "x64/mmu.h"
 #include "utils.h"
 #include <fmt/format.h>
 
@@ -49,6 +49,7 @@ bool test(u128 initial, u128 expected, u128 replacement) {
     u128 emulatedResult;
     bool emulatedZeroFlag { false };
     {
+        using namespace mem;
         using namespace x64;
         auto addressSpace = AddressSpace::tryCreate(1);
         if(!addressSpace) return false;

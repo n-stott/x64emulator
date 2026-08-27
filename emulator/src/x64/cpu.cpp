@@ -4,7 +4,7 @@
 #else
 #include "x64/cpuimpl.h"
 #endif
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "host/hostinstructions.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -20,7 +20,7 @@ namespace x64 {
     using Impl = CpuImpl;
 #endif
 
-    Cpu::Cpu(Mmu& mmu) :
+    Cpu::Cpu(mem::Mmu& mmu) :
             mmu_(&mmu) {
         
     }
@@ -64,117 +64,117 @@ namespace x64 {
         return (T)value.immediate;
     }
 
-    u8 Cpu::get(Ptr8 ptr) const {
+    u8 Cpu::get(mem::Ptr8 ptr) const {
         return mmu_->read8(ptr);
     }
 
-    u16 Cpu::get(Ptr16 ptr) const {
+    u16 Cpu::get(mem::Ptr16 ptr) const {
         return mmu_->read16(ptr);
     }
 
-    u32 Cpu::get(Ptr32 ptr) const {
+    u32 Cpu::get(mem::Ptr32 ptr) const {
         return mmu_->read32(ptr);
     }
 
-    u64 Cpu::get(Ptr64 ptr) const {
+    u64 Cpu::get(mem::Ptr64 ptr) const {
         return mmu_->read64(ptr);
     }
 
-    f80 Cpu::get(Ptr80 ptr) const {
+    f80 Cpu::get(mem::Ptr80 ptr) const {
         return mmu_->read80(ptr);
     }
 
-    Xmm Cpu::get(Ptr128 ptr) const {
+    Xmm Cpu::get(mem::Ptr128 ptr) const {
         return mmu_->read128(ptr);
     }
 
-    Xmm Cpu::getUnaligned(Ptr128 ptr) const {
+    Xmm Cpu::getUnaligned(mem::Ptr128 ptr) const {
         return mmu_->readUnaligned128(ptr);
     }
 
-    void Cpu::set(Ptr8 ptr, u8 value) {
+    void Cpu::set(mem::Ptr8 ptr, u8 value) {
         mmu_->write8(ptr, value);
     }
 
-    void Cpu::set(Ptr16 ptr, u16 value) {
+    void Cpu::set(mem::Ptr16 ptr, u16 value) {
         mmu_->write16(ptr, value);
     }
 
-    void Cpu::set(Ptr32 ptr, u32 value) {
+    void Cpu::set(mem::Ptr32 ptr, u32 value) {
         mmu_->write32(ptr, value);
     }
 
-    void Cpu::set(Ptr64 ptr, u64 value) {
+    void Cpu::set(mem::Ptr64 ptr, u64 value) {
         mmu_->write64(ptr, value);
     }
 
-    void Cpu::set(Ptr80 ptr, f80 value) {
+    void Cpu::set(mem::Ptr80 ptr, f80 value) {
         mmu_->write80(ptr, value);
     }
 
-    void Cpu::set(Ptr128 ptr, Xmm value) {
+    void Cpu::set(mem::Ptr128 ptr, Xmm value) {
         mmu_->write128(ptr, value);
     }
 
-    void Cpu::setUnaligned(Ptr128 ptr, Xmm value) {
+    void Cpu::setUnaligned(mem::Ptr128 ptr, Xmm value) {
         mmu_->writeUnaligned128(ptr, value);
     }
 
-    u8 Cpu::xchg(Ptr8 ptr, u8 value) {
+    u8 Cpu::xchg(mem::Ptr8 ptr, u8 value) {
         return mmu_->xchg8(ptr, value);
     }
-    u16 Cpu::xchg(Ptr16 ptr, u16 value) {
+    u16 Cpu::xchg(mem::Ptr16 ptr, u16 value) {
         return mmu_->xchg16(ptr, value);
     }
-    u32 Cpu::xchg(Ptr32 ptr, u32 value) {
+    u32 Cpu::xchg(mem::Ptr32 ptr, u32 value) {
         return mmu_->xchg32(ptr, value);
     }
-    u64 Cpu::xchg(Ptr64 ptr, u64 value) {
+    u64 Cpu::xchg(mem::Ptr64 ptr, u64 value) {
         return mmu_->xchg64(ptr, value);
     }
 
     void Cpu::push8(u8 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i8)value);
+        mmu_->write64(mem::Ptr64{regs_.rsp()}, (u64)(i64)(i8)value);
     }
 
     void Cpu::push16(u16 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i16)value);
+        mmu_->write64(mem::Ptr64{regs_.rsp()}, (u64)(i64)(i16)value);
     }
 
     void Cpu::push32(u32 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, (u64)(i64)(i32)value);
+        mmu_->write64(mem::Ptr64{regs_.rsp()}, (u64)(i64)(i32)value);
     }
 
     void Cpu::push64(u64 value) {
         regs_.rsp() -= 8;
-        mmu_->write64(Ptr64{regs_.rsp()}, value);
+        mmu_->write64(mem::Ptr64{regs_.rsp()}, value);
     }
 
     u8 Cpu::pop8() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
+        u64 value = mmu_->read64(mem::Ptr64{regs_.rsp()});
         assert(value == (u8)value);
         regs_.rsp() += 8;
         return static_cast<u8>(value);
     }
 
     u16 Cpu::pop16() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
+        u64 value = mmu_->read64(mem::Ptr64{regs_.rsp()});
         assert(value == (u16)value);
         regs_.rsp() += 8;
         return static_cast<u16>(value);
     }
 
     u32 Cpu::pop32() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
+        u64 value = mmu_->read64(mem::Ptr64{regs_.rsp()});
         regs_.rsp() += 8;
         return static_cast<u32>(value);
     }
 
     u64 Cpu::pop64() {
-        u64 value = mmu_->read64(Ptr64{regs_.rsp()});
+        u64 value = mmu_->read64(mem::Ptr64{regs_.rsp()});
         regs_.rsp() += 8;
         return value;
     }
@@ -319,28 +319,28 @@ namespace x64 {
     DEFINE_STANDALONE(LOCK_XADD_M16_R16, execLockXaddM16R16)
     DEFINE_STANDALONE(LOCK_XADD_M32_R32, execLockXaddM32R32)
     DEFINE_STANDALONE(LOCK_XADD_M64_R64, execLockXaddM64R64)
-    DEFINE_STANDALONE(MOV_R8_R8, execMovRR<Size::BYTE>)
-    DEFINE_STANDALONE(MOV_R8_M8, execMovRM<Size::BYTE>)
-    DEFINE_STANDALONE(MOV_M8_R8, execMovMR<Size::BYTE>)
-    DEFINE_STANDALONE(MOV_R8_IMM, execMovRImm<Size::BYTE>)
-    DEFINE_STANDALONE(MOV_M8_IMM, execMovMImm<Size::BYTE>)
-    DEFINE_STANDALONE(MOV_R16_R16, execMovRR<Size::WORD>)
-    DEFINE_STANDALONE(MOV_R16_M16, execMovRM<Size::WORD>)
-    DEFINE_STANDALONE(MOV_M16_R16, execMovMR<Size::WORD>)
-    DEFINE_STANDALONE(MOV_R16_IMM, execMovRImm<Size::WORD>)
-    DEFINE_STANDALONE(MOV_M16_IMM, execMovMImm<Size::WORD>)
-    DEFINE_STANDALONE(MOV_R32_R32, execMovRR<Size::DWORD>)
-    DEFINE_STANDALONE(MOV_R32_M32, execMovRM<Size::DWORD>)
-    DEFINE_STANDALONE(MOV_M32_R32, execMovMR<Size::DWORD>)
-    DEFINE_STANDALONE(MOV_R32_IMM, execMovRImm<Size::DWORD>)
-    DEFINE_STANDALONE(MOV_M32_IMM, execMovMImm<Size::DWORD>)
-    DEFINE_STANDALONE(MOV_R64_R64, execMovRR<Size::QWORD>)
-    DEFINE_STANDALONE(MOV_R64_M64, execMovRM<Size::QWORD>)
-    DEFINE_STANDALONE(MOV_M64_R64, execMovMR<Size::QWORD>)
-    DEFINE_STANDALONE(MOV_R64_IMM, execMovRImm<Size::QWORD>)
-    DEFINE_STANDALONE(MOV_M64_IMM, execMovMImm<Size::QWORD>)
+    DEFINE_STANDALONE(MOV_R8_R8, execMovRR<mem::Size::BYTE>)
+    DEFINE_STANDALONE(MOV_R8_M8, execMovRM<mem::Size::BYTE>)
+    DEFINE_STANDALONE(MOV_M8_R8, execMovMR<mem::Size::BYTE>)
+    DEFINE_STANDALONE(MOV_R8_IMM, execMovRImm<mem::Size::BYTE>)
+    DEFINE_STANDALONE(MOV_M8_IMM, execMovMImm<mem::Size::BYTE>)
+    DEFINE_STANDALONE(MOV_R16_R16, execMovRR<mem::Size::WORD>)
+    DEFINE_STANDALONE(MOV_R16_M16, execMovRM<mem::Size::WORD>)
+    DEFINE_STANDALONE(MOV_M16_R16, execMovMR<mem::Size::WORD>)
+    DEFINE_STANDALONE(MOV_R16_IMM, execMovRImm<mem::Size::WORD>)
+    DEFINE_STANDALONE(MOV_M16_IMM, execMovMImm<mem::Size::WORD>)
+    DEFINE_STANDALONE(MOV_R32_R32, execMovRR<mem::Size::DWORD>)
+    DEFINE_STANDALONE(MOV_R32_M32, execMovRM<mem::Size::DWORD>)
+    DEFINE_STANDALONE(MOV_M32_R32, execMovMR<mem::Size::DWORD>)
+    DEFINE_STANDALONE(MOV_R32_IMM, execMovRImm<mem::Size::DWORD>)
+    DEFINE_STANDALONE(MOV_M32_IMM, execMovMImm<mem::Size::DWORD>)
+    DEFINE_STANDALONE(MOV_R64_R64, execMovRR<mem::Size::QWORD>)
+    DEFINE_STANDALONE(MOV_R64_M64, execMovRM<mem::Size::QWORD>)
+    DEFINE_STANDALONE(MOV_M64_R64, execMovMR<mem::Size::QWORD>)
+    DEFINE_STANDALONE(MOV_R64_IMM, execMovRImm<mem::Size::QWORD>)
+    DEFINE_STANDALONE(MOV_M64_IMM, execMovMImm<mem::Size::QWORD>)
     DEFINE_STANDALONE(MOV_MMX_MMX, execMovMMXMMX)
-    DEFINE_STANDALONE(MOV_XMM_XMM, execMovRR<Size::XWORD>)
+    DEFINE_STANDALONE(MOV_XMM_XMM, execMovRR<mem::Size::XWORD>)
     DEFINE_STANDALONE(MOVQ2DQ_XMM_MM, execMovq2dq)
     DEFINE_STANDALONE(MOVDQ2Q_MM_XMM, execMovdq2q)
     DEFINE_STANDALONE(MOV_ALIGNED_XMM_M128, execMovaXMMM128)
@@ -2591,7 +2591,7 @@ namespace x64 {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();
-        Ptr8 address = resolve(dst);
+        mem::Ptr8 address = resolve(dst);
         u8 srcValue = get(src);
         mmu_->withExclusiveRegion(address, [&](u8 oldValue) -> u8 {
             u8 newValue = Impl::add8(oldValue, srcValue, &flags_);
@@ -2603,7 +2603,7 @@ namespace x64 {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
-        Ptr16 address = resolve(dst);
+        mem::Ptr16 address = resolve(dst);
         u16 srcValue = get(src);
         mmu_->withExclusiveRegion(address, [&](u16 oldValue) -> u16 {
             u16 newValue = Impl::add16(oldValue, srcValue, &flags_);
@@ -2615,7 +2615,7 @@ namespace x64 {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
-        Ptr32 address = resolve(dst);
+        mem::Ptr32 address = resolve(dst);
         u32 srcValue = get(src);
         mmu_->withExclusiveRegion(address, [&](u32 oldValue) -> u32 {
             u32 newValue = Impl::add32(oldValue, srcValue, &flags_);
@@ -2627,7 +2627,7 @@ namespace x64 {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
-        Ptr64 address = resolve(dst);
+        mem::Ptr64 address = resolve(dst);
         u64 srcValue = get(src);
         mmu_->withExclusiveRegion(address, [&](u64 oldValue) -> u64 {
             u64 newValue = Impl::add64(oldValue, srcValue, &flags_);
@@ -2655,12 +2655,12 @@ namespace x64 {
     template<> Xmm writeLow(Xmm t, u64 u) { return Xmm{u, t.hi}; }
 
 
-    template<Size size>
+    template<mem::Size size>
     void Cpu::execMovRR(const X64Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<R<size>>();
         auto srcValue = get(src);
-        if constexpr(size == Size::QWORD) {
+        if constexpr(size == mem::Size::QWORD) {
             // This is essentially targeting longjmp, which
             // can skip over multiple stackframes at once.
             if(dst == R64::RSP) {
@@ -2678,35 +2678,35 @@ namespace x64 {
         set(dst, get(src));
     }
 
-    template<Size size>
+    template<mem::Size size>
     void Cpu::execMovRM(const X64Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<M<size>>();
         set(dst, get(resolve(src)));
     }
 
-    template<Size size>
+    template<mem::Size size>
     void Cpu::execMovMR(const X64Instruction& ins) {
         const auto& dst = ins.op0<M<size>>();
         const auto& src = ins.op1<R<size>>();
         set(resolve(dst), get(src));
     }
 
-    template<Size size>
+    template<mem::Size size>
     void Cpu::execMovRImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<Imm>();
         set(dst, get<U<size>>(src));
     }
 
-    template<Size size>
+    template<mem::Size size>
     void Cpu::execMovMImm(const X64Instruction& ins) {
         const auto& dst = ins.op0<M<size>>();
         const auto& src = ins.op1<Imm>();
         set(resolve(dst), get<U<size>>(src));
     }
 
-    static bool is128bitAligned(Ptr128 ptr) {
+    static bool is128bitAligned(mem::Ptr128 ptr) {
         return ptr.address() % 16 == 0;
     }
 
@@ -3760,7 +3760,7 @@ namespace x64 {
         }
     }
 
-    void Cpu::execLockCmpxchg8Impl(Ptr8 dst, u8 src) {
+    void Cpu::execLockCmpxchg8Impl(mem::Ptr8 dst, u8 src) {
         u8 eax = get(R8::AL);
         mmu_->withExclusiveRegion(dst, [&](u8 oldValue) {
             Impl::cmpxchg8(eax, oldValue, &flags_);
@@ -3773,7 +3773,7 @@ namespace x64 {
         });
     }
 
-    void Cpu::execLockCmpxchg16Impl(Ptr16 dst, u16 src) {
+    void Cpu::execLockCmpxchg16Impl(mem::Ptr16 dst, u16 src) {
         u16 eax = get(R16::AX);
         mmu_->withExclusiveRegion(dst, [&](u16 oldValue) {
             Impl::cmpxchg16(eax, oldValue, &flags_);
@@ -3786,7 +3786,7 @@ namespace x64 {
         });
     }
 
-    void Cpu::execLockCmpxchg32Impl(Ptr32 dst, u32 src) {
+    void Cpu::execLockCmpxchg32Impl(mem::Ptr32 dst, u32 src) {
         u32 eax = get(R32::EAX);
         mmu_->withExclusiveRegion(dst, [&](u32 oldValue) {
             Impl::cmpxchg32(eax, oldValue, &flags_);
@@ -3799,7 +3799,7 @@ namespace x64 {
         });
     }
 
-    void Cpu::execLockCmpxchg64Impl(Ptr64 dst, u64 src) {
+    void Cpu::execLockCmpxchg64Impl(mem::Ptr64 dst, u64 src) {
         u64 eax = get(R64::RAX);
         mmu_->withExclusiveRegion(dst, [&](u64 oldValue) {
             Impl::cmpxchg64(eax, oldValue, &flags_);
@@ -4058,8 +4058,8 @@ namespace x64 {
         assert(dst.encoding.base == R64::RDI);
         assert(src.encoding.base == R64::RSI);
         u32 counter = get(R32::ECX);
-        Ptr8 dptr = resolve(dst);
-        Ptr8 sptr = resolve(src);
+        mem::Ptr8 dptr = resolve(dst);
+        mem::Ptr8 sptr = resolve(src);
         verify(flags_.direction == 0);
         mmu_->copyBytes(dptr, sptr, counter);
         sptr += counter;
@@ -4073,8 +4073,8 @@ namespace x64 {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<M16>();
         u32 counter = get(R32::ECX);
-        Ptr16 dptr = resolve(dst);
-        Ptr16 sptr = resolve(src);
+        mem::Ptr16 dptr = resolve(dst);
+        mem::Ptr16 sptr = resolve(src);
         verify(flags_.direction == 0);
         while(counter) {
             u16 val = mmu_->read16(sptr);
@@ -4092,8 +4092,8 @@ namespace x64 {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<M32>();
         u32 counter = get(R32::ECX);
-        Ptr32 dptr = resolve(dst);
-        Ptr32 sptr = resolve(src);
+        mem::Ptr32 dptr = resolve(dst);
+        mem::Ptr32 sptr = resolve(src);
         verify(flags_.direction == 0);
         while(counter) {
             u32 val = mmu_->read32(sptr);
@@ -4110,8 +4110,8 @@ namespace x64 {
     void Cpu::execMovsM8M8(const X64Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<M8>();
-        Ptr8 dptr = resolve(dst);
-        Ptr8 sptr = resolve(src);
+        mem::Ptr8 dptr = resolve(dst);
+        mem::Ptr8 sptr = resolve(src);
         verify(flags_.direction == 0);
         u8 val = mmu_->read8(sptr);
         mmu_->write8(dptr, val);
@@ -4124,8 +4124,8 @@ namespace x64 {
     void Cpu::execMovsM16M16(const X64Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<M16>();
-        Ptr16 dptr = resolve(dst);
-        Ptr16 sptr = resolve(src);
+        mem::Ptr16 dptr = resolve(dst);
+        mem::Ptr16 sptr = resolve(src);
         verify(flags_.direction == 0);
         u16 val = mmu_->read16(sptr);
         mmu_->write16(dptr, val);
@@ -4138,8 +4138,8 @@ namespace x64 {
     void Cpu::execMovsM64M64(const X64Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<M64>();
-        Ptr64 dptr = resolve(dst);
-        Ptr64 sptr = resolve(src);
+        mem::Ptr64 dptr = resolve(dst);
+        mem::Ptr64 sptr = resolve(src);
         verify(flags_.direction == 0);
         u64 val = mmu_->read64(sptr);
         mmu_->write64(dptr, val);
@@ -4153,8 +4153,8 @@ namespace x64 {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<M64>();
         u32 counter = get(R32::ECX);
-        Ptr64 dptr = resolve(dst);
-        Ptr64 sptr = resolve(src);
+        mem::Ptr64 dptr = resolve(dst);
+        mem::Ptr64 sptr = resolve(src);
         verify(flags_.direction == 0);
         while(counter) {
             u64 val = mmu_->read64(sptr);
@@ -4172,8 +4172,8 @@ namespace x64 {
         const auto& src1 = ins.op0<M8>();
         const auto& src2 = ins.op1<M8>();
         u32 counter = get(R32::ECX);
-        Ptr8 s1ptr = resolve(src1);
-        Ptr8 s2ptr = resolve(src2);
+        mem::Ptr8 s1ptr = resolve(src1);
+        mem::Ptr8 s2ptr = resolve(src2);
         verify(flags_.direction == 0);
         while(counter) {
             u8 s1 = mmu_->read8(s1ptr);
@@ -4194,7 +4194,7 @@ namespace x64 {
     void Cpu::execStosM8R8(const X64Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();
-        Ptr8 dptr = resolve(dst);
+        mem::Ptr8 dptr = resolve(dst);
         u8 val = get(src);
         verify(flags_.direction == 0);
         mmu_->write8(dptr, val);
@@ -4205,7 +4205,7 @@ namespace x64 {
     void Cpu::execStosM16R16(const X64Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
-        Ptr16 dptr = resolve(dst);
+        mem::Ptr16 dptr = resolve(dst);
         u16 val = get(src);
         verify(flags_.direction == 0);
         mmu_->write16(dptr, val);
@@ -4216,7 +4216,7 @@ namespace x64 {
     void Cpu::execStosM32R32(const X64Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
-        Ptr32 dptr = resolve(dst);
+        mem::Ptr32 dptr = resolve(dst);
         u32 val = get(src);
         verify(flags_.direction == 0);
         mmu_->write32(dptr, val);
@@ -4227,7 +4227,7 @@ namespace x64 {
     void Cpu::execStosM64R64(const X64Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
-        Ptr64 dptr = resolve(dst);
+        mem::Ptr64 dptr = resolve(dst);
         u64 val = get(src);
         verify(flags_.direction == 0);
         mmu_->write64(dptr, val);
@@ -4239,7 +4239,7 @@ namespace x64 {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();
         u32 counter = get(R32::ECX);
-        Ptr8 dptr = resolve(dst);
+        mem::Ptr8 dptr = resolve(dst);
         u8 val = get(src);
         verify(flags_.direction == 0);
         while(counter) {
@@ -4255,7 +4255,7 @@ namespace x64 {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
         u32 counter = get(R32::ECX);
-        Ptr16 dptr = resolve(dst);
+        mem::Ptr16 dptr = resolve(dst);
         u16 val = get(src);
         verify(flags_.direction == 0);
         while(counter) {
@@ -4271,7 +4271,7 @@ namespace x64 {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
         u32 counter = get(R32::ECX);
-        Ptr32 dptr = resolve(dst);
+        mem::Ptr32 dptr = resolve(dst);
         u32 val = get(src);
         verify(flags_.direction == 0);
         while(counter) {
@@ -4287,7 +4287,7 @@ namespace x64 {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
         u64 counter = get(R64::RCX);
-        Ptr64 dptr = resolve(dst);
+        mem::Ptr64 dptr = resolve(dst);
         u64 val = get(src);
         verify(flags_.direction == 0);
         while(counter) {
@@ -4305,7 +4305,7 @@ namespace x64 {
         assert(src2.encoding.base == R64::RDI);
         u64 counter = get(R64::RCX);
         u8 src1Value = get(src1);
-        Ptr8 ptr2 = resolve(src2);
+        mem::Ptr8 ptr2 = resolve(src2);
         verify(flags_.direction == 0);
         while(counter) {
             u8 src2Value = mmu_->read8(ptr2);
@@ -4324,7 +4324,7 @@ namespace x64 {
         assert(src2.encoding.base == R64::RDI);
         u64 counter = get(R64::RCX);
         u16 src1Value = get(src1);
-        Ptr16 ptr2 = resolve(src2);
+        mem::Ptr16 ptr2 = resolve(src2);
         verify(flags_.direction == 0);
         while(counter) {
             u16 src2Value = mmu_->read16(ptr2);
@@ -4343,7 +4343,7 @@ namespace x64 {
         assert(src2.encoding.base == R64::RDI);
         u64 counter = get(R64::RCX);
         u32 src1Value = get(src1);
-        Ptr32 ptr2 = resolve(src2);
+        mem::Ptr32 ptr2 = resolve(src2);
         verify(flags_.direction == 0);
         while(counter) {
             u32 src2Value = mmu_->read32(ptr2);
@@ -4362,7 +4362,7 @@ namespace x64 {
         assert(src2.encoding.base == R64::RDI);
         u64 counter = get(R64::RCX);
         u64 src1Value = get(src1);
-        Ptr64 ptr2 = resolve(src2);
+        mem::Ptr64 ptr2 = resolve(src2);
         verify(flags_.direction == 0);
         while(counter) {
             u64 src2Value = mmu_->read64(ptr2);
@@ -4716,7 +4716,7 @@ namespace x64 {
         auto dst = ST::ST0;
         f80 dstValue = x87fpu_.st(dst);
         const auto& src = ins.op0<M32>();
-        Ptr32 srcPtr = resolve(src);
+        mem::Ptr32 srcPtr = resolve(src);
         f80 srcValue = F80::bitcastFromU32(get(srcPtr));
         x87fpu_.set(dst, Impl::fdiv(srcValue, dstValue, &x87fpu_));
     }
@@ -4879,8 +4879,8 @@ namespace x64 {
 
     void Cpu::execFnstenvM224(const X64Instruction& ins) {
         const auto& dst = ins.op0<M224>();
-        Ptr224 dst224 = resolve(dst);
-        Ptr32 dstPtr { dst224.address() };
+        mem::Ptr224 dst224 = resolve(dst);
+        mem::Ptr32 dstPtr { dst224.address() };
         set(dstPtr++, (u32)x87fpu_.control().asWord());
         set(dstPtr++, (u32)x87fpu_.status().asWord());
         set(dstPtr++, (u32)x87fpu_.tag().asWord());
@@ -4888,8 +4888,8 @@ namespace x64 {
 
     void Cpu::execFldenvM224(const X64Instruction& ins) {
         const auto& src = ins.op0<M224>();
-        Ptr224 src224 = resolve(src);
-        Ptr32 srcPtr { src224.address() };
+        mem::Ptr224 src224 = resolve(src);
+        mem::Ptr32 srcPtr { src224.address() };
         x87fpu_.control() = X87Control::fromWord((u16)get(srcPtr++));
         x87fpu_.status() = X87Status::fromWord((u16)get(srcPtr++));
         x87fpu_.tag() = X87Tag::fromWord((u16)get(srcPtr++));
@@ -7402,18 +7402,18 @@ namespace x64 {
 
     void Cpu::execFxsaveM4096(const X64Instruction& ins) {
         const auto& dst = ins.op0<M4096>();
-        Ptr4096 dstPtr = resolve(dst);
+        mem::Ptr4096 dstPtr = resolve(dst);
         verify(dstPtr.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
         FPUState fpuState = getFpuState();
-        mmu_->copyToMmu(Ptr8{dstPtr.address()}, (const u8*)&fpuState, sizeof(fpuState));
+        mmu_->copyToMmu(mem::Ptr8{dstPtr.address()}, (const u8*)&fpuState, sizeof(fpuState));
     }
 
     void Cpu::execFxrstorM4096(const X64Instruction& ins) {
         const auto& src = ins.op0<M4096>();
-        Ptr4096 srcPtr = resolve(src);
+        mem::Ptr4096 srcPtr = resolve(src);
         verify(srcPtr.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
         FPUState fpuState;
-        mmu_->copyFromMmu((u8*)&fpuState, Ptr8{srcPtr.address()}, sizeof(fpuState));
+        mmu_->copyFromMmu((u8*)&fpuState, mem::Ptr8{srcPtr.address()}, sizeof(fpuState));
         setFpuState(fpuState);
     }
 

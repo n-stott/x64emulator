@@ -1,6 +1,6 @@
 #include "kernel/linux/shm/sharedmemory.h"
 #include "kernel/linux/shm/sharedmemorysegment.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include "verify.h"
 #include <algorithm>
 #include <errno.h>
@@ -18,7 +18,7 @@ namespace kernel::gnulinux {
         verify(flags.test(GetFlags::CREATE), "Only create is supported");
         verify(!flags.test(GetFlags::EXCL), "Excl is not supported");
         
-        size = x64::Mmu::pageRoundUp(size);
+        size = mem::Mmu::pageRoundUp(size);
 
         auto segment = SharedMemorySegment::tryCreate(mode, size);
         Id id { segment->id() };
@@ -28,7 +28,7 @@ namespace kernel::gnulinux {
         return ReturnType(id.value);
     }
 
-    ErrnoOr<u64> SharedMemory::attach(x64::Mmu* mmu, Id id, u64 preferredAddress, BitFlags<AtFlags> flags) {
+    ErrnoOr<u64> SharedMemory::attach(mem::Mmu* mmu, Id id, u64 preferredAddress, BitFlags<AtFlags> flags) {
         using ReturnType = ErrnoOr<u64>;
 
         verify(preferredAddress == 0, "Can only attach at kernel-chosen address");
@@ -44,7 +44,7 @@ namespace kernel::gnulinux {
         return ErrnoOraddr;
     }
 
-    int SharedMemory::detach(x64::Mmu* mmu, u64 address) {
+    int SharedMemory::detach(mem::Mmu* mmu, u64 address) {
         auto it = std::find_if(segments_.begin(), segments_.end(), [&](const auto& p) {
             return p.second->attachedAddress() == address;
         });

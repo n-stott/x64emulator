@@ -3,7 +3,7 @@
 
 #include <atomic>
 
-namespace x64 {
+namespace mem {
 
 #ifdef MULTIPROCESSING
     class Spinlock {

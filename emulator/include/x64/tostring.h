@@ -6,6 +6,7 @@
 namespace x64::utils {
 
     using namespace x64;
+    using namespace mem;
 
     inline std::string toString(const Segment& seg) {
         switch(seg) {

@@ -1,6 +1,6 @@
 #include "x64/disassembler/disassemblycache.h"
 #include "x64/disassembler/zydiswrapper.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 
 namespace x64 {
 
@@ -108,11 +108,11 @@ namespace x64 {
         }
     }
 
-    void DisassemblyCache::onRegionProtectionChange(u64 base, u64 length, BitFlags<x64::PROT> protBefore, BitFlags<x64::PROT> protAfter) {
+    void DisassemblyCache::onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) {
         // if executable flag didn't change, we don't need to to anything
-        if(protBefore.test(x64::PROT::EXEC) == protAfter.test(x64::PROT::EXEC)) return;
+        if(protBefore.test(mem::PROT::EXEC) == protAfter.test(mem::PROT::EXEC)) return;
 
-        if(!protAfter.test(x64::PROT::EXEC)) {
+        if(!protAfter.test(mem::PROT::EXEC)) {
             {
                 auto left = executableSectionsByBegin_.lower_bound(base);
                 auto right = executableSectionsByBegin_.upper_bound(base+length);
@@ -129,8 +129,8 @@ namespace x64 {
         }
     }
 
-    void DisassemblyCache::onRegionDestruction(u64 base, u64 length, BitFlags<x64::PROT> prot) {
-        if(!prot.test(x64::PROT::EXEC)) return;
+    void DisassemblyCache::onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) {
+        if(!prot.test(mem::PROT::EXEC)) return;
 
         {
             auto left = executableSectionsByBegin_.lower_bound(base);
@@ -184,9 +184,9 @@ namespace x64 {
 
     bool MmuBytecodeRetriever::retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) {
         if(!data) return false;
-        const x64::MmuRegion* mmuRegion = ((const x64::Mmu&)mmu_).findAddress(address);
+        const mem::MmuRegion* mmuRegion = ((const mem::Mmu&)mmu_).findAddress(address);
         if(!mmuRegion) return false;
-        verify(mmuRegion->prot().test(x64::PROT::EXEC), [&]() {
+        verify(mmuRegion->prot().test(mem::PROT::EXEC), [&]() {
             fmt::print(stderr, "Attempting to execute non-executable region [{:#x}-{:#x}]\n", mmuRegion->base(), mmuRegion->end());
         });
 
@@ -203,7 +203,7 @@ namespace x64 {
 
         // Now, do the disassembly
         data->resize(end-address, 0x0);
-        mmu_.copyFromMmu(data->data(), x64::Ptr8{address}, end-address);
+        mmu_.copyFromMmu(data->data(), mem::Ptr8{address}, end-address);
 
         if(name) *name = mmuRegion->name();
         if(regionBase) *regionBase = mmuRegion->base();

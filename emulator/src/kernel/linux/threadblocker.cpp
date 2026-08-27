@@ -3,27 +3,27 @@
 #include "kernel/linux/process.h"
 #include "kernel/linux/fs/fs.h"
 #include "kernel/linux/fs/fsflags.h"
-#include "x64/mmu.h"
+#include "mem/mmu.h"
 #include <fmt/core.h>
 #include <algorithm>
 #include <sstream>
 
 namespace kernel::gnulinux {
 
-    FutexBlocker FutexBlocker::withAbsoluteTimeout(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+    FutexBlocker FutexBlocker::withAbsoluteTimeout(Thread* thread, Timers& timers, mem::Ptr32 wordPtr, u32 expected, mem::Ptr timeout) {
         return FutexBlocker(thread, timers, wordPtr, expected, timeout, true);
     }
 
-    FutexBlocker FutexBlocker::withRelativeTimeout(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout) {
+    FutexBlocker FutexBlocker::withRelativeTimeout(Thread* thread, Timers& timers, mem::Ptr32 wordPtr, u32 expected, mem::Ptr timeout) {
         return FutexBlocker(thread, timers, wordPtr, expected, timeout, false);
     }
 
-    FutexBlocker::FutexBlocker(Thread* thread, Timers& timers, x64::Ptr32 wordPtr, u32 expected, x64::Ptr timeout, bool absoluteTimeout)
+    FutexBlocker::FutexBlocker(Thread* thread, Timers& timers, mem::Ptr32 wordPtr, u32 expected, mem::Ptr timeout, bool absoluteTimeout)
         : thread_(thread), timers_(&timers), wordPtr_(wordPtr), expected_(expected) {
         if(!!timeout) {
             Timer* timer = timers.get(0); // get the same timer as in the setup
             verify(!!timer);
-            x64::Mmu mmu(thread_->process()->addressSpace());
+            mem::Mmu mmu(thread_->process()->addressSpace());
             if(absoluteTimeout) {
                 auto absolute = timer->readTimespec(mmu, timeout);
                 verify(!!absolute, "Could not read timeout value");
@@ -41,7 +41,7 @@ namespace kernel::gnulinux {
         }
     }
 
-    bool FutexBlocker::tryUnblock(x64::Ptr32 ptr) const {
+    bool FutexBlocker::tryUnblock(mem::Ptr32 ptr) const {
         if(!!timeLimit_) {
             Timer* timer = timers_->get(0); // get the same timer as in the setup
             verify(!!timer);
@@ -59,7 +59,7 @@ namespace kernel::gnulinux {
     std::string FutexBlocker::toString() const {
         int pid = thread_->description().pid;
         int tid = thread_->description().tid;
-        x64::Mmu mmu(thread_->process()->addressSpace());
+        mem::Mmu mmu(thread_->process()->addressSpace());
         u32 contained = mmu.read32(wordPtr_);
         std::string timeoutString;
         if(!!timeLimit_) {
@@ -74,7 +74,7 @@ namespace kernel::gnulinux {
                     pid, tid, expected_, wordPtr_.address(), contained, timeoutString);
     }
 
-    PollBlocker::PollBlocker(Process* process, Thread* thread, Timers& timers, x64::Ptr pollfds, size_t nfds, int timeoutInMs)
+    PollBlocker::PollBlocker(Process* process, Thread* thread, Timers& timers, mem::Ptr pollfds, size_t nfds, int timeoutInMs)
         : process_(process), thread_(thread), timers_(&timers), pollfds_(pollfds), nfds_(nfds) {
         if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
@@ -87,7 +87,7 @@ namespace kernel::gnulinux {
     }
 
     bool PollBlocker::tryUnblock(FS& fs) {
-        x64::Mmu mmu(thread_->process()->addressSpace());
+        mem::Mmu mmu(thread_->process()->addressSpace());
         mmu.readFromMmu<FS::PollFd>(pollfds_, nfds_, &allpollfds_);
         allpolldatas_.resize(allpollfds_.size());
         std::transform(allpollfds_.begin(), allpollfds_.end(), allpolldatas_.begin(), [&](FS::PollFd pollfd) -> FS::PollData {
@@ -130,7 +130,7 @@ namespace kernel::gnulinux {
         int tid = thread_->description().tid;
         std::stringstream ss;
         ss << '{';
-        x64::Mmu mmu(thread_->process()->addressSpace());
+        mem::Mmu mmu(thread_->process()->addressSpace());
         std::vector<FS::PollFd> pollfds(mmu.readFromMmu<FS::PollFd>(pollfds_, nfds_));
         for(const auto& pfd : pollfds) {
             ss << pfd.fd << " [";
@@ -149,11 +149,11 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} polling on {} fds {} {}", pid, tid, nfds_, pollfdsString, timeoutString);
     }
 
-    SelectBlocker::SelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, x64::Ptr readfds, x64::Ptr writefds, x64::Ptr exceptfds, x64::Ptr timeout)
+    SelectBlocker::SelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout)
             : process_(process), thread_(thread), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
         Timer* timer = timers_->getOrTryCreate(0); // get any timer
         verify(!!timer);
-        x64::Mmu mmu(thread_->process()->addressSpace());
+        mem::Mmu mmu(thread_->process()->addressSpace());
         auto duration = timer->readRelativeTimeval(mmu, timeout);
         if(!!duration) {
             PreciseTime now = timer->now();
@@ -167,7 +167,7 @@ namespace kernel::gnulinux {
         for(int fd = 0; fd < nfds_; ++fd) {
             selectData_.fds.push_back(process_->fds()[fd]);
         }
-        x64::Mmu mmu(thread_->process()->addressSpace());
+        mem::Mmu mmu(thread_->process()->addressSpace());
         if(!!readfds_) mmu.copyFromMmu((u8*)&selectData_.readfds, readfds_, sizeof(selectData_.readfds));
         if(!!writefds_) mmu.copyFromMmu((u8*)&selectData_.writefds, writefds_, sizeof(selectData_.writefds));
         if(!!exceptfds_) mmu.copyFromMmu((u8*)&selectData_.exceptfds, exceptfds_, sizeof(selectData_.exceptfds));
@@ -203,7 +203,7 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} selecting on {} fds {}", pid, tid, nfds_, timeoutString);
     }
 
-    EpollWaitBlocker::EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, x64::Ptr events, size_t maxevents, int timeoutInMs)
+    EpollWaitBlocker::EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, mem::Ptr events, size_t maxevents, int timeoutInMs)
         : process_(process), thread_(thread), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
         if(timeoutInMs > 0) {
             Timer* timer = timers_->getOrTryCreate(0); // get any timer
@@ -240,7 +240,7 @@ namespace kernel::gnulinux {
                     e.data,
                 });
             }
-            x64::Mmu mmu(thread_->process()->addressSpace());
+            mem::Mmu mmu(thread_->process()->addressSpace());
             mmu.writeToMmu(events_, eventsForMemory);
             thread_->savedCpuState().regs.set(x64::R64::RAX, epollEvents.size());
             return true;
@@ -289,7 +289,7 @@ namespace kernel::gnulinux {
                 verify(ec->pid == pid_);
                 thread_->savedCpuState().regs.set(x64::R64::RAX, pid_);
                 if(wstatus_) {
-                    x64::Mmu mmu(thread_->process()->addressSpace());
+                    mem::Mmu mmu(thread_->process()->addressSpace());
                     int status = (ec->status << 8) | ec->signal.value_or(0);
                     mmu.write32(wstatus_, status);
                 }
@@ -302,7 +302,7 @@ namespace kernel::gnulinux {
             if(auto ec = thread_->process()->tryRetrieveExitedChild()) {
                 thread_->savedCpuState().regs.set(x64::R64::RAX, ec->pid);
                 if(wstatus_) {
-                    x64::Mmu mmu(thread_->process()->addressSpace());
+                    mem::Mmu mmu(thread_->process()->addressSpace());
                     int status = (ec->status << 8) | ec->signal.value_or(0);
                     mmu.write32(wstatus_, status);
                 }
@@ -327,7 +327,7 @@ namespace kernel::gnulinux {
             return false;
         }
         ssize_t ret = readResult.value().errorOrWith<ssize_t>([&](const auto& buffer) {
-            x64::Mmu mmu(thread_->process()->addressSpace());
+            mem::Mmu mmu(thread_->process()->addressSpace());
             mmu.copyToMmu(buf_, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });

@@ -75,11 +75,11 @@ set(LIB_KIND STATIC)
 add_library(x64cpu ${LIB_KIND}
     src/host/hostinstructions.cpp
     src/host/hostmemory.cpp
+    src/mem/mmu.cpp
     src/x64/checkedcpuimpl.cpp
     src/x64/cpu.cpp
     src/x64/cpuimpl.cpp
     src/x64/flags.cpp
-    src/x64/mmu.cpp
     src/x64/nativecpuimpl.cpp
     src/x64/registers.cpp
     src/x64/simd.cpp
@@ -161,7 +161,7 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
         profiling
         fmt::fmt-header-only
     )
-    target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
+    target_compile_definitions(x64emulator PRIVATE ${COMPILE_DEFINITIONS})
 
 
     add_library(x64linuxkernel ${LIB_KIND}
@@ -216,7 +216,7 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
         profiling
         fmt::fmt-header-only
     )
-    target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
+    target_compile_definitions(x64linuxkernel PRIVATE ${COMPILE_DEFINITIONS})
 
     # target_compile_options(x64linuxkernel PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
     # target_link_libraries(x64linuxkernel PRIVATE asan ubsan)
