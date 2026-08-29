@@ -87,7 +87,7 @@ namespace x64 {
         x64::DisassemblyCache disassemblyCache_;
 
         std::mutex segmentGuard_;
-        std::vector<x64::X64Instruction> blockInstructions_;
+        std::vector<x64::Instruction> blockInstructions_;
         IntervalVector<x64::CodeSegment> codeSegments_;
         std::unordered_map<u64, x64::CodeSegment*> codeSegmentsByAddress_;
     };

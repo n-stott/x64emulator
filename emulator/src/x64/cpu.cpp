@@ -195,7 +195,7 @@ namespace x64 {
 
     #define STANDALONE_NAME(type) EXEC_##type
 
-    #define DEFINE_STANDALONE(type, f) void STANDALONE_NAME(type) (Cpu& cpu, const X64Instruction& ins) { \
+    #define DEFINE_STANDALONE(type, f) void STANDALONE_NAME(type) (Cpu& cpu, const Instruction& ins) { \
         assert(ins.insn() == Insn::type);                                                         \
         cpu.f(ins);                                                                         \
     }
@@ -1858,12 +1858,12 @@ namespace x64 {
         STANDALONE_NAME(UNKNOWN),
     }};
 
-    void Cpu::exec(const X64Instruction& insn) {
+    void Cpu::exec(const Instruction& insn) {
         return execFunctions_[(size_t)insn.insn()](*this, insn);
     }
 
-    BasicBlock Cpu::createBasicBlock(const X64Instruction* instructions, size_t count) {
-        std::vector<std::pair<X64Instruction, CpuExecPtr>> vec;
+    BasicBlock Cpu::createBasicBlock(const Instruction* instructions, size_t count) {
+        std::vector<std::pair<Instruction, CpuExecPtr>> vec;
         vec.reserve(count);
         for(size_t i = 0; i < count; ++i) {
             vec.push_back(std::make_pair(instructions[i], execFunctions_[(size_t)instructions[i].insn()]));
@@ -1878,48 +1878,48 @@ namespace x64 {
         }
     }
 
-    void Cpu::execAddRM8RM8(const X64Instruction& ins) {
+    void Cpu::execAddRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::add8(get(dst), get(src), &flags_));
     }
-    void Cpu::execAddRM8Imm(const X64Instruction& ins) {
+    void Cpu::execAddRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::add8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execAddRM16RM16(const X64Instruction& ins) {
+    void Cpu::execAddRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::add16(get(dst), get(src), &flags_));
     }
-    void Cpu::execAddRM16Imm(const X64Instruction& ins) {
+    void Cpu::execAddRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::add16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execAddRM32RM32(const X64Instruction& ins) {
+    void Cpu::execAddRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::add32(get(dst), get(src), &flags_));
     }
-    void Cpu::execAddRM32Imm(const X64Instruction& ins) {
+    void Cpu::execAddRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::add32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execAddRM64RM64(const X64Instruction& ins) {
+    void Cpu::execAddRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::add64(get(dst), get(src), &flags_));
     }
-    void Cpu::execAddRM64Imm(const X64Instruction& ins) {
+    void Cpu::execAddRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::add64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execLockAddM8RM8(const X64Instruction& ins) {
+    void Cpu::execLockAddM8RM8(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<RM8>();
@@ -1927,7 +1927,7 @@ namespace x64 {
             return Impl::add8(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockAddM8Imm(const X64Instruction& ins) {
+    void Cpu::execLockAddM8Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<Imm>();
@@ -1935,7 +1935,7 @@ namespace x64 {
             return Impl::add8(oldValue, get<u8>(src), &flags_);
         });
     }
-    void Cpu::execLockAddM16RM16(const X64Instruction& ins) {
+    void Cpu::execLockAddM16RM16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<RM16>();
@@ -1943,7 +1943,7 @@ namespace x64 {
             return Impl::add16(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockAddM16Imm(const X64Instruction& ins) {
+    void Cpu::execLockAddM16Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<Imm>();
@@ -1951,7 +1951,7 @@ namespace x64 {
             return Impl::add16(oldValue, get<u16>(src), &flags_);
         });
     }
-    void Cpu::execLockAddM32RM32(const X64Instruction& ins) {
+    void Cpu::execLockAddM32RM32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<RM32>();
@@ -1959,7 +1959,7 @@ namespace x64 {
             return Impl::add32(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockAddM32Imm(const X64Instruction& ins) {
+    void Cpu::execLockAddM32Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<Imm>();
@@ -1967,7 +1967,7 @@ namespace x64 {
             return Impl::add32(oldValue, get<u32>(src), &flags_);
         });
     }
-    void Cpu::execLockAddM64RM64(const X64Instruction& ins) {
+    void Cpu::execLockAddM64RM64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<RM64>();
@@ -1975,7 +1975,7 @@ namespace x64 {
             return Impl::add64(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockAddM64Imm(const X64Instruction& ins) {
+    void Cpu::execLockAddM64Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<Imm>();
@@ -1984,89 +1984,89 @@ namespace x64 {
         });
     }
 
-    void Cpu::execAdcRM8RM8(const X64Instruction& ins) {
+    void Cpu::execAdcRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::adc8(get(dst), get(src), &flags_));
     }
-    void Cpu::execAdcRM8Imm(const X64Instruction& ins) {
+    void Cpu::execAdcRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::adc8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execAdcRM16RM16(const X64Instruction& ins) {
+    void Cpu::execAdcRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::adc16(get(dst), get(src), &flags_));
     }
-    void Cpu::execAdcRM16Imm(const X64Instruction& ins) {
+    void Cpu::execAdcRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::adc16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execAdcRM32RM32(const X64Instruction& ins) {
+    void Cpu::execAdcRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::adc32(get(dst), get(src), &flags_));
     }
-    void Cpu::execAdcRM32Imm(const X64Instruction& ins) {
+    void Cpu::execAdcRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::adc32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execAdcRM64RM64(const X64Instruction& ins) {
+    void Cpu::execAdcRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::adc64(get(dst), get(src), &flags_));
     }
-    void Cpu::execAdcRM64Imm(const X64Instruction& ins) {
+    void Cpu::execAdcRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::adc64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execSubRM8RM8(const X64Instruction& ins) {
+    void Cpu::execSubRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::sub8(get(dst), get(src), &flags_));
     }
-    void Cpu::execSubRM8Imm(const X64Instruction& ins) {
+    void Cpu::execSubRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sub8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execSubRM16RM16(const X64Instruction& ins) {
+    void Cpu::execSubRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::sub16(get(dst), get(src), &flags_));
     }
-    void Cpu::execSubRM16Imm(const X64Instruction& ins) {
+    void Cpu::execSubRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sub16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execSubRM32RM32(const X64Instruction& ins) {
+    void Cpu::execSubRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::sub32(get(dst), get(src), &flags_));
     }
-    void Cpu::execSubRM32Imm(const X64Instruction& ins) {
+    void Cpu::execSubRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sub32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execSubRM64RM64(const X64Instruction& ins) {
+    void Cpu::execSubRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::sub64(get(dst), get(src), &flags_));
     }
-    void Cpu::execSubRM64Imm(const X64Instruction& ins) {
+    void Cpu::execSubRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sub64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execLockSubM8RM8(const X64Instruction& ins) {
+    void Cpu::execLockSubM8RM8(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<RM8>();
@@ -2074,7 +2074,7 @@ namespace x64 {
             return Impl::sub8(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockSubM8Imm(const X64Instruction& ins) {
+    void Cpu::execLockSubM8Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<Imm>();
@@ -2082,7 +2082,7 @@ namespace x64 {
             return Impl::sub8(oldValue, get<u8>(src), &flags_);
         });
     }
-    void Cpu::execLockSubM16RM16(const X64Instruction& ins) {
+    void Cpu::execLockSubM16RM16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<RM16>();
@@ -2090,7 +2090,7 @@ namespace x64 {
             return Impl::sub16(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockSubM16Imm(const X64Instruction& ins) {
+    void Cpu::execLockSubM16Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<Imm>();
@@ -2098,7 +2098,7 @@ namespace x64 {
             return Impl::sub16(oldValue, get<u16>(src), &flags_);
         });
     }
-    void Cpu::execLockSubM32RM32(const X64Instruction& ins) {
+    void Cpu::execLockSubM32RM32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<RM32>();
@@ -2106,7 +2106,7 @@ namespace x64 {
             return Impl::sub32(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockSubM32Imm(const X64Instruction& ins) {
+    void Cpu::execLockSubM32Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<Imm>();
@@ -2114,7 +2114,7 @@ namespace x64 {
             return Impl::sub32(oldValue, get<u32>(src), &flags_);
         });
     }
-    void Cpu::execLockSubM64RM64(const X64Instruction& ins) {
+    void Cpu::execLockSubM64RM64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<RM64>();
@@ -2122,7 +2122,7 @@ namespace x64 {
             return Impl::sub64(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockSubM64Imm(const X64Instruction& ins) {
+    void Cpu::execLockSubM64Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<Imm>();
@@ -2131,142 +2131,142 @@ namespace x64 {
         });
     }
 
-    void Cpu::execSbbRM8RM8(const X64Instruction& ins) {
+    void Cpu::execSbbRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::sbb8(get(dst), get(src), &flags_));
     }
-    void Cpu::execSbbRM8Imm(const X64Instruction& ins) {
+    void Cpu::execSbbRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sbb8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execSbbRM16RM16(const X64Instruction& ins) {
+    void Cpu::execSbbRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::sbb16(get(dst), get(src), &flags_));
     }
-    void Cpu::execSbbRM16Imm(const X64Instruction& ins) {
+    void Cpu::execSbbRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sbb16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execSbbRM32RM32(const X64Instruction& ins) {
+    void Cpu::execSbbRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::sbb32(get(dst), get(src), &flags_));
     }
-    void Cpu::execSbbRM32Imm(const X64Instruction& ins) {
+    void Cpu::execSbbRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sbb32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execSbbRM64RM64(const X64Instruction& ins) {
+    void Cpu::execSbbRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::sbb64(get(dst), get(src), &flags_));
     }
-    void Cpu::execSbbRM64Imm(const X64Instruction& ins) {
+    void Cpu::execSbbRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sbb64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execNegRM8(const X64Instruction& ins) {
+    void Cpu::execNegRM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         set(dst, Impl::neg8(get(dst), &flags_));
     }
-    void Cpu::execNegRM16(const X64Instruction& ins) {
+    void Cpu::execNegRM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         set(dst, Impl::neg16(get(dst), &flags_));
     }
-    void Cpu::execNegRM32(const X64Instruction& ins) {
+    void Cpu::execNegRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         set(dst, Impl::neg32(get(dst), &flags_));
     }
-    void Cpu::execNegRM64(const X64Instruction& ins) {
+    void Cpu::execNegRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         set(dst, Impl::neg64(get(dst), &flags_));
     }
 
-    void Cpu::execMulRM8(const X64Instruction& ins) {
+    void Cpu::execMulRM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         auto res = Impl::mul8(get(R8::AL), get(dst), &flags_);
         set(R16::AX, (u16)((u16)res.first << 8 | (u16)res.second));
     }
 
-    void Cpu::execMulRM16(const X64Instruction& ins) {
+    void Cpu::execMulRM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         auto res = Impl::mul16(get(R16::AX), get(dst), &flags_);
         set(R16::DX, res.first);
         set(R16::AX, res.second);
     }
 
-    void Cpu::execMulRM32(const X64Instruction& ins) {
+    void Cpu::execMulRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         auto res = Impl::mul32(get(R32::EAX), get(dst), &flags_);
         set(R32::EDX, res.first);
         set(R32::EAX, res.second);
     }
 
-    void Cpu::execMulRM64(const X64Instruction& ins) {
+    void Cpu::execMulRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         auto res = Impl::mul64(get(R64::RAX), get(dst), &flags_);
         set(R64::RDX, res.first);
         set(R64::RAX, res.second);
     }
 
-    void Cpu::execImul1RM16(const X64Instruction& ins) {
+    void Cpu::execImul1RM16(const Instruction& ins) {
         const auto& src = ins.op0<RM16>();
         auto res = Impl::imul16(get(R16::AX), get(src), &flags_);
         set(R16::DX, res.first);
         set(R16::AX, res.second);
     }
-    void Cpu::execImul2R16RM16(const X64Instruction& ins) {
+    void Cpu::execImul2R16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<RM16>();
         auto res = Impl::imul16(get(dst), get(src), &flags_);
         set(dst, res.second);
     }
-    void Cpu::execImul3R16RM16Imm(const X64Instruction& ins) {
+    void Cpu::execImul3R16RM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src1 = ins.op1<RM16>();
         const auto& src2 = ins.op2<Imm>();
         auto res = Impl::imul16(get(src1), get<u16>(src2), &flags_);
         set(dst, res.second);
     }
-    void Cpu::execImul1RM32(const X64Instruction& ins) {
+    void Cpu::execImul1RM32(const Instruction& ins) {
         const auto& src = ins.op0<RM32>();
         auto res = Impl::imul32(get(R32::EAX), get(src), &flags_);
         set(R32::EDX, res.first);
         set(R32::EAX, res.second);
     }
-    void Cpu::execImul2R32RM32(const X64Instruction& ins) {
+    void Cpu::execImul2R32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         auto res = Impl::imul32(get(dst), get(src), &flags_);
         set(dst, res.second);
     }
-    void Cpu::execImul3R32RM32Imm(const X64Instruction& ins) {
+    void Cpu::execImul3R32RM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<RM32>();
         const auto& src2 = ins.op2<Imm>();
         auto res = Impl::imul32(get(src1), get<u32>(src2), &flags_);
         set(dst, res.second);
     }
-    void Cpu::execImul1RM64(const X64Instruction& ins) {
+    void Cpu::execImul1RM64(const Instruction& ins) {
         const auto& src = ins.op0<RM64>();
         auto res = Impl::imul64(get(R64::RAX), get(src), &flags_);
         set(R64::RDX, res.first);
         set(R64::RAX, res.second);
     }
-    void Cpu::execImul2R64RM64(const X64Instruction& ins) {
+    void Cpu::execImul2R64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         auto res = Impl::imul64(get(dst), get(src), &flags_);
         set(dst, res.second);
     }
-    void Cpu::execImul3R64RM64Imm(const X64Instruction& ins) {
+    void Cpu::execImul3R64RM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src1 = ins.op1<RM64>();
         const auto& src2 = ins.op2<Imm>();
@@ -2274,131 +2274,131 @@ namespace x64 {
         set(dst, res.second);
     }
 
-    void Cpu::execDivRM8(const X64Instruction& ins) {
+    void Cpu::execDivRM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         auto res = Impl::div8(get(R8::AH), get(R8::AL), get(dst));
         set(R8::AL, res.first);
         set(R8::AH, res.second);
     }
 
-    void Cpu::execDivRM16(const X64Instruction& ins) {
+    void Cpu::execDivRM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         auto res = Impl::div16(get(R16::DX), get(R16::AX), get(dst));
         set(R16::AX, res.first);
         set(R16::DX, res.second);
     }
 
-    void Cpu::execDivRM32(const X64Instruction& ins) {
+    void Cpu::execDivRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         auto res = Impl::div32(get(R32::EDX), get(R32::EAX), get(dst));
         set(R32::EAX, res.first);
         set(R32::EDX, res.second);
     }
 
-    void Cpu::execDivRM64(const X64Instruction& ins) {
+    void Cpu::execDivRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         auto res = Impl::div64(get(R64::RDX), get(R64::RAX), get(dst));
         set(R64::RAX, res.first);
         set(R64::RDX, res.second);
     }
 
-    void Cpu::execIdivRM32(const X64Instruction& ins) {
+    void Cpu::execIdivRM32(const Instruction& ins) {
         const auto& src = ins.op0<RM32>();
         auto res = host::idiv32(get(R32::EDX), get(R32::EAX), get(src));
         set(R32::EAX, res.quotient);
         set(R32::EDX, res.remainder);
     }
 
-    void Cpu::execIdivRM64(const X64Instruction& ins) {
+    void Cpu::execIdivRM64(const Instruction& ins) {
         const auto& src = ins.op0<RM64>();
         auto res = host::idiv64(get(R64::RDX), get(R64::RAX), get(src));
         set(R64::RAX, res.quotient);
         set(R64::RDX, res.remainder);
     }
 
-    void Cpu::execAndRM8RM8(const X64Instruction& ins) {
+    void Cpu::execAndRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::and8(get(dst), get(src), &flags_));
     }
-    void Cpu::execAndRM8Imm(const X64Instruction& ins) {
+    void Cpu::execAndRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::and8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execAndRM16RM16(const X64Instruction& ins) {
+    void Cpu::execAndRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::and16(get(dst), get(src), &flags_));
     }
-    void Cpu::execAndRM16Imm(const X64Instruction& ins) {
+    void Cpu::execAndRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::and16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execAndRM32RM32(const X64Instruction& ins) {
+    void Cpu::execAndRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::and32(get(dst), get(src), &flags_));
     }
-    void Cpu::execAndRM32Imm(const X64Instruction& ins) {
+    void Cpu::execAndRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::and32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execAndRM64RM64(const X64Instruction& ins) {
+    void Cpu::execAndRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::and64(get(dst), get(src), &flags_));
     }
-    void Cpu::execAndRM64Imm(const X64Instruction& ins) {
+    void Cpu::execAndRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::and64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execOrRM8RM8(const X64Instruction& ins) {
+    void Cpu::execOrRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::or8(get(dst), get(src), &flags_));
     }
-    void Cpu::execOrRM8Imm(const X64Instruction& ins) {
+    void Cpu::execOrRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::or8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execOrRM16RM16(const X64Instruction& ins) {
+    void Cpu::execOrRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::or16(get(dst), get(src), &flags_));
     }
-    void Cpu::execOrRM16Imm(const X64Instruction& ins) {
+    void Cpu::execOrRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::or16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execOrRM32RM32(const X64Instruction& ins) {
+    void Cpu::execOrRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::or32(get(dst), get(src), &flags_));
     }
-    void Cpu::execOrRM32Imm(const X64Instruction& ins) {
+    void Cpu::execOrRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::or32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execOrRM64RM64(const X64Instruction& ins) {
+    void Cpu::execOrRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::or64(get(dst), get(src), &flags_));
     }
-    void Cpu::execOrRM64Imm(const X64Instruction& ins) {
+    void Cpu::execOrRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::or64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execLockOrM8RM8(const X64Instruction& ins) {
+    void Cpu::execLockOrM8RM8(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<RM8>();
@@ -2406,7 +2406,7 @@ namespace x64 {
             return Impl::or8(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockOrM8Imm(const X64Instruction& ins) {
+    void Cpu::execLockOrM8Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<Imm>();
@@ -2414,7 +2414,7 @@ namespace x64 {
             return Impl::or8(oldValue, get<u8>(src), &flags_);
         });
     }
-    void Cpu::execLockOrM16RM16(const X64Instruction& ins) {
+    void Cpu::execLockOrM16RM16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<RM16>();
@@ -2422,7 +2422,7 @@ namespace x64 {
             return Impl::or16(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockOrM16Imm(const X64Instruction& ins) {
+    void Cpu::execLockOrM16Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<Imm>();
@@ -2430,7 +2430,7 @@ namespace x64 {
             return Impl::or16(oldValue, get<u16>(src), &flags_);
         });
     }
-    void Cpu::execLockOrM32RM32(const X64Instruction& ins) {
+    void Cpu::execLockOrM32RM32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<RM32>();
@@ -2438,7 +2438,7 @@ namespace x64 {
             return Impl::or32(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockOrM32Imm(const X64Instruction& ins) {
+    void Cpu::execLockOrM32Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<Imm>();
@@ -2446,7 +2446,7 @@ namespace x64 {
             return Impl::or32(oldValue, get<u32>(src), &flags_);
         });
     }
-    void Cpu::execLockOrM64RM64(const X64Instruction& ins) {
+    void Cpu::execLockOrM64RM64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<RM64>();
@@ -2454,7 +2454,7 @@ namespace x64 {
             return Impl::or64(oldValue, get(src), &flags_);
         });
     }
-    void Cpu::execLockOrM64Imm(const X64Instruction& ins) {
+    void Cpu::execLockOrM64Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<Imm>();
@@ -2463,86 +2463,86 @@ namespace x64 {
         });
     }
 
-    void Cpu::execXorRM8RM8(const X64Instruction& ins) {
+    void Cpu::execXorRM8RM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::xor8(get(dst), get(src), &flags_));
     }
-    void Cpu::execXorRM8Imm(const X64Instruction& ins) {
+    void Cpu::execXorRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::xor8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execXorRM16RM16(const X64Instruction& ins) {
+    void Cpu::execXorRM16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::xor16(get(dst), get(src), &flags_));
     }
-    void Cpu::execXorRM16Imm(const X64Instruction& ins) {
+    void Cpu::execXorRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::xor16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execXorRM32RM32(const X64Instruction& ins) {
+    void Cpu::execXorRM32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::xor32(get(dst), get(src), &flags_));
     }
-    void Cpu::execXorRM32Imm(const X64Instruction& ins) {
+    void Cpu::execXorRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::xor32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execXorRM64RM64(const X64Instruction& ins) {
+    void Cpu::execXorRM64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::xor64(get(dst), get(src), &flags_));
     }
-    void Cpu::execXorRM64Imm(const X64Instruction& ins) {
+    void Cpu::execXorRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::xor64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execNotRM8(const X64Instruction& ins) {
+    void Cpu::execNotRM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         set(dst, ~get(dst));
     }
-    void Cpu::execNotRM16(const X64Instruction& ins) {
+    void Cpu::execNotRM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         set(dst, ~get(dst));
     }
-    void Cpu::execNotRM32(const X64Instruction& ins) {
+    void Cpu::execNotRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         set(dst, ~get(dst));
     }
-    void Cpu::execNotRM64(const X64Instruction& ins) {
+    void Cpu::execNotRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         set(dst, ~get(dst));
     }
 
-    void Cpu::execXchgRM8R8(const X64Instruction& ins) {
+    void Cpu::execXchgRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         u8 srcValue = get(src);
         u8 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
-    void Cpu::execXchgRM16R16(const X64Instruction& ins) {
+    void Cpu::execXchgRM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R16>();
         u16 srcValue = get(src);
         u16 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
-    void Cpu::execXchgRM32R32(const X64Instruction& ins) {
+    void Cpu::execXchgRM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R32>();
         u32 srcValue = get(src);
         u32 dstValue = xchg(dst, srcValue);
         set(src, dstValue);
     }
-    void Cpu::execXchgRM64R64(const X64Instruction& ins) {
+    void Cpu::execXchgRM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R64>();
         u64 srcValue = get(src);
@@ -2550,7 +2550,7 @@ namespace x64 {
         set(src, dstValue);
     }
 
-    void Cpu::execXaddRM8R8(const X64Instruction& ins) {
+    void Cpu::execXaddRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         u8 dstValue = get(dst);
@@ -2559,7 +2559,7 @@ namespace x64 {
         set(dst, tmpValue);
         set(src, dstValue);
     }
-    void Cpu::execXaddRM16R16(const X64Instruction& ins) {
+    void Cpu::execXaddRM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R16>();
         u16 dstValue = get(dst);
@@ -2568,7 +2568,7 @@ namespace x64 {
         set(dst, tmpValue);
         set(src, dstValue);
     }
-    void Cpu::execXaddRM32R32(const X64Instruction& ins) {
+    void Cpu::execXaddRM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R32>();
         u32 dstValue = get(dst);
@@ -2577,7 +2577,7 @@ namespace x64 {
         set(dst, tmpValue);
         set(src, dstValue);
     }
-    void Cpu::execXaddRM64R64(const X64Instruction& ins) {
+    void Cpu::execXaddRM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R64>();
         u64 dstValue = get(dst);
@@ -2587,7 +2587,7 @@ namespace x64 {
         set(src, dstValue);
     }
 
-    void Cpu::execLockXaddM8R8(const X64Instruction& ins) {
+    void Cpu::execLockXaddM8R8(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();
@@ -2599,7 +2599,7 @@ namespace x64 {
             return newValue;
         });
     }
-    void Cpu::execLockXaddM16R16(const X64Instruction& ins) {
+    void Cpu::execLockXaddM16R16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
@@ -2611,7 +2611,7 @@ namespace x64 {
             return newValue;
         });
     }
-    void Cpu::execLockXaddM32R32(const X64Instruction& ins) {
+    void Cpu::execLockXaddM32R32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
@@ -2623,7 +2623,7 @@ namespace x64 {
             return newValue;
         });
     }
-    void Cpu::execLockXaddM64R64(const X64Instruction& ins) {
+    void Cpu::execLockXaddM64R64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
@@ -2656,7 +2656,7 @@ namespace x64 {
 
 
     template<mem::Size size>
-    void Cpu::execMovRR(const X64Instruction& ins) {
+    void Cpu::execMovRR(const Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<R<size>>();
         auto srcValue = get(src);
@@ -2672,35 +2672,35 @@ namespace x64 {
         set(dst, srcValue);
     }
 
-    void Cpu::execMovMMXMMX(const X64Instruction& ins) {
+    void Cpu::execMovMMXMMX(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMX>();
         set(dst, get(src));
     }
 
     template<mem::Size size>
-    void Cpu::execMovRM(const X64Instruction& ins) {
+    void Cpu::execMovRM(const Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<M<size>>();
         set(dst, get(resolve(src)));
     }
 
     template<mem::Size size>
-    void Cpu::execMovMR(const X64Instruction& ins) {
+    void Cpu::execMovMR(const Instruction& ins) {
         const auto& dst = ins.op0<M<size>>();
         const auto& src = ins.op1<R<size>>();
         set(resolve(dst), get(src));
     }
 
     template<mem::Size size>
-    void Cpu::execMovRImm(const X64Instruction& ins) {
+    void Cpu::execMovRImm(const Instruction& ins) {
         const auto& dst = ins.op0<R<size>>();
         const auto& src = ins.op1<Imm>();
         set(dst, get<U<size>>(src));
     }
 
     template<mem::Size size>
-    void Cpu::execMovMImm(const X64Instruction& ins) {
+    void Cpu::execMovMImm(const Instruction& ins) {
         const auto& dst = ins.op0<M<size>>();
         const auto& src = ins.op1<Imm>();
         set(resolve(dst), get<U<size>>(src));
@@ -2710,7 +2710,7 @@ namespace x64 {
         return ptr.address() % 16 == 0;
     }
 
-    void Cpu::execMovq2dq(const X64Instruction& ins) {
+    void Cpu::execMovq2dq(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<MMX>();
         u64 srcValue = get(src);
@@ -2718,7 +2718,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execMovdq2q(const X64Instruction& ins) {
+    void Cpu::execMovdq2q(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<XMM>();
         u128 srcValue = get(src);
@@ -2726,7 +2726,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execMovaXMMM128(const X64Instruction& ins) {
+    void Cpu::execMovaXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M128>();
         auto srcAddress = resolve(src);
@@ -2738,7 +2738,7 @@ namespace x64 {
         set(dst, get(srcAddress));
     }
 
-    void Cpu::execMovaM128XMM(const X64Instruction& ins) {
+    void Cpu::execMovaM128XMM(const Instruction& ins) {
         const auto& dst = ins.op0<M128>();
         const auto& src = ins.op1<XMM>();
         auto dstAddress = resolve(dst);
@@ -2750,7 +2750,7 @@ namespace x64 {
         set(dstAddress, get(src));
     }
 
-    void Cpu::execMovuXMMM128(const X64Instruction& ins) {
+    void Cpu::execMovuXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M128>();
         auto srcAddress = resolve(src);
@@ -2761,7 +2761,7 @@ namespace x64 {
         }
     }
 
-    void Cpu::execMovuM128XMM(const X64Instruction& ins) {
+    void Cpu::execMovuM128XMM(const Instruction& ins) {
         const auto& dst = ins.op0<M128>();
         const auto& src = ins.op1<XMM>();
         auto dstAddress = resolve(dst);
@@ -2772,132 +2772,132 @@ namespace x64 {
         }
     }
 
-    void Cpu::execMovsxR16RM8(const X64Instruction& ins) {
+    void Cpu::execMovsxR16RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<RM8>();
         set(dst, signExtend<u16>(get(src)));
     }
-    void Cpu::execMovsxR32RM8(const X64Instruction& ins) {
+    void Cpu::execMovsxR32RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM8>();
         set(dst, signExtend<u32>(get(src)));
     }
-    void Cpu::execMovsxR32RM16(const X64Instruction& ins) {
+    void Cpu::execMovsxR32RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM16>();
         set(dst, signExtend<u32>(get(src)));
     }
-    void Cpu::execMovsxR64RM8(const X64Instruction& ins) {
+    void Cpu::execMovsxR64RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM8>();
         set(dst, signExtend<u64>(get(src)));
     }
-    void Cpu::execMovsxR64RM16(const X64Instruction& ins) {
+    void Cpu::execMovsxR64RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM16>();
         set(dst, signExtend<u64>(get(src)));
     }
-    void Cpu::execMovsxR64RM32(const X64Instruction& ins) {
+    void Cpu::execMovsxR64RM32(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM32>();
         set(dst, signExtend<u64>(get(src)));
     }
 
-    void Cpu::execMovzxR16RM8(const X64Instruction& ins) {
+    void Cpu::execMovzxR16RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<RM8>();
         set(dst, (u16)get(src));
     }
-    void Cpu::execMovzxR32RM8(const X64Instruction& ins) {
+    void Cpu::execMovzxR32RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM8>();
         set(dst, (u32)get(src));
     }
-    void Cpu::execMovzxR32RM16(const X64Instruction& ins) {
+    void Cpu::execMovzxR32RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM16>();
         set(dst, (u32)get(src));
     }
-    void Cpu::execMovzxR64RM8(const X64Instruction& ins) {
+    void Cpu::execMovzxR64RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM8>();
         set(dst, (u64)get(src));
     }
-    void Cpu::execMovzxR64RM16(const X64Instruction& ins) {
+    void Cpu::execMovzxR64RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM16>();
         set(dst, (u64)get(src));
     }
-    void Cpu::execMovzxR64RM32(const X64Instruction& ins) {
+    void Cpu::execMovzxR64RM32(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM32>();
         set(dst, (u64)get(src));
     }
 
-    void Cpu::execLeaR32Encoding32(const X64Instruction& ins) {
+    void Cpu::execLeaR32Encoding32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<Encoding32>();
         set(dst, resolve(src));
     }
-    void Cpu::execLeaR64Encoding32(const X64Instruction& ins) {
+    void Cpu::execLeaR64Encoding32(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<Encoding32>();
         set(dst, zeroExtend<u64, u32>(resolve(src)));
     }
-    void Cpu::execLeaR32Encoding64(const X64Instruction& ins) {
+    void Cpu::execLeaR32Encoding64(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<Encoding64>();
         set(dst, narrow<u32, u64>(resolve(src)));
     }
-    void Cpu::execLeaR64Encoding64(const X64Instruction& ins) {
+    void Cpu::execLeaR64Encoding64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<Encoding64>();
         set(dst, resolve(src));
     }
 
-    void Cpu::execPushImm(const X64Instruction& ins) {
+    void Cpu::execPushImm(const Instruction& ins) {
         const auto& src = ins.op0<Imm>();
         push32(get<u32>(src));
     }
-    void Cpu::execPushRM32(const X64Instruction& ins) {
+    void Cpu::execPushRM32(const Instruction& ins) {
         const auto& src = ins.op0<RM32>();
         push32(get(src));
     }
-    void Cpu::execPushRM64(const X64Instruction& ins) {
+    void Cpu::execPushRM64(const Instruction& ins) {
         const auto& src = ins.op0<RM64>();
         push64(get(src));
     }
 
-    void Cpu::execPopR32(const X64Instruction& ins) {
+    void Cpu::execPopR32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         set(dst, pop32());
     }
 
-    void Cpu::execPopR64(const X64Instruction& ins) {
+    void Cpu::execPopR64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         set(dst, pop64());
     }
 
-    void Cpu::execPopM32(const X64Instruction& ins) {
+    void Cpu::execPopM32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         set(resolve(dst), pop32());
     }
 
-    void Cpu::execPopM64(const X64Instruction& ins) {
+    void Cpu::execPopM64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         set(resolve(dst), pop64());
     }
 
-    void Cpu::execPushfq(const X64Instruction&) {
+    void Cpu::execPushfq(const Instruction&) {
         push64(flags_.toRflags());
     }
 
-    void Cpu::execPopfq(const X64Instruction&) {
+    void Cpu::execPopfq(const Instruction&) {
         u64 rflags = pop64();
         flags_ = Flags::fromRflags(rflags);
     }
 
-    void Cpu::execCallDirect(const X64Instruction& ins) {
+    void Cpu::execCallDirect(const Instruction& ins) {
         u64 address =  ins.op0<u64>();
         push64(regs_.rip());
         callbacks_.forEach([&](Callback* callback) {
@@ -2906,7 +2906,7 @@ namespace x64 {
         regs_.rip() = address;
     }
 
-    void Cpu::execCallIndirectRM32(const X64Instruction& ins) {
+    void Cpu::execCallIndirectRM32(const Instruction& ins) {
         const auto& src = ins.op0<RM32>();
         u64 address = get(src);
         push64(regs_.rip());
@@ -2916,7 +2916,7 @@ namespace x64 {
         regs_.rip() = address;
     }
 
-    void Cpu::execCallIndirectRM64(const X64Instruction& ins) {
+    void Cpu::execCallIndirectRM64(const Instruction& ins) {
         const auto& src = ins.op0<RM64>();
         u64 address = get(src);
         push64(regs_.rip());
@@ -2926,14 +2926,14 @@ namespace x64 {
         regs_.rip() = address;
     }
 
-    void Cpu::execRet(const X64Instruction&) {
+    void Cpu::execRet(const Instruction&) {
         regs_.rip() = pop64();
         callbacks_.forEach([&](Callback* callback) {
             callback->onRet();
         });
     }
 
-    void Cpu::execRetImm(const X64Instruction& ins) {
+    void Cpu::execRetImm(const Instruction& ins) {
         const auto& src = ins.op0<Imm>();
         regs_.rip() = pop64();
         regs_.rsp() += get<u64>(src);
@@ -2942,72 +2942,72 @@ namespace x64 {
         });
     }
 
-    void Cpu::execLeave(const X64Instruction&) {
+    void Cpu::execLeave(const Instruction&) {
         regs_.rsp() = regs_.rbp();
         regs_.rbp() = pop64();
     }
 
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
-    void Cpu::execHalt(const X64Instruction&) {
+    void Cpu::execHalt(const Instruction&) {
         verify(false, "Halt not implemented");
     }
     
-    void Cpu::execNop(const X64Instruction&) { }
+    void Cpu::execNop(const Instruction&) { }
 
-    void Cpu::execUd2(const X64Instruction&) {
+    void Cpu::execUd2(const Instruction&) {
         fmt::print(stderr, "Illegal instruction\n");
         verify(false);
     }
 
-    void Cpu::execUnknown(const X64Instruction& ins) {
+    void Cpu::execUnknown(const Instruction& ins) {
         const auto& mnemonic = ins.op0<std::array<char, 16>>();
         fmt::print("unknown {}\n", mnemonic.data());
         verify(false);
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 
-    void Cpu::execCdq(const X64Instruction&) { set(R32::EDX, (get(R32::EAX) & 0x80000000) ? 0xFFFFFFFF : 0x0); }
-    void Cpu::execCqo(const X64Instruction&) { set(R64::RDX, (get(R64::RAX) & 0x8000000000000000) ? 0xFFFFFFFFFFFFFFFF : 0x0); }
+    void Cpu::execCdq(const Instruction&) { set(R32::EDX, (get(R32::EAX) & 0x80000000) ? 0xFFFFFFFF : 0x0); }
+    void Cpu::execCqo(const Instruction&) { set(R64::RDX, (get(R64::RAX) & 0x8000000000000000) ? 0xFFFFFFFFFFFFFFFF : 0x0); }
 
-    void Cpu::execIncRM8(const X64Instruction& ins) {
+    void Cpu::execIncRM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         set(dst, Impl::inc8(get(dst), &flags_));
     }
-    void Cpu::execIncRM16(const X64Instruction& ins) {
+    void Cpu::execIncRM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         set(dst, Impl::inc16(get(dst), &flags_));
     }
-    void Cpu::execIncRM32(const X64Instruction& ins) {
+    void Cpu::execIncRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         set(dst, Impl::inc32(get(dst), &flags_));
     }
-    void Cpu::execIncRM64(const X64Instruction& ins) {
+    void Cpu::execIncRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         set(dst, Impl::inc64(get(dst), &flags_));
     }
 
-    void Cpu::execLockIncM8(const X64Instruction& ins) {
+    void Cpu::execLockIncM8(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
             return Impl::inc8(oldValue, &flags_);
         });
     }
-    void Cpu::execLockIncM16(const X64Instruction& ins) {
+    void Cpu::execLockIncM16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
             return Impl::inc16(oldValue, &flags_);
         });
     }
-    void Cpu::execLockIncM32(const X64Instruction& ins) {
+    void Cpu::execLockIncM32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
             return Impl::inc32(oldValue, &flags_);
         });
     }
-    void Cpu::execLockIncM64(const X64Instruction& ins) {
+    void Cpu::execLockIncM64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -3015,45 +3015,45 @@ namespace x64 {
         });
     }
 
-    void Cpu::execDecRM8(const X64Instruction& ins) {
+    void Cpu::execDecRM8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         set(dst, Impl::dec8(get(dst), &flags_));
     }
-    void Cpu::execDecRM16(const X64Instruction& ins) {
+    void Cpu::execDecRM16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         set(dst, Impl::dec16(get(dst), &flags_));
     }
-    void Cpu::execDecRM32(const X64Instruction& ins) {
+    void Cpu::execDecRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         set(dst, Impl::dec32(get(dst), &flags_));
     }
-    void Cpu::execDecRM64(const X64Instruction& ins) {
+    void Cpu::execDecRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         set(dst, Impl::dec64(get(dst), &flags_));
     }
 
-    void Cpu::execLockDecM8(const X64Instruction& ins) {
+    void Cpu::execLockDecM8(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M8>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u8 oldValue) {
             return Impl::dec8(oldValue, &flags_);
         });
     }
-    void Cpu::execLockDecM16(const X64Instruction& ins) {
+    void Cpu::execLockDecM16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u16 oldValue) {
             return Impl::dec16(oldValue, &flags_);
         });
     }
-    void Cpu::execLockDecM32(const X64Instruction& ins) {
+    void Cpu::execLockDecM32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u32 oldValue) {
             return Impl::dec32(oldValue, &flags_);
         });
     }
-    void Cpu::execLockDecM64(const X64Instruction& ins) {
+    void Cpu::execLockDecM64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         mmu_->withExclusiveRegion(resolve(dst), [&](u64 oldValue) {
@@ -3061,215 +3061,215 @@ namespace x64 {
         });
     }
 
-    void Cpu::execShlRM8R8(const X64Instruction& ins) {
+    void Cpu::execShlRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shl8(get(dst), get(src), &flags_));
     }
-    void Cpu::execShlRM8Imm(const X64Instruction& ins) {
+    void Cpu::execShlRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shl8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execShlRM16R8(const X64Instruction& ins) {
+    void Cpu::execShlRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shl16(get(dst), get(src), &flags_));
     }
-    void Cpu::execShlRM16Imm(const X64Instruction& ins) {
+    void Cpu::execShlRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shl16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execShlRM32R8(const X64Instruction& ins) {
+    void Cpu::execShlRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shl32(get(dst), get(src), &flags_));
     }
-    void Cpu::execShlRM32Imm(const X64Instruction& ins) {
+    void Cpu::execShlRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shl32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execShlRM64R8(const X64Instruction& ins) {
+    void Cpu::execShlRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shl64(get(dst), get(src), &flags_));
     }
-    void Cpu::execShlRM64Imm(const X64Instruction& ins) {
+    void Cpu::execShlRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shl64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execShrRM8R8(const X64Instruction& ins) {
+    void Cpu::execShrRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shr8(get(dst), get(src), &flags_));
     }
-    void Cpu::execShrRM8Imm(const X64Instruction& ins) {
+    void Cpu::execShrRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shr8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execShrRM16R8(const X64Instruction& ins) {
+    void Cpu::execShrRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shr16(get(dst), get(src), &flags_));
     }
-    void Cpu::execShrRM16Imm(const X64Instruction& ins) {
+    void Cpu::execShrRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shr16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execShrRM32R8(const X64Instruction& ins) {
+    void Cpu::execShrRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shr32(get(dst), get(src), &flags_));
     }
-    void Cpu::execShrRM32Imm(const X64Instruction& ins) {
+    void Cpu::execShrRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shr32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execShrRM64R8(const X64Instruction& ins) {
+    void Cpu::execShrRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::shr64(get(dst), get(src), &flags_));
     }
-    void Cpu::execShrRM64Imm(const X64Instruction& ins) {
+    void Cpu::execShrRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::shr64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execShldRM32R32R8(const X64Instruction& ins) {
+    void Cpu::execShldRM32R32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src1 = ins.op1<R32>();
         const auto& src2 = ins.op2<R8>();
         set(dst, Impl::shld32(get(dst), get(src1), get(src2), &flags_));
     }
-    void Cpu::execShldRM32R32Imm(const X64Instruction& ins) {
+    void Cpu::execShldRM32R32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src1 = ins.op1<R32>();
         const auto& src2 = ins.op2<Imm>();
         set(dst, Impl::shld32(get(dst), get(src1), get<u8>(src2), &flags_));
     }
-    void Cpu::execShldRM64R64R8(const X64Instruction& ins) {
+    void Cpu::execShldRM64R64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src1 = ins.op1<R64>();
         const auto& src2 = ins.op2<R8>();
         set(dst, Impl::shld64(get(dst), get(src1), get(src2), &flags_));
     }
-    void Cpu::execShldRM64R64Imm(const X64Instruction& ins) {
+    void Cpu::execShldRM64R64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src1 = ins.op1<R64>();
         const auto& src2 = ins.op2<Imm>();
         set(dst, Impl::shld64(get(dst), get(src1), get<u8>(src2), &flags_));
     }
 
-    void Cpu::execShrdRM32R32R8(const X64Instruction& ins) {
+    void Cpu::execShrdRM32R32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src1 = ins.op1<R32>();
         const auto& src2 = ins.op2<R8>();
         set(dst, Impl::shrd32(get(dst), get(src1), get(src2), &flags_));
     }
-    void Cpu::execShrdRM32R32Imm(const X64Instruction& ins) {
+    void Cpu::execShrdRM32R32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src1 = ins.op1<R32>();
         const auto& src2 = ins.op2<Imm>();
         set(dst, Impl::shrd32(get(dst), get(src1), get<u8>(src2), &flags_));
     }
-    void Cpu::execShrdRM64R64R8(const X64Instruction& ins) {
+    void Cpu::execShrdRM64R64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src1 = ins.op1<R64>();
         const auto& src2 = ins.op2<R8>();
         set(dst, Impl::shrd64(get(dst), get(src1), get(src2), &flags_));
     }
-    void Cpu::execShrdRM64R64Imm(const X64Instruction& ins) {
+    void Cpu::execShrdRM64R64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src1 = ins.op1<R64>();
         const auto& src2 = ins.op2<Imm>();
         set(dst, Impl::shrd64(get(dst), get(src1), get<u8>(src2), &flags_));
     }
 
-    void Cpu::execSarRM8R8(const X64Instruction& ins) {
+    void Cpu::execSarRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::sar8(get(dst), get(src), &flags_));
     }
-    void Cpu::execSarRM8Imm(const X64Instruction& ins) {
+    void Cpu::execSarRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sar8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execSarRM16R8(const X64Instruction& ins) {
+    void Cpu::execSarRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::sar16(get(dst), get(src), &flags_));
     }
-    void Cpu::execSarRM16Imm(const X64Instruction& ins) {
+    void Cpu::execSarRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sar16(get(dst), get<u16>(src), &flags_));
     }
-    void Cpu::execSarRM32R8(const X64Instruction& ins) {
+    void Cpu::execSarRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::sar32(get(dst), get(src), &flags_));
     }
-    void Cpu::execSarRM32Imm(const X64Instruction& ins) {
+    void Cpu::execSarRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sar32(get(dst), get<u32>(src), &flags_));
     }
-    void Cpu::execSarRM64R8(const X64Instruction& ins) {
+    void Cpu::execSarRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::sar64(get(dst), get(src), &flags_));
     }
-    void Cpu::execSarRM64Imm(const X64Instruction& ins) {
+    void Cpu::execSarRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::sar64(get(dst), get<u64>(src), &flags_));
     }
 
-    void Cpu::execSarxR32RM32R32(const X64Instruction& ins) {
+    void Cpu::execSarxR32RM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         const auto& count = ins.op2<R32>();
         Flags flags;
         set(dst, Impl::sar32(get(src), get(count), &flags));
     }
-    void Cpu::execSarxR64RM64R64(const X64Instruction& ins) {
+    void Cpu::execSarxR64RM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         const auto& count = ins.op2<R64>();
         Flags flags;
         set(dst, Impl::sar64(get(src), get(count), &flags));
     }
-    void Cpu::execShlxR32RM32R32(const X64Instruction& ins) {
+    void Cpu::execShlxR32RM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         const auto& count = ins.op2<R32>();
         Flags flags;
         set(dst, Impl::shl32(get(src), get(count), &flags));
     }
-    void Cpu::execShlxR64RM64R64(const X64Instruction& ins) {
+    void Cpu::execShlxR64RM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         const auto& count = ins.op2<R64>();
         Flags flags;
         set(dst, Impl::shl64(get(src), get(count), &flags));
     }
-    void Cpu::execShrxR32RM32R32(const X64Instruction& ins) {
+    void Cpu::execShrxR32RM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         const auto& count = ins.op2<R32>();
         Flags flags;
         set(dst, Impl::shr32(get(src), get(count), &flags));
     }
-    void Cpu::execShrxR64RM64R64(const X64Instruction& ins) {
+    void Cpu::execShrxR64RM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         const auto& count = ins.op2<R64>();
@@ -3277,311 +3277,311 @@ namespace x64 {
         set(dst, Impl::shr64(get(src), get(count), &flags));
     }
 
-    void Cpu::execRclRM8R8(const X64Instruction& ins) {
+    void Cpu::execRclRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcl8(get(dst), get(src), &flags_));
     }
-    void Cpu::execRclRM8Imm(const X64Instruction& ins) {
+    void Cpu::execRclRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcl8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRclRM16R8(const X64Instruction& ins) {
+    void Cpu::execRclRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcl16(get(dst), get(src), &flags_));
     }
-    void Cpu::execRclRM16Imm(const X64Instruction& ins) {
+    void Cpu::execRclRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcl16(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRclRM32R8(const X64Instruction& ins) {
+    void Cpu::execRclRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcl32(get(dst), get(src), &flags_));
     }
-    void Cpu::execRclRM32Imm(const X64Instruction& ins) {
+    void Cpu::execRclRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcl32(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRclRM64R8(const X64Instruction& ins) {
+    void Cpu::execRclRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcl64(get(dst), get(src), &flags_));
     }
-    void Cpu::execRclRM64Imm(const X64Instruction& ins) {
+    void Cpu::execRclRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcl64(get(dst), get<u8>(src), &flags_));
     }
 
-    void Cpu::execRcrRM8R8(const X64Instruction& ins) {
+    void Cpu::execRcrRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcr8(get(dst), get(src), &flags_));
     }
-    void Cpu::execRcrRM8Imm(const X64Instruction& ins) {
+    void Cpu::execRcrRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcr8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRcrRM16R8(const X64Instruction& ins) {
+    void Cpu::execRcrRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcr16(get(dst), get(src), &flags_));
     }
-    void Cpu::execRcrRM16Imm(const X64Instruction& ins) {
+    void Cpu::execRcrRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcr16(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRcrRM32R8(const X64Instruction& ins) {
+    void Cpu::execRcrRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcr32(get(dst), get(src), &flags_));
     }
-    void Cpu::execRcrRM32Imm(const X64Instruction& ins) {
+    void Cpu::execRcrRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcr32(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRcrRM64R8(const X64Instruction& ins) {
+    void Cpu::execRcrRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rcr64(get(dst), get(src), &flags_));
     }
-    void Cpu::execRcrRM64Imm(const X64Instruction& ins) {
+    void Cpu::execRcrRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rcr64(get(dst), get<u8>(src), &flags_));
     }
 
-    void Cpu::execRolRM8R8(const X64Instruction& ins) {
+    void Cpu::execRolRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rol8(get(dst), get(src), &flags_));
     }
-    void Cpu::execRolRM8Imm(const X64Instruction& ins) {
+    void Cpu::execRolRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rol8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRolRM16R8(const X64Instruction& ins) {
+    void Cpu::execRolRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rol16(get(dst), get(src), &flags_));
     }
-    void Cpu::execRolRM16Imm(const X64Instruction& ins) {
+    void Cpu::execRolRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rol16(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRolRM32R8(const X64Instruction& ins) {
+    void Cpu::execRolRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rol32(get(dst), get(src), &flags_));
     }
-    void Cpu::execRolRM32Imm(const X64Instruction& ins) {
+    void Cpu::execRolRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rol32(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRolRM64R8(const X64Instruction& ins) {
+    void Cpu::execRolRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::rol64(get(dst), get(src), &flags_));
     }
-    void Cpu::execRolRM64Imm(const X64Instruction& ins) {
+    void Cpu::execRolRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::rol64(get(dst), get<u8>(src), &flags_));
     }
 
-    void Cpu::execRorRM8R8(const X64Instruction& ins) {
+    void Cpu::execRorRM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::ror8(get(dst), get(src), &flags_));
     }
-    void Cpu::execRorRM8Imm(const X64Instruction& ins) {
+    void Cpu::execRorRM8Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM8>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::ror8(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRorRM16R8(const X64Instruction& ins) {
+    void Cpu::execRorRM16R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::ror16(get(dst), get(src), &flags_));
     }
-    void Cpu::execRorRM16Imm(const X64Instruction& ins) {
+    void Cpu::execRorRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::ror16(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRorRM32R8(const X64Instruction& ins) {
+    void Cpu::execRorRM32R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::ror32(get(dst), get(src), &flags_));
     }
-    void Cpu::execRorRM32Imm(const X64Instruction& ins) {
+    void Cpu::execRorRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::ror32(get(dst), get<u8>(src), &flags_));
     }
-    void Cpu::execRorRM64R8(const X64Instruction& ins) {
+    void Cpu::execRorRM64R8(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<R8>();
         set(dst, Impl::ror64(get(dst), get(src), &flags_));
     }
-    void Cpu::execRorRM64Imm(const X64Instruction& ins) {
+    void Cpu::execRorRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::ror64(get(dst), get<u8>(src), &flags_));
     }
 
-    void Cpu::execTzcntR16RM16(const X64Instruction& ins) {
+    void Cpu::execTzcntR16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::tzcnt16(get(src), &flags_));
     }
-    void Cpu::execTzcntR32RM32(const X64Instruction& ins) {
+    void Cpu::execTzcntR32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::tzcnt32(get(src), &flags_));
     }
-    void Cpu::execTzcntR64RM64(const X64Instruction& ins) {
+    void Cpu::execTzcntR64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::tzcnt64(get(src), &flags_));
     }
 
-    void Cpu::execBtRM16R16(const X64Instruction& ins) {
+    void Cpu::execBtRM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<R16>();
         Impl::bt16(get(dst), get(bit), &flags_);
     }
-    void Cpu::execBtRM16Imm(const X64Instruction& ins) {
+    void Cpu::execBtRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<Imm>();
         Impl::bt16(get(dst), get<u16>(bit), &flags_);
     }
-    void Cpu::execBtRM32R32(const X64Instruction& ins) {
+    void Cpu::execBtRM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<R32>();
         Impl::bt32(get(dst), get(bit), &flags_);
     }
-    void Cpu::execBtRM32Imm(const X64Instruction& ins) {
+    void Cpu::execBtRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<Imm>();
         Impl::bt32(get(dst), get<u32>(bit), &flags_);
     }
-    void Cpu::execBtRM64R64(const X64Instruction& ins) {
+    void Cpu::execBtRM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<R64>();
         Impl::bt64(get(dst), get(bit), &flags_);
     }
-    void Cpu::execBtRM64Imm(const X64Instruction& ins) {
+    void Cpu::execBtRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<Imm>();
         Impl::bt64(get(dst), get<u64>(bit), &flags_);
     }
 
-    void Cpu::execBtrRM16R16(const X64Instruction& ins) {
+    void Cpu::execBtrRM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<R16>();
         set(dst, Impl::btr16(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtrRM16Imm(const X64Instruction& ins) {
+    void Cpu::execBtrRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::btr16(get(dst), get<u16>(bit), &flags_));
     }
-    void Cpu::execBtrRM32R32(const X64Instruction& ins) {
+    void Cpu::execBtrRM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<R32>();
         set(dst, Impl::btr32(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtrRM32Imm(const X64Instruction& ins) {
+    void Cpu::execBtrRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::btr32(get(dst), get<u32>(bit), &flags_));
     }
-    void Cpu::execBtrRM64R64(const X64Instruction& ins) {
+    void Cpu::execBtrRM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<R64>();
         set(dst, Impl::btr64(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtrRM64Imm(const X64Instruction& ins) {
+    void Cpu::execBtrRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::btr64(get(dst), get<u64>(bit), &flags_));
     }
 
-    void Cpu::execBtcRM16R16(const X64Instruction& ins) {
+    void Cpu::execBtcRM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<R16>();
         set(dst, Impl::btc16(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtcRM16Imm(const X64Instruction& ins) {
+    void Cpu::execBtcRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::btc16(get(dst), get<u16>(bit), &flags_));
     }
-    void Cpu::execBtcRM32R32(const X64Instruction& ins) {
+    void Cpu::execBtcRM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<R32>();
         set(dst, Impl::btc32(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtcRM32Imm(const X64Instruction& ins) {
+    void Cpu::execBtcRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::btc32(get(dst), get<u32>(bit), &flags_));
     }
-    void Cpu::execBtcRM64R64(const X64Instruction& ins) {
+    void Cpu::execBtcRM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<R64>();
         set(dst, Impl::btc64(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtcRM64Imm(const X64Instruction& ins) {
+    void Cpu::execBtcRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::btc64(get(dst), get<u64>(bit), &flags_));
     }
 
-    void Cpu::execBtsRM16R16(const X64Instruction& ins) {
+    void Cpu::execBtsRM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<R16>();
         set(dst, Impl::bts16(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtsRM16Imm(const X64Instruction& ins) {
+    void Cpu::execBtsRM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM16>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::bts16(get(dst), get<u16>(bit), &flags_));
     }
-    void Cpu::execBtsRM32R32(const X64Instruction& ins) {
+    void Cpu::execBtsRM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<R32>();
         set(dst, Impl::bts32(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtsRM32Imm(const X64Instruction& ins) {
+    void Cpu::execBtsRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::bts32(get(dst), get<u32>(bit), &flags_));
     }
-    void Cpu::execBtsRM64R64(const X64Instruction& ins) {
+    void Cpu::execBtsRM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<R64>();
         set(dst, Impl::bts64(get(dst), get(bit), &flags_));
     }
-    void Cpu::execBtsRM64Imm(const X64Instruction& ins) {
+    void Cpu::execBtsRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& bit = ins.op1<Imm>();
         set(dst, Impl::bts64(get(dst), get<u64>(bit), &flags_));
     }
 
-    void Cpu::execLockBtsM16R16(const X64Instruction& ins) {
+    void Cpu::execLockBtsM16R16(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& bit = ins.op1<R16>();
@@ -3589,7 +3589,7 @@ namespace x64 {
             return Impl::bts16(oldValue, get(bit), &flags_);
         });
     }
-    void Cpu::execLockBtsM16Imm(const X64Instruction& ins) {
+    void Cpu::execLockBtsM16Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M16>();
         const auto& bit = ins.op1<Imm>();
@@ -3597,7 +3597,7 @@ namespace x64 {
             return Impl::bts16(oldValue, get<u16>(bit), &flags_);
         });
     }
-    void Cpu::execLockBtsM32R32(const X64Instruction& ins) {
+    void Cpu::execLockBtsM32R32(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& bit = ins.op1<R32>();
@@ -3605,7 +3605,7 @@ namespace x64 {
             return Impl::bts32(oldValue, get(bit), &flags_);
         });
     }
-    void Cpu::execLockBtsM32Imm(const X64Instruction& ins) {
+    void Cpu::execLockBtsM32Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M32>();
         const auto& bit = ins.op1<Imm>();
@@ -3613,7 +3613,7 @@ namespace x64 {
             return Impl::bts32(oldValue, get<u32>(bit), &flags_);
         });
     }
-    void Cpu::execLockBtsM64R64(const X64Instruction& ins) {
+    void Cpu::execLockBtsM64R64(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& bit = ins.op1<R64>();
@@ -3621,7 +3621,7 @@ namespace x64 {
             return Impl::bts64(oldValue, get(bit), &flags_);
         });
     }
-    void Cpu::execLockBtsM64Imm(const X64Instruction& ins) {
+    void Cpu::execLockBtsM64Imm(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M64>();
         const auto& bit = ins.op1<Imm>();
@@ -3630,83 +3630,83 @@ namespace x64 {
         });
     }
 
-    void Cpu::execTestRM8R8(const X64Instruction& ins) {
+    void Cpu::execTestRM8R8(const Instruction& ins) {
         const auto& src1 = ins.op0<RM8>();
         const auto& src2 = ins.op1<R8>();
         Impl::test8(get(src1), get(src2), &flags_);
     }
-    void Cpu::execTestRM8Imm(const X64Instruction& ins) {
+    void Cpu::execTestRM8Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM8>();
         const auto& src2 = ins.op1<Imm>();
         Impl::test8(get(src1), get<u8>(src2), &flags_);
     }
-    void Cpu::execTestRM16R16(const X64Instruction& ins) {
+    void Cpu::execTestRM16R16(const Instruction& ins) {
         const auto& src1 = ins.op0<RM16>();
         const auto& src2 = ins.op1<R16>();
         Impl::test16(get(src1), get(src2), &flags_);
     }
-    void Cpu::execTestRM16Imm(const X64Instruction& ins) {
+    void Cpu::execTestRM16Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM16>();
         const auto& src2 = ins.op1<Imm>();
         Impl::test16(get(src1), get<u16>(src2), &flags_);
     }
-    void Cpu::execTestRM32R32(const X64Instruction& ins) {
+    void Cpu::execTestRM32R32(const Instruction& ins) {
         const auto& src1 = ins.op0<RM32>();
         const auto& src2 = ins.op1<R32>();
         Impl::test32(get(src1), get(src2), &flags_);
     }
-    void Cpu::execTestRM32Imm(const X64Instruction& ins) {
+    void Cpu::execTestRM32Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM32>();
         const auto& src2 = ins.op1<Imm>();
         Impl::test32(get(src1), get<u32>(src2), &flags_);
     }
-    void Cpu::execTestRM64R64(const X64Instruction& ins) {
+    void Cpu::execTestRM64R64(const Instruction& ins) {
         const auto& src1 = ins.op0<RM64>();
         const auto& src2 = ins.op1<R64>();
         Impl::test64(get(src1), get(src2), &flags_);
     }
-    void Cpu::execTestRM64Imm(const X64Instruction& ins) {
+    void Cpu::execTestRM64Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM64>();
         const auto& src2 = ins.op1<Imm>();
         Impl::test64(get(src1), get<u64>(src2), &flags_);
     }
 
-    void Cpu::execCmpRM8RM8(const X64Instruction& ins) {
+    void Cpu::execCmpRM8RM8(const Instruction& ins) {
         const auto& src1 = ins.op0<RM8>();
         const auto& src2 = ins.op1<RM8>();
         Impl::cmp8(get(src1), get(src2), &flags_);
     }
-    void Cpu::execCmpRM8Imm(const X64Instruction& ins) {
+    void Cpu::execCmpRM8Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM8>();
         const auto& src2 = ins.op1<Imm>();
         Impl::cmp8(get(src1), get<u8>(src2), &flags_);
     }
-    void Cpu::execCmpRM16RM16(const X64Instruction& ins) {
+    void Cpu::execCmpRM16RM16(const Instruction& ins) {
         const auto& src1 = ins.op0<RM16>();
         const auto& src2 = ins.op1<RM16>();
         Impl::cmp16(get(src1), get(src2), &flags_);
     }
-    void Cpu::execCmpRM16Imm(const X64Instruction& ins) {
+    void Cpu::execCmpRM16Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM16>();
         const auto& src2 = ins.op1<Imm>();
         Impl::cmp16(get(src1), get<u16>(src2), &flags_);
     }
-    void Cpu::execCmpRM32RM32(const X64Instruction& ins) {
+    void Cpu::execCmpRM32RM32(const Instruction& ins) {
         const auto& src1 = ins.op0<RM32>();
         const auto& src2 = ins.op1<RM32>();
         Impl::cmp32(get(src1), get(src2), &flags_);
     }
-    void Cpu::execCmpRM32Imm(const X64Instruction& ins) {
+    void Cpu::execCmpRM32Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM32>();
         const auto& src2 = ins.op1<Imm>();
         Impl::cmp32(get(src1), get<u32>(src2), &flags_);
     }
-    void Cpu::execCmpRM64RM64(const X64Instruction& ins) {
+    void Cpu::execCmpRM64RM64(const Instruction& ins) {
         const auto& src1 = ins.op0<RM64>();
         const auto& src2 = ins.op1<RM64>();
         Impl::cmp64(get(src1), get(src2), &flags_);
     }
-    void Cpu::execCmpRM64Imm(const X64Instruction& ins) {
+    void Cpu::execCmpRM64Imm(const Instruction& ins) {
         const auto& src1 = ins.op0<RM64>();
         const auto& src2 = ins.op1<Imm>();
         Impl::cmp64(get(src1), get<u64>(src2), &flags_);
@@ -3812,27 +3812,27 @@ namespace x64 {
         });
     }
 
-    void Cpu::execCmpxchgRM8R8(const X64Instruction& ins) {
+    void Cpu::execCmpxchgRM8R8(const Instruction& ins) {
         const auto& src1 = ins.op0<RM8>();
         const auto& src2 = ins.op1<R8>();
         execCmpxchg8Impl(src1, get(src2));
     }
-    void Cpu::execCmpxchgRM16R16(const X64Instruction& ins) {
+    void Cpu::execCmpxchgRM16R16(const Instruction& ins) {
         const auto& src1 = ins.op0<RM16>();
         const auto& src2 = ins.op1<R16>();
         execCmpxchg16Impl(src1, get(src2));
     }
-    void Cpu::execCmpxchgRM32R32(const X64Instruction& ins) {
+    void Cpu::execCmpxchgRM32R32(const Instruction& ins) {
         const auto& src1 = ins.op0<RM32>();
         const auto& src2 = ins.op1<R32>();
         execCmpxchg32Impl(src1, get(src2));
     }
-    void Cpu::execCmpxchgRM64R64(const X64Instruction& ins) {
+    void Cpu::execCmpxchgRM64R64(const Instruction& ins) {
         const auto& src1 = ins.op0<RM64>();
         const auto& src2 = ins.op1<R64>();
         execCmpxchg64Impl(src1, get(src2));
     }
-    void Cpu::execCmpxchg16BM128(const X64Instruction& ins) {
+    void Cpu::execCmpxchg16BM128(const Instruction& ins) {
         const auto& dst = ins.op0<M128>();
 
         u128 regs { get(R64::RAX), get(R64::RDX) };
@@ -3848,31 +3848,31 @@ namespace x64 {
         }
     }
 
-    void Cpu::execLockCmpxchgM8R8(const X64Instruction& ins) {
+    void Cpu::execLockCmpxchgM8R8(const Instruction& ins) {
         assert(ins.lock());
         const auto& src1 = ins.op0<M8>();
         const auto& src2 = ins.op1<R8>();
         execLockCmpxchg8Impl(resolve(src1), get(src2));
     }
-    void Cpu::execLockCmpxchgM16R16(const X64Instruction& ins) {
+    void Cpu::execLockCmpxchgM16R16(const Instruction& ins) {
         assert(ins.lock());
         const auto& src1 = ins.op0<M16>();
         const auto& src2 = ins.op1<R16>();
         execLockCmpxchg16Impl(resolve(src1), get(src2));
     }
-    void Cpu::execLockCmpxchgM32R32(const X64Instruction& ins) {
+    void Cpu::execLockCmpxchgM32R32(const Instruction& ins) {
         assert(ins.lock());
         const auto& src1 = ins.op0<M32>();
         const auto& src2 = ins.op1<R32>();
         execLockCmpxchg32Impl(resolve(src1), get(src2));
     }
-    void Cpu::execLockCmpxchgM64R64(const X64Instruction& ins) {
+    void Cpu::execLockCmpxchgM64R64(const Instruction& ins) {
         assert(ins.lock());
         const auto& src1 = ins.op0<M64>();
         const auto& src2 = ins.op1<R64>();
         execLockCmpxchg64Impl(resolve(src1), get(src2));
     }
-    void Cpu::execLockCmpxchg16BM128(const X64Instruction& ins) {
+    void Cpu::execLockCmpxchg16BM128(const Instruction& ins) {
         assert(ins.lock());
         const auto& dst = ins.op0<M128>();
         auto ptr = resolve(dst);
@@ -3895,45 +3895,45 @@ namespace x64 {
         set(dst, flags_.matches(cond));
     }
 
-    void Cpu::execSetRM8(const X64Instruction& ins) {
+    void Cpu::execSetRM8(const Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
         const auto& dst = ins.op1<RM8>();
         execSet(cond, dst);
     }
 
-    void Cpu::execJmpRM32(const X64Instruction& ins) {
+    void Cpu::execJmpRM32(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         u64 dstValue = (u64)get(dst);
         regs_.rip() = dstValue;
     }
 
-    void Cpu::execJmpRM64(const X64Instruction& ins) {
+    void Cpu::execJmpRM64(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         u64 dstValue = get(dst);
         regs_.rip() = dstValue;
     }
 
-    void Cpu::execJmpu32(const X64Instruction& ins) {
+    void Cpu::execJmpu32(const Instruction& ins) {
         const auto& dst = ins.op0<u32>();
         u64 dstValue = dst;
         regs_.rip() = dstValue;
     }
 
-    void Cpu::execJe(const X64Instruction& ins) {
+    void Cpu::execJe(const Instruction& ins) {
         if(flags_.matches(Cond::E)) {
             u64 dst = ins.op0<u64>();
             regs_.rip() = dst;
         }
     }
 
-    void Cpu::execJne(const X64Instruction& ins) {
+    void Cpu::execJne(const Instruction& ins) {
         if(flags_.matches(Cond::NE)) {
             u64 dst = ins.op0<u64>();
             regs_.rip() = dst;
         }
     }
 
-    void Cpu::execJcc(const X64Instruction& ins) {
+    void Cpu::execJcc(const Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
         if(flags_.matches(cond)) {
             u64 dst = ins.op1<u64>();
@@ -3941,14 +3941,14 @@ namespace x64 {
         }
     }
 
-    void Cpu::execJrcxz(const X64Instruction& ins) {
+    void Cpu::execJrcxz(const Instruction& ins) {
         if(regs_.get(R64::RCX) == 0) {
             const auto& imm = ins.op0<u64>();
             regs_.rip() = imm;
         }
     }
 
-    void Cpu::execBsrR16R16(const X64Instruction& ins) {
+    void Cpu::execBsrR16R16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<R16>();
         u16 val = get(src);
@@ -3956,7 +3956,7 @@ namespace x64 {
         if(mssb < 16) set(dst, mssb);
     }
 
-    void Cpu::execBsrR16M16(const X64Instruction& ins) {
+    void Cpu::execBsrR16M16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<M16>();
         u16 val = get(resolve(src));
@@ -3964,7 +3964,7 @@ namespace x64 {
         if(mssb < 16) set(dst, mssb);
     }
 
-    void Cpu::execBsrR32R32(const X64Instruction& ins) {
+    void Cpu::execBsrR32R32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<R32>();
         u32 val = get(src);
@@ -3972,7 +3972,7 @@ namespace x64 {
         if(mssb < 32) set(dst, mssb);
     }
 
-    void Cpu::execBsrR32M32(const X64Instruction& ins) {
+    void Cpu::execBsrR32M32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M32>();
         u32 val = get(resolve(src));
@@ -3980,7 +3980,7 @@ namespace x64 {
         if(mssb < 32) set(dst, mssb);
     }
 
-    void Cpu::execBsrR64R64(const X64Instruction& ins) {
+    void Cpu::execBsrR64R64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<R64>();
         u64 val = get(src);
@@ -3988,7 +3988,7 @@ namespace x64 {
         if(mssb < 64) set(dst, mssb);
     }
 
-    void Cpu::execBsrR64M64(const X64Instruction& ins) {
+    void Cpu::execBsrR64M64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M64>();
         u64 val = get(resolve(src));
@@ -3996,7 +3996,7 @@ namespace x64 {
         if(mssb < 64) set(dst, mssb);
     }
 
-    void Cpu::execBsfR16R16(const X64Instruction& ins) {
+    void Cpu::execBsfR16R16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<R16>();
         u16 val = get(src);
@@ -4004,7 +4004,7 @@ namespace x64 {
         if(mssb < 16) set(dst, mssb);
     }
 
-    void Cpu::execBsfR16M16(const X64Instruction& ins) {
+    void Cpu::execBsfR16M16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<M16>();
         u16 val = get(resolve(src));
@@ -4012,7 +4012,7 @@ namespace x64 {
         if(mssb < 16) set(dst, mssb);
     }
 
-    void Cpu::execBsfR32R32(const X64Instruction& ins) {
+    void Cpu::execBsfR32R32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<R32>();
         u32 val = get(src);
@@ -4020,7 +4020,7 @@ namespace x64 {
         if(mssb < 32) set(dst, mssb);
     }
 
-    void Cpu::execBsfR32M32(const X64Instruction& ins) {
+    void Cpu::execBsfR32M32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M32>();
         u32 val = get(resolve(src));
@@ -4028,7 +4028,7 @@ namespace x64 {
         if(mssb < 32) set(dst, mssb);
     }
 
-    void Cpu::execBsfR64R64(const X64Instruction& ins) {
+    void Cpu::execBsfR64R64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<R64>();
         u64 val = get(src);
@@ -4036,7 +4036,7 @@ namespace x64 {
         if(mssb < 64) set(dst, mssb);
     }
 
-    void Cpu::execBsfR64M64(const X64Instruction& ins) {
+    void Cpu::execBsfR64M64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M64>();
         u64 val = get(resolve(src));
@@ -4044,15 +4044,15 @@ namespace x64 {
         if(mssb < 64) set(dst, mssb);
     }
 
-    void Cpu::execCld(const X64Instruction&) {
+    void Cpu::execCld(const Instruction&) {
         flags_.direction = 0;
     }
 
-    void Cpu::execStd(const X64Instruction&) {
+    void Cpu::execStd(const Instruction&) {
         flags_.direction = 1;
     }
 
-    void Cpu::execRepMovsM8M8(const X64Instruction& ins) {
+    void Cpu::execRepMovsM8M8(const Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<M8>();
         assert(dst.encoding.base == R64::RDI);
@@ -4069,7 +4069,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execRepMovsM16M16(const X64Instruction& ins) {
+    void Cpu::execRepMovsM16M16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<M16>();
         u32 counter = get(R32::ECX);
@@ -4088,7 +4088,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execRepMovsM32M32(const X64Instruction& ins) {
+    void Cpu::execRepMovsM32M32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<M32>();
         u32 counter = get(R32::ECX);
@@ -4107,7 +4107,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execMovsM8M8(const X64Instruction& ins) {
+    void Cpu::execMovsM8M8(const Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<M8>();
         mem::Ptr8 dptr = resolve(dst);
@@ -4121,7 +4121,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execMovsM16M16(const X64Instruction& ins) {
+    void Cpu::execMovsM16M16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<M16>();
         mem::Ptr16 dptr = resolve(dst);
@@ -4135,7 +4135,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execMovsM64M64(const X64Instruction& ins) {
+    void Cpu::execMovsM64M64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<M64>();
         mem::Ptr64 dptr = resolve(dst);
@@ -4149,7 +4149,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execRepMovsM64M64(const X64Instruction& ins) {
+    void Cpu::execRepMovsM64M64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<M64>();
         u32 counter = get(R32::ECX);
@@ -4168,7 +4168,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
     
-    void Cpu::execRepCmpsM8M8(const X64Instruction& ins) {
+    void Cpu::execRepCmpsM8M8(const Instruction& ins) {
         const auto& src1 = ins.op0<M8>();
         const auto& src2 = ins.op1<M8>();
         u32 counter = get(R32::ECX);
@@ -4191,7 +4191,7 @@ namespace x64 {
         set(R64::RDI, s2ptr.address());
     }
 
-    void Cpu::execStosM8R8(const X64Instruction& ins) {
+    void Cpu::execStosM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();
         mem::Ptr8 dptr = resolve(dst);
@@ -4202,7 +4202,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execStosM16R16(const X64Instruction& ins) {
+    void Cpu::execStosM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
         mem::Ptr16 dptr = resolve(dst);
@@ -4213,7 +4213,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execStosM32R32(const X64Instruction& ins) {
+    void Cpu::execStosM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
         mem::Ptr32 dptr = resolve(dst);
@@ -4224,7 +4224,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execStosM64R64(const X64Instruction& ins) {
+    void Cpu::execStosM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
         mem::Ptr64 dptr = resolve(dst);
@@ -4235,7 +4235,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execRepStosM8R8(const X64Instruction& ins) {
+    void Cpu::execRepStosM8R8(const Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<R8>();
         u32 counter = get(R32::ECX);
@@ -4251,7 +4251,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
     
-    void Cpu::execRepStosM16R16(const X64Instruction& ins) {
+    void Cpu::execRepStosM16R16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<R16>();
         u32 counter = get(R32::ECX);
@@ -4267,7 +4267,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
     
-    void Cpu::execRepStosM32R32(const X64Instruction& ins) {
+    void Cpu::execRepStosM32R32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<R32>();
         u32 counter = get(R32::ECX);
@@ -4283,7 +4283,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execRepStosM64R64(const X64Instruction& ins) {
+    void Cpu::execRepStosM64R64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<R64>();
         u64 counter = get(R64::RCX);
@@ -4299,7 +4299,7 @@ namespace x64 {
         set(R64::RDI, dptr.address());
     }
 
-    void Cpu::execRepNZScasR8M8(const X64Instruction& ins) {
+    void Cpu::execRepNZScasR8M8(const Instruction& ins) {
         const auto& src1 = ins.op0<R8>();
         const auto& src2 = ins.op1<M8>();
         assert(src2.encoding.base == R64::RDI);
@@ -4318,7 +4318,7 @@ namespace x64 {
         set(R64::RDI, ptr2.address());
     }
 
-    void Cpu::execRepNZScasR16M16(const X64Instruction& ins) {
+    void Cpu::execRepNZScasR16M16(const Instruction& ins) {
         const auto& src1 = ins.op0<R16>();
         const auto& src2 = ins.op1<M16>();
         assert(src2.encoding.base == R64::RDI);
@@ -4337,7 +4337,7 @@ namespace x64 {
         set(R64::RDI, ptr2.address());
     }
 
-    void Cpu::execRepNZScasR32M32(const X64Instruction& ins) {
+    void Cpu::execRepNZScasR32M32(const Instruction& ins) {
         const auto& src1 = ins.op0<R32>();
         const auto& src2 = ins.op1<M32>();
         assert(src2.encoding.base == R64::RDI);
@@ -4356,7 +4356,7 @@ namespace x64 {
         set(R64::RDI, ptr2.address());
     }
 
-    void Cpu::execRepNZScasR64M64(const X64Instruction& ins) {
+    void Cpu::execRepNZScasR64M64(const Instruction& ins) {
         const auto& src1 = ins.op0<R64>();
         const auto& src2 = ins.op1<M64>();
         assert(src2.encoding.base == R64::RDI);
@@ -4375,7 +4375,7 @@ namespace x64 {
         set(R64::RDI, ptr2.address());
     }
 
-    void Cpu::execCmovR16RM16(const X64Instruction& ins) {
+    void Cpu::execCmovR16RM16(const Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
         if(!flags_.matches(cond)) return;
         const auto& dst = ins.op1<R16>();
@@ -4383,7 +4383,7 @@ namespace x64 {
         set(dst, get(src));
     }
 
-    void Cpu::execCmovR32RM32(const X64Instruction& ins) {
+    void Cpu::execCmovR32RM32(const Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
         if(!flags_.matches(cond)) return;
         const auto& dst = ins.op1<R32>();
@@ -4391,7 +4391,7 @@ namespace x64 {
         set(dst, get(src));
     }
 
-    void Cpu::execCmovR64RM64(const X64Instruction& ins) {
+    void Cpu::execCmovR64RM64(const Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
         if(!flags_.matches(cond)) return;
         const auto& dst = ins.op1<R64>();
@@ -4399,184 +4399,184 @@ namespace x64 {
         set(dst, get(src));
     }
 
-    void Cpu::execCbw(const X64Instruction&) {
+    void Cpu::execCbw(const Instruction&) {
         set(R16::AX, (u16)(i16)(i8)get(R8::AL));
     }
 
-    void Cpu::execCwde(const X64Instruction&) {
+    void Cpu::execCwde(const Instruction&) {
         set(R32::EAX, (u32)(i32)(i16)get(R16::AX));
     }
 
-    void Cpu::execCdqe(const X64Instruction&) {
+    void Cpu::execCdqe(const Instruction&) {
         set(R64::RAX, (u64)(i64)(i32)get(R32::EAX));
     }
 
-    void Cpu::execBswapR32(const X64Instruction& ins) {
+    void Cpu::execBswapR32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         set(dst, Impl::bswap32(get(dst)));
     }
 
-    void Cpu::execBswapR64(const X64Instruction& ins) {
+    void Cpu::execBswapR64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         set(dst, Impl::bswap64(get(dst)));
     }
 
-    void Cpu::execPopcntR16RM16(const X64Instruction& ins) {
+    void Cpu::execPopcntR16RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::popcnt16(get(src), &flags_));
     }
-    void Cpu::execPopcntR32RM32(const X64Instruction& ins) {
+    void Cpu::execPopcntR32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::popcnt32(get(src), &flags_));
     }
-    void Cpu::execPopcntR64RM64(const X64Instruction& ins) {
+    void Cpu::execPopcntR64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::popcnt64(get(src), &flags_));
     }
 
-    void Cpu::execMovapsXMMM128XMMM128(const X64Instruction& ins) {
+    void Cpu::execMovapsXMMM128XMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMMM128>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, get(src));
     }
 
-    void Cpu::execMovdMMXRM32(const X64Instruction& ins) {
+    void Cpu::execMovdMMXRM32(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<RM32>();
         set(dst, zeroExtend<u64, u32>(get(src)));
     }
-    void Cpu::execMovdRM32MMX(const X64Instruction& ins) {
+    void Cpu::execMovdRM32MMX(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<MMX>();
         set(dst, narrow<u32, u64>(get(src)));
     }
-    void Cpu::execMovdMMXRM64(const X64Instruction& ins) {
+    void Cpu::execMovdMMXRM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<RM64>();
         set(dst, get(src));
     }
-    void Cpu::execMovdRM64MMX(const X64Instruction& ins) {
+    void Cpu::execMovdRM64MMX(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<MMX>();
         set(dst, get(src));
     }
 
-    void Cpu::execMovdXMMRM32(const X64Instruction& ins) {
+    void Cpu::execMovdXMMRM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM32>();
         set(dst, zeroExtend<Xmm, u32>(get(src)));
     }
-    void Cpu::execMovdRM32XMM(const X64Instruction& ins) {
+    void Cpu::execMovdRM32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<XMM>();
         set(dst, narrow<u32, Xmm>(get(src)));
     }
-    void Cpu::execMovdXMMRM64(const X64Instruction& ins) {
+    void Cpu::execMovdXMMRM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM64>();
         set(dst, zeroExtend<Xmm, u64>(get(src)));
     }
-    void Cpu::execMovdRM64XMM(const X64Instruction& ins) {
+    void Cpu::execMovdRM64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<XMM>();
         set(dst, narrow<u64, Xmm>(get(src)));
     }
 
-    void Cpu::execMovqMMXRM64(const X64Instruction& ins) {
+    void Cpu::execMovqMMXRM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<RM64>();
         set(dst, get(src));
     }
-    void Cpu::execMovqRM64MMX(const X64Instruction& ins) {
+    void Cpu::execMovqRM64MMX(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<MMX>();
         set(dst, get(src));
     }
-    void Cpu::execMovqXMMRM64(const X64Instruction& ins) {
+    void Cpu::execMovqXMMRM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM64>();
         set(dst, zeroExtend<Xmm, u64>(get(src)));
     }
-    void Cpu::execMovqRM64XMM(const X64Instruction& ins) {
+    void Cpu::execMovqRM64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<XMM>();
         set(dst, narrow<u64, Xmm>(get(src)));
     }
 
-    void Cpu::execFldz(const X64Instruction&) { x87fpu_.push(F80::fromLongDouble(0.0)); }
-    void Cpu::execFld1(const X64Instruction&) { x87fpu_.push(F80::fromLongDouble(1.0)); }
-    void Cpu::execFldlg2(const X64Instruction&) { x87fpu_.push(F80::lg2()); }
-    void Cpu::execFldST(const X64Instruction& ins) {
+    void Cpu::execFldz(const Instruction&) { x87fpu_.push(F80::fromLongDouble(0.0)); }
+    void Cpu::execFld1(const Instruction&) { x87fpu_.push(F80::fromLongDouble(1.0)); }
+    void Cpu::execFldlg2(const Instruction&) { x87fpu_.push(F80::lg2()); }
+    void Cpu::execFldST(const Instruction& ins) {
         const auto& src = ins.op0<ST>();
         x87fpu_.push(x87fpu_.st(src));
     }
-    void Cpu::execFldM32(const X64Instruction& ins) {
+    void Cpu::execFldM32(const Instruction& ins) {
         const auto& src = ins.op0<M32>();
         x87fpu_.push(F80::bitcastFromU32(get(resolve(src))));
     }
-    void Cpu::execFldM64(const X64Instruction& ins) {
+    void Cpu::execFldM64(const Instruction& ins) {
         const auto& src = ins.op0<M64>();
         x87fpu_.push(F80::bitcastFromU64(get(resolve(src))));
     }
-    void Cpu::execFldM80(const X64Instruction& ins) {
+    void Cpu::execFldM80(const Instruction& ins) {
         const auto& src = ins.op0<M80>();
         x87fpu_.push(get(resolve(src)));
     }
 
-    void Cpu::execFildM16(const X64Instruction& ins) {
+    void Cpu::execFildM16(const Instruction& ins) {
         const auto& src = ins.op0<M16>();
         x87fpu_.push(F80::castFromI16((i16)get(resolve(src))));
     }
-    void Cpu::execFildM32(const X64Instruction& ins) {
+    void Cpu::execFildM32(const Instruction& ins) {
         const auto& src = ins.op0<M32>();
         x87fpu_.push(F80::castFromI32((i32)get(resolve(src))));
     }
-    void Cpu::execFildM64(const X64Instruction& ins) {
+    void Cpu::execFildM64(const Instruction& ins) {
         const auto& src = ins.op0<M64>();
         x87fpu_.push(F80::castFromI64((i64)get(resolve(src))));
     }
 
-    void Cpu::execFstpST(const X64Instruction& ins) {
+    void Cpu::execFstpST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         x87fpu_.set(dst, x87fpu_.st(ST::ST0));
         x87fpu_.pop();
     }
-    void Cpu::execFstpM32(const X64Instruction& ins) {
+    void Cpu::execFstpM32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         set(resolve(dst), F80::bitcastToU32(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
-    void Cpu::execFstpM64(const X64Instruction& ins) {
+    void Cpu::execFstpM64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         set(resolve(dst), F80::bitcastToU64(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
-    void Cpu::execFstpM80(const X64Instruction& ins) {
+    void Cpu::execFstpM80(const Instruction& ins) {
         const auto& dst = ins.op0<M80>();
         set(resolve(dst), x87fpu_.st(ST::ST0));
         x87fpu_.pop();
     }
 
-    void Cpu::execFistpM16(const X64Instruction& ins) {
+    void Cpu::execFistpM16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         set(resolve(dst), (u16)F80::castToI16(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
-    void Cpu::execFistpM32(const X64Instruction& ins) {
+    void Cpu::execFistpM32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         set(resolve(dst), (u32)F80::castToI32(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
-    void Cpu::execFistpM64(const X64Instruction& ins) {
+    void Cpu::execFistpM64(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         set(resolve(dst), (u64)F80::castToI64(x87fpu_.st(ST::ST0)));
         x87fpu_.pop();
     }
 
-    void Cpu::execFxchST(const X64Instruction& ins) {
+    void Cpu::execFxchST(const Instruction& ins) {
         const auto& src = ins.op0<ST>();
         f80 srcValue = x87fpu_.st(src);
         f80 dstValue = x87fpu_.st(ST::ST0);
@@ -4584,21 +4584,21 @@ namespace x64 {
         x87fpu_.set(ST::ST0, srcValue);
     }
 
-    void Cpu::execFaddM32(const X64Instruction& ins) {
+    void Cpu::execFaddM32(const Instruction& ins) {
         const auto& src = ins.op0<M32>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fadd(topValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
-    void Cpu::execFaddM64(const X64Instruction& ins) {
+    void Cpu::execFaddM64(const Instruction& ins) {
         const auto& src = ins.op0<M32>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fadd(topValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
-    void Cpu::execFaddpST(const X64Instruction& ins) {
+    void Cpu::execFaddpST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 dstValue = x87fpu_.st(dst);
@@ -4606,7 +4606,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFsubSTM32(const X64Instruction& ins) {
+    void Cpu::execFsubSTM32(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<M32>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4614,7 +4614,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fsub(dstValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
-    void Cpu::execFsubSTM64(const X64Instruction& ins) {
+    void Cpu::execFsubSTM64(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<M64>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4622,7 +4622,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fsub(dstValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
-    void Cpu::execFsubSTST(const X64Instruction& ins) {
+    void Cpu::execFsubSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4630,7 +4630,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fsub(dstValue, srcValue, &x87fpu_)); // NOLINT(readability-suspicious-call-argument)
     }
 
-    void Cpu::execFsubpST(const X64Instruction& ins) {
+    void Cpu::execFsubpST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 dstValue = x87fpu_.st(dst);
@@ -4638,7 +4638,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFsubrpST(const X64Instruction& ins) {
+    void Cpu::execFsubrpST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 dstValue = x87fpu_.st(dst);
@@ -4646,21 +4646,21 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFmul1M32(const X64Instruction& ins) {
+    void Cpu::execFmul1M32(const Instruction& ins) {
         const auto& src = ins.op0<M32>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 srcValue = F80::bitcastFromU32(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::execFmul1M64(const X64Instruction& ins) {
+    void Cpu::execFmul1M64(const Instruction& ins) {
         const auto& src = ins.op0<M64>();
         f80 topValue = x87fpu_.st(ST::ST0);
         f80 srcValue = F80::bitcastFromU64(get(resolve(src)));
         x87fpu_.set(ST::ST0, Impl::fmul(topValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::execFmulSTST(const X64Instruction& ins) {
+    void Cpu::execFmulSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4668,7 +4668,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fmul(dstValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::execFmulpSTST(const X64Instruction& ins) {
+    void Cpu::execFmulpSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4678,7 +4678,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFdivSTST(const X64Instruction& ins) {
+    void Cpu::execFdivSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4686,7 +4686,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fdiv(dstValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::execFdivM32(const X64Instruction& ins) {
+    void Cpu::execFdivM32(const Instruction& ins) {
         auto dst = ST::ST0;
         f80 dstValue = x87fpu_.st(dst);
         const auto& src = ins.op0<M32>();
@@ -4694,7 +4694,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fdiv(dstValue, srcValue, &x87fpu_));
     }
 
-    void Cpu::execFdivpSTST(const X64Instruction& ins) {
+    void Cpu::execFdivpSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4704,7 +4704,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFdivrSTST(const X64Instruction& ins) {
+    void Cpu::execFdivrSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4712,7 +4712,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fdiv(srcValue, dstValue, &x87fpu_));
     }
 
-    void Cpu::execFdivrM32(const X64Instruction& ins) {
+    void Cpu::execFdivrM32(const Instruction& ins) {
         auto dst = ST::ST0;
         f80 dstValue = x87fpu_.st(dst);
         const auto& src = ins.op0<M32>();
@@ -4721,7 +4721,7 @@ namespace x64 {
         x87fpu_.set(dst, Impl::fdiv(srcValue, dstValue, &x87fpu_));
     }
 
-    void Cpu::execFdivrpSTST(const X64Instruction& ins) {
+    void Cpu::execFdivrpSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4731,7 +4731,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFcomSTM32(const X64Instruction& ins) {
+    void Cpu::execFcomSTM32(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<M32>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4739,7 +4739,7 @@ namespace x64 {
         Impl::fcom(dstValue, srcValue, &x87fpu_);
     }
 
-    void Cpu::execFcomSTM64(const X64Instruction& ins) {
+    void Cpu::execFcomSTM64(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<M32>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4747,7 +4747,7 @@ namespace x64 {
         Impl::fcom(dstValue, srcValue, &x87fpu_);
     }
 
-    void Cpu::execFcomSTST(const X64Instruction& ins) {
+    void Cpu::execFcomSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4755,7 +4755,7 @@ namespace x64 {
         Impl::fcom(dstValue, srcValue, &x87fpu_);
     }
 
-    void Cpu::execFcompSTM32(const X64Instruction& ins) {
+    void Cpu::execFcompSTM32(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<M32>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4764,7 +4764,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFcompSTM64(const X64Instruction& ins) {
+    void Cpu::execFcompSTM64(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<M64>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4773,7 +4773,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFcompSTST(const X64Instruction& ins) {
+    void Cpu::execFcompSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4782,7 +4782,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFcomiSTST(const X64Instruction& ins) {
+    void Cpu::execFcomiSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4790,7 +4790,7 @@ namespace x64 {
         Impl::fcomi(dstValue, srcValue, &x87fpu_, &flags_);
     }
 
-    void Cpu::execFcomipSTST(const X64Instruction& ins) {
+    void Cpu::execFcomipSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4799,7 +4799,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFucomiSTST(const X64Instruction& ins) {
+    void Cpu::execFucomiSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4807,7 +4807,7 @@ namespace x64 {
         Impl::fucomi(dstValue, srcValue, &x87fpu_, &flags_);
     }
 
-    void Cpu::execFucomipSTST(const X64Instruction& ins) {
+    void Cpu::execFucomipSTST(const Instruction& ins) {
         const auto& dst = ins.op0<ST>();
         const auto& src = ins.op1<ST>();
         f80 dstValue = x87fpu_.st(dst);
@@ -4816,12 +4816,12 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFrndint(const X64Instruction&) {
+    void Cpu::execFrndint(const Instruction&) {
         f80 dstValue = x87fpu_.st(ST::ST0);
         x87fpu_.set(ST::ST0, Impl::frndint(dstValue, &x87fpu_));
     }
 
-    void Cpu::execFcmovST(const X64Instruction& ins) {
+    void Cpu::execFcmovST(const Instruction& ins) {
         const auto& cond = ins.op0<Cond>();
         const auto& src = ins.op1<ST>();
         if(flags_.matches(cond)) {
@@ -4829,11 +4829,11 @@ namespace x64 {
         }
     }
 
-    void Cpu::execF2xm1(const X64Instruction&) {
+    void Cpu::execF2xm1(const Instruction&) {
         x87fpu_.f2xm1();
     }
 
-    void Cpu::execFyl2x(const X64Instruction&) {
+    void Cpu::execFyl2x(const Instruction&) {
         f80 x = x87fpu_.st(ST::ST0);
         f80 y = x87fpu_.st(ST::ST1);
         f80 res = F80::yl2x(x, y);
@@ -4841,7 +4841,7 @@ namespace x64 {
         x87fpu_.pop();
     }
 
-    void Cpu::execFscale(const X64Instruction&) {
+    void Cpu::execFscale(const Instruction&) {
         fmt::print(fg(fmt::color::red), "fscale rounding not checked\n");
         f80 val = x87fpu_.st(ST::ST0);
         f80 scale = x87fpu_.st(ST::ST1);
@@ -4849,35 +4849,35 @@ namespace x64 {
         x87fpu_.set(ST::ST0, res);
     }
 
-    void Cpu::execFabs(const X64Instruction&) {
+    void Cpu::execFabs(const Instruction&) {
         x87fpu_.fabs();
     }
 
-    void Cpu::execFchs(const X64Instruction&) {
+    void Cpu::execFchs(const Instruction&) {
         x87fpu_.fchs();
     }
 
-    void Cpu::execFnstcwM16(const X64Instruction& ins) {
+    void Cpu::execFnstcwM16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         set(resolve(dst), x87fpu_.control().asWord());
     }
 
-    void Cpu::execFldcwM16(const X64Instruction& ins) {
+    void Cpu::execFldcwM16(const Instruction& ins) {
         const auto& src = ins.op0<M16>();
         x87fpu_.control() = X87Control::fromWord(get(resolve(src)));
     }
 
-    void Cpu::execFnstswR16(const X64Instruction& ins) {
+    void Cpu::execFnstswR16(const Instruction& ins) {
         const auto& dst = ins.op0<R16>();
         set(dst, x87fpu_.status().asWord());
     }
 
-    void Cpu::execFnstswM16(const X64Instruction& ins) {
+    void Cpu::execFnstswM16(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         set(resolve(dst), x87fpu_.status().asWord());
     }
 
-    void Cpu::execFnstenvM224(const X64Instruction& ins) {
+    void Cpu::execFnstenvM224(const Instruction& ins) {
         const auto& dst = ins.op0<M224>();
         mem::Ptr224 dst224 = resolve(dst);
         mem::Ptr32 dstPtr { dst224.address() };
@@ -4886,7 +4886,7 @@ namespace x64 {
         set(dstPtr++, (u32)x87fpu_.tag().asWord());
     }
 
-    void Cpu::execFldenvM224(const X64Instruction& ins) {
+    void Cpu::execFldenvM224(const Instruction& ins) {
         const auto& src = ins.op0<M224>();
         mem::Ptr224 src224 = resolve(src);
         mem::Ptr32 srcPtr { src224.address() };
@@ -4895,41 +4895,41 @@ namespace x64 {
         x87fpu_.tag() = X87Tag::fromWord((u16)get(srcPtr++));
     }
 
-    void Cpu::execFxam(const X64Instruction&) {
+    void Cpu::execFxam(const Instruction&) {
         x87fpu_.fxam();
     }
 
-    void Cpu::execEmms(const X64Instruction&) {
+    void Cpu::execEmms(const Instruction&) {
         x87fpu_.tag() = X87Tag::fromWord(0xFFFF);
     }
 
-    void Cpu::execMovssXMMM32(const X64Instruction& ins) {
+    void Cpu::execMovssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, zeroExtend<Xmm, u32>(get(resolve(src))));
     }
-    void Cpu::execMovssM32XMM(const X64Instruction& ins) {
+    void Cpu::execMovssM32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<XMM>();
         set(resolve(dst), narrow<u32, Xmm>(get(src)));
     }
-    void Cpu::execMovssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMovssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::movss(get(dst), get(src)));
     }
 
-    void Cpu::execMovsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execMovsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, zeroExtend<Xmm, u64>(get(resolve(src))));
     }
-    void Cpu::execMovsdM64XMM(const X64Instruction& ins) {
+    void Cpu::execMovsdM64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<XMM>();
         set(resolve(dst), narrow<u64, Xmm>(get(src)));
     }
-    void Cpu::execMovsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMovsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = get(dst);
@@ -4938,350 +4938,350 @@ namespace x64 {
     }
 
 
-    void Cpu::execAddpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execAddpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::addps(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execAddpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execAddpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::addpd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execAddssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execAddssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::addss(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execAddssXMMM32(const X64Instruction& ins) {
+    void Cpu::execAddssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::addss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execAddsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execAddsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::addsd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execAddsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execAddsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 res = Impl::addsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSubpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execSubpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src =ins.op1<XMMM128>();
         u128 res = Impl::subps(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSubpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execSubpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src =ins.op1<XMMM128>();
         u128 res = Impl::subpd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSubssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execSubssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src =ins.op1<XMM>();
         u128 res = Impl::subss(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSubssXMMM32(const X64Instruction& ins) {
+    void Cpu::execSubssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src =ins.op1<M32>();
         u128 res = Impl::subss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSubsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execSubsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src =ins.op1<XMM>();
         u128 res = Impl::subsd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSubsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execSubsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src =ins.op1<M64>();
         u128 res = Impl::subsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execMulpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMulpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::mulps(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execMulpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMulpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::mulpd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execMulssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMulssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::mulss(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execMulssXMMM32(const X64Instruction& ins) {
+    void Cpu::execMulssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::mulss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execMulsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMulsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::mulsd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execMulsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execMulsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 res = Impl::mulsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execDivpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execDivpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::divps(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execDivpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execDivpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::divpd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
     
-    void Cpu::execDivssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execDivssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::divss(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execDivssXMMM32(const X64Instruction& ins) {
+    void Cpu::execDivssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::divss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execDivsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execDivsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::divsd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execDivsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execDivsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 res = Impl::divsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSqrtpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execSqrtpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::sqrtps(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSqrtpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execSqrtpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::sqrtpd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSqrtssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execSqrtssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::sqrtss(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSqrtssXMMM32(const X64Instruction& ins) {
+    void Cpu::execSqrtssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::sqrtss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSqrtsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execSqrtsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::sqrtsd(get(dst), get(src), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execSqrtsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execSqrtsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 res = Impl::sqrtsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode());
         set(dst, res);
     }
 
-    void Cpu::execRsqrtssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execRsqrtssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::rsqrtss(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execRsqrtssXMMM32(const X64Instruction& ins) {
+    void Cpu::execRsqrtssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::rsqrtss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))));
         set(dst, res);
     }
 
-    void Cpu::execRcppsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execRcppsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::rcpps(get(src));
         set(dst, res);
     }
 
-    void Cpu::execComissXMMXMM(const X64Instruction& ins) {
+    void Cpu::execComissXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         Impl::comiss(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execComissXMMM32(const X64Instruction& ins) {
+    void Cpu::execComissXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         Impl::comiss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execComisdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execComisdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         Impl::comisd(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execComisdXMMM64(const X64Instruction& ins) {
+    void Cpu::execComisdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         Impl::comisd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execUcomissXMMXMM(const X64Instruction& ins) {
+    void Cpu::execUcomissXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         Impl::comiss(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execUcomissXMMM32(const X64Instruction& ins) {
+    void Cpu::execUcomissXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         Impl::comiss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execUcomisdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execUcomisdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         Impl::comisd(get(dst), get(src), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execUcomisdXMMM64(const X64Instruction& ins) {
+    void Cpu::execUcomisdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         Impl::comisd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode(), &flags_);
     }
 
-    void Cpu::execMaxssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMaxssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::maxss(get(dst), get(src), simdRoundingMode()));
     }
-    void Cpu::execMaxssXMMM32(const X64Instruction& ins) {
+    void Cpu::execMaxssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::maxss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode()));
     }
-    void Cpu::execMaxsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMaxsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::maxsd(get(dst), get(src), simdRoundingMode()));
     }
-    void Cpu::execMaxsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execMaxsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::maxsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode()));
     }
 
-    void Cpu::execMinssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMinssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::minss(get(dst), get(src), simdRoundingMode()));
     }
-    void Cpu::execMinssXMMM32(const X64Instruction& ins) {
+    void Cpu::execMinssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::minss(get(dst), zeroExtend<Xmm, u32>(get(resolve(src))), simdRoundingMode()));
     }
-    void Cpu::execMinsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMinsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::minsd(get(dst), get(src), simdRoundingMode()));
     }
-    void Cpu::execMinsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execMinsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::minsd(get(dst), zeroExtend<Xmm, u64>(get(resolve(src))), simdRoundingMode()));
     }
 
-    void Cpu::execMaxpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMaxpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::maxps(get(dst), get(src), simdRoundingMode()));
     }
-    void Cpu::execMaxpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMaxpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::maxpd(get(dst), get(src), simdRoundingMode()));
     }
 
-    void Cpu::execMinpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMinpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::minps(get(dst), get(src), simdRoundingMode()));
     }
-    void Cpu::execMinpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMinpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::minpd(get(dst), get(src), simdRoundingMode()));
     }
 
-    void Cpu::execCmpssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execCmpssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& cond = ins.op2<FCond>();
@@ -5289,7 +5289,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execCmpssXMMM32(const X64Instruction& ins) {
+    void Cpu::execCmpssXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         const auto& cond = ins.op2<FCond>();
@@ -5297,7 +5297,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execCmpsdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execCmpsdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& cond = ins.op2<FCond>();
@@ -5305,7 +5305,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execCmpsdXMMM64(const X64Instruction& ins) {
+    void Cpu::execCmpsdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         const auto& cond = ins.op2<FCond>();
@@ -5313,7 +5313,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execCmppsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCmppsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& cond = ins.op2<FCond>();
@@ -5321,7 +5321,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execCmppdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCmppdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& cond = ins.op2<FCond>();
@@ -5329,211 +5329,211 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execCvtsi2ssXMMRM32(const X64Instruction& ins) {
+    void Cpu::execCvtsi2ssXMMRM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM32>();
         u128 res = Impl::cvtsi2ss32(get(dst), get(src));
         set(dst, res);
     }
-    void Cpu::execCvtsi2ssXMMRM64(const X64Instruction& ins) {
+    void Cpu::execCvtsi2ssXMMRM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM64>();
         u128 res = Impl::cvtsi2ss64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execCvtsi2sdXMMRM32(const X64Instruction& ins) {
+    void Cpu::execCvtsi2sdXMMRM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM32>();
         u128 res = Impl::cvtsi2sd32(get(dst), get(src));
         set(dst, res);
     }
-    void Cpu::execCvtsi2sdXMMRM64(const X64Instruction& ins) {
+    void Cpu::execCvtsi2sdXMMRM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM64>();
         u128 res = Impl::cvtsi2sd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execCvtss2sdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execCvtss2sdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 res = Impl::cvtss2sd(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execCvtss2sdXMMM32(const X64Instruction& ins) {
+    void Cpu::execCvtss2sdXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         u128 res = Impl::cvtss2sd(get(dst), zeroExtend<u128, u32>(get(resolve(src))));
         set(dst, res);
     }
 
-    void Cpu::execCvtss2siR32XMM(const X64Instruction& ins) {
+    void Cpu::execCvtss2siR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtss2si32(narrow<u32, u64>(get(src).lo), simdRoundingMode()));
     }
 
-    void Cpu::execCvtss2siR32M32(const X64Instruction& ins) {
+    void Cpu::execCvtss2siR32M32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::cvtss2si32(get(resolve(src)), simdRoundingMode()));
     }
 
-    void Cpu::execCvtss2siR64XMM(const X64Instruction& ins) {
+    void Cpu::execCvtss2siR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtss2si64(narrow<u32, u64>(get(src).lo), simdRoundingMode()));
     }
 
-    void Cpu::execCvtss2siR64M32(const X64Instruction& ins) {
+    void Cpu::execCvtss2siR64M32(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::cvtss2si64(get(resolve(src)), simdRoundingMode()));
     }
 
-    void Cpu::execCvtsd2siR32XMM(const X64Instruction& ins) {
+    void Cpu::execCvtsd2siR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtsd2si32(get(src).lo, simdRoundingMode()));
     }
 
-    void Cpu::execCvtsd2siR32M64(const X64Instruction& ins) {
+    void Cpu::execCvtsd2siR32M64(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvtsd2si32(get(resolve(src)), simdRoundingMode()));
     }
 
-    void Cpu::execCvtsd2siR64XMM(const X64Instruction& ins) {
+    void Cpu::execCvtsd2siR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtsd2si64(get(src).lo, simdRoundingMode()));
     }
 
-    void Cpu::execCvtsd2siR64M64(const X64Instruction& ins) {
+    void Cpu::execCvtsd2siR64M64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvtsd2si64(get(resolve(src)), simdRoundingMode()));
     }
 
-    void Cpu::execCvtsd2ssXMMXMM(const X64Instruction& ins) {
+    void Cpu::execCvtsd2ssXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtsd2ss(get(dst), get(src)));
     }
 
-    void Cpu::execCvtsd2ssXMMM64(const X64Instruction& ins) {
+    void Cpu::execCvtsd2ssXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvtsd2ss(get(dst), zeroExtend<u128, u64>(get(resolve(src)))));
     }
 
-    void Cpu::execCvttps2dqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCvttps2dqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvttps2dq(get(src)));
     }
 
-    void Cpu::execCvttpd2dqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCvttpd2dqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvttpd2dq(get(src)));
     }
 
-    void Cpu::execCvttss2siR32XMM(const X64Instruction& ins) {
+    void Cpu::execCvttss2siR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvttss2si32(get(src)));
     }
-    void Cpu::execCvttss2siR32M32(const X64Instruction& ins) {
+    void Cpu::execCvttss2siR32M32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::cvttss2si32(zeroExtend<u128, u32>(get(resolve(src)))));
     }
-    void Cpu::execCvttss2siR64XMM(const X64Instruction& ins) {
+    void Cpu::execCvttss2siR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvttss2si64(get(src)));
     }
-    void Cpu::execCvttss2siR64M32(const X64Instruction& ins) {
+    void Cpu::execCvttss2siR64M32(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::cvttss2si64(zeroExtend<u128, u32>(get(resolve(src)))));
     }
 
-    void Cpu::execCvttsd2siR32XMM(const X64Instruction& ins) {
+    void Cpu::execCvttsd2siR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvttsd2si32(get(src)));
     }
-    void Cpu::execCvttsd2siR32M64(const X64Instruction& ins) {
+    void Cpu::execCvttsd2siR32M64(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvttsd2si32(zeroExtend<u128, u64>(get(resolve(src)))));
     }
-    void Cpu::execCvttsd2siR64XMM(const X64Instruction& ins) {
+    void Cpu::execCvttsd2siR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvttsd2si64(get(src)));
     }
-    void Cpu::execCvttsd2siR64M64(const X64Instruction& ins) {
+    void Cpu::execCvttsd2siR64M64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvttsd2si64(zeroExtend<u128, u64>(get(resolve(src)))));
     }
 
-    void Cpu::execCvtdq2psXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCvtdq2psXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvtdq2ps(get(src)));
     }
 
-    void Cpu::execCvtdq2pdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execCvtdq2pdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtdq2pd(get(src)));
     }
-    void Cpu::execCvtdq2pdXMMM64(const X64Instruction& ins) {
+    void Cpu::execCvtdq2pdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvtdq2pd(zeroExtend<u128, u64>(get(resolve(src)))));
     }
 
-    void Cpu::execCvtps2dqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCvtps2dqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvtps2dq(get(src), simdRoundingMode()));
     }
 
-    void Cpu::execCvtps2pdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execCvtps2pdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::cvtps2pd(get(src)));
     }
 
-    void Cpu::execCvtps2pdXMMM64(const X64Instruction& ins) {
+    void Cpu::execCvtps2pdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::cvtps2pd(zeroExtend<u128, u64>(get(resolve(src)))));
     }
 
-    void Cpu::execCvtpd2psXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execCvtpd2psXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::cvtpd2ps(get(src), simdRoundingMode()));
     }
 
-    void Cpu::execStmxcsrM32(const X64Instruction& ins) {
+    void Cpu::execStmxcsrM32(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         set(resolve(dst), mxcsr_.asDoubleWord());
     }
-    void Cpu::execLdmxcsrM32(const X64Instruction& ins) {
+    void Cpu::execLdmxcsrM32(const Instruction& ins) {
         const auto& src = ins.op0<M32>();
         mxcsr_ = SimdControlStatus::fromDoubleWord(get(resolve(src)));
     }
 
-    void Cpu::execPandMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPandMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 dstValue = get(dst);
@@ -5542,7 +5542,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPandnMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPandnMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 dstValue = get(dst);
@@ -5551,7 +5551,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPorMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPorMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 dstValue = get(dst);
@@ -5560,7 +5560,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPxorMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPxorMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 dstValue = get(dst);
@@ -5569,7 +5569,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPandXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPandXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5579,7 +5579,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPandnXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPandnXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5589,7 +5589,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPorXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPorXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5599,7 +5599,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPxorXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPxorXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5609,7 +5609,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execAndpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execAndpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5619,7 +5619,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execAndnpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execAndnpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5629,7 +5629,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execOrpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execOrpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5639,7 +5639,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execXorpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execXorpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 dstValue = get(dst);
@@ -5649,7 +5649,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execShufpsXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execShufpsXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& order = ins.op2<Imm>();
@@ -5657,7 +5657,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execShufpdXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execShufpdXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& order = ins.op2<Imm>();
@@ -5665,7 +5665,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execMovlpsXMMM64(const X64Instruction& ins) {
+    void Cpu::execMovlpsXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 dstValue = get(dst);
@@ -5674,14 +5674,14 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execMovlpsM64XMM(const X64Instruction& ins) {
+    void Cpu::execMovlpsM64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<XMM>();
         u128 srcValue = get(src);
         set(resolve(dst), srcValue.lo);
     }
 
-    void Cpu::execMovhpsXMMM64(const X64Instruction& ins) {
+    void Cpu::execMovhpsXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         u128 dstValue = get(dst);
@@ -5690,14 +5690,14 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execMovhpsM64XMM(const X64Instruction& ins) {
+    void Cpu::execMovhpsM64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<M64>();
         const auto& src = ins.op1<XMM>();
         u128 srcValue = get(src);
         set(resolve(dst), srcValue.hi);
     }
 
-    void Cpu::execMovhlpsXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMovhlpsXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 dstValue = get(dst);
@@ -5706,7 +5706,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execMovlhpsXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMovlhpsXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         u128 dstValue = get(dst);
@@ -5715,7 +5715,7 @@ namespace x64 {
         set(dst, dstValue);
     }
 
-    void Cpu::execPinsrwMMXR32Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrwMMXR32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<R32>();
         const auto& pos = ins.op2<Imm>();
@@ -5723,7 +5723,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPinsrwMMXM16Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrwMMXM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<M16>();
         const auto& pos = ins.op2<Imm>();
@@ -5731,7 +5731,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPinsrwXMMR32Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrwXMMR32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<R32>();
         const auto& pos = ins.op2<Imm>();
@@ -5739,7 +5739,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPinsrwXMMM16Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrwXMMM16Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M16>();
         const auto& pos = ins.op2<Imm>();
@@ -5747,7 +5747,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPextrwR32XMMImm(const X64Instruction& ins) {
+    void Cpu::execPextrwR32XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         const auto& pos = ins.op2<Imm>();
@@ -5755,7 +5755,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPextrwM16XMMImm(const X64Instruction& ins) {
+    void Cpu::execPextrwM16XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<M16>();
         const auto& src = ins.op1<XMM>();
         const auto& pos = ins.op2<Imm>();
@@ -5763,119 +5763,119 @@ namespace x64 {
         set(resolve(dst), res);
     }
 
-    void Cpu::execPunpcklbwMMXMMXM32(const X64Instruction& ins) {
+    void Cpu::execPunpcklbwMMXMMXM32(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM32>();
         u64 res = Impl::punpcklbw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpcklwdMMXMMXM32(const X64Instruction& ins) {
+    void Cpu::execPunpcklwdMMXMMXM32(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM32>();
         u64 res = Impl::punpcklwd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckldqMMXMMXM32(const X64Instruction& ins) {
+    void Cpu::execPunpckldqMMXMMXM32(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM32>();
         u64 res = Impl::punpckldq64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpcklbwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpcklbwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpcklbw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpcklwdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpcklwdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpcklwd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckldqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpckldqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpckldq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpcklqdqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpcklqdqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpcklqdq(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhbwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPunpckhbwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::punpckhbw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhwdMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPunpckhwdMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::punpckhwd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhdqMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPunpckhdqMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::punpckhdq64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhbwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpckhbwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpckhbw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhwdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpckhwdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpckhwd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhdqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpckhdqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpckhdq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPunpckhqdqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPunpckhqdqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::punpckhqdq(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPshufbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPshufbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pshufb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPshufbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPshufbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pshufb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPshufwMMXMMXM64Imm(const X64Instruction& ins) {
+    void Cpu::execPshufwMMXMMXM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         const auto& order = ins.op2<Imm>();
@@ -5883,7 +5883,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPshuflwXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPshuflwXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& order = ins.op2<Imm>();
@@ -5891,7 +5891,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPshufhwXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPshufhwXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& order = ins.op2<Imm>();
@@ -5899,7 +5899,7 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPshufdXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPshufdXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& order = ins.op2<Imm>();
@@ -5907,569 +5907,569 @@ namespace x64 {
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPcmpeqbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pcmpeqb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPcmpeqwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pcmpeqw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqdMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPcmpeqdMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pcmpeqd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpeqbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpeqb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpeqwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpeqw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpeqdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpeqd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpeqqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpeqqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpeqq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPcmpgtbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pcmpgtb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPcmpgtwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pcmpgtw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtdMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPcmpgtdMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pcmpgtd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpgtbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpgtb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpgtwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpgtw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpgtdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpgtd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPcmpgtqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPcmpgtqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pcmpgtq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmovmskbR32MMX(const X64Instruction& ins) {
+    void Cpu::execPmovmskbR32MMX(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<MMX>();
         u16 res = Impl::pmovmskb64(get(src));
         set(dst, zeroExtend<u32, u16>(res));
     }
 
-    void Cpu::execPmovmskbR64MMX(const X64Instruction& ins) {
+    void Cpu::execPmovmskbR64MMX(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<MMX>();
         u16 res = Impl::pmovmskb64(get(src));
         set(dst, zeroExtend<u64, u16>(res));
     }
 
-    void Cpu::execPmovmskbR32XMM(const X64Instruction& ins) {
+    void Cpu::execPmovmskbR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         u16 res = Impl::pmovmskb128(get(src));
         set(dst, zeroExtend<u32, u16>(res));
     }
 
-    void Cpu::execPmovmskbR64XMM(const X64Instruction& ins) {
+    void Cpu::execPmovmskbR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         u16 res = Impl::pmovmskb128(get(src));
         set(dst, zeroExtend<u64, u16>(res));
     }
 
-    void Cpu::execPaddbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPaddbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPaddwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPadddMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPadddMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddqMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPaddqMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddq64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddsbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPaddsbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddsb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPaddswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddsw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddusbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPaddusbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddusb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPadduswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPadduswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::paddusw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPaddbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPaddwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPadddXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPadddXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPaddqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddsbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPaddsbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddsb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPaddswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddsw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPaddusbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPaddusbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddusb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPadduswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPadduswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::paddusw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubdMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubdMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubqMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubqMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubq64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubsbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubsbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubsb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubsw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubusbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubusbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubusb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubuswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsubuswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psubusw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubsbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubsbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubsb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubsw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubusbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubusbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubusb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsubuswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsubuswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psubusw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmulhuwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmulhuwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmulhuw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmulhwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmulhwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmulhw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmullwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmullwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmullw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmuludqMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmuludqMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmuludq64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmulhuwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmulhuwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmulhuw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmulhwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmulhwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmulhw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmullwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmullwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmullw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmuludqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmuludqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmuludq128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmaddwdMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmaddwdMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmaddwd64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmaddwdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaddwdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmaddwd128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsadbwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsadbwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::psadbw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPsadbwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsadbwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::psadbw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPavgbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPavgbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pavgb64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPavgwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPavgwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pavgw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPavgbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPavgbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pavgb128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPavgwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPavgwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pavgw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmaxswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmaxswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmaxsw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmaxswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaxswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmaxsw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmaxubMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmaxubMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pmaxub64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPmaxubXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaxubXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pmaxub128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPminswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPminswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pminsw64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPminswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPminswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pminsw128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPminubMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPminubMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         u64 res = Impl::pminub64(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPminubXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPminubXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         u128 res = Impl::pminub128(get(dst), get(src));
         set(dst, res);
     }
 
-    void Cpu::execPtestXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPtestXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         Impl::ptest(get(dst), get(src), &flags_);
     }
 
-    void Cpu::execPsrawMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsrawMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psraw64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrawMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsrawMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::psraw64(get(dst), (u8)get(src)));
     }
 
-    void Cpu::execPsradMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsradMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrad64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsradMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsradMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::psrad64(get(dst), (u8)get(src)));
     }
 
-    void Cpu::execPsrawXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsrawXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psraw128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrawXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsrawXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::psraw128(get(dst), (u8)get(src).lo));
     }
 
-    void Cpu::execPsradXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsradXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrad128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsradXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsradXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::psrad128(get(dst), (u8)get(src).lo));
@@ -6479,72 +6479,72 @@ namespace x64 {
         return (u8)std::min((u64)255, count);
     }
 
-    void Cpu::execPsllwMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsllwMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psllw64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsllwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsllwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         auto shift = shiftFromU64(get(src));
         set(dst, Impl::psllw64(get(dst), shift));
     }
 
-    void Cpu::execPslldMMXImm(const X64Instruction& ins) {
+    void Cpu::execPslldMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::pslld64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPslldMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPslldMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         auto shift = shiftFromU64(get(src));
         set(dst, Impl::pslld64(get(dst), shift));
     }
 
-    void Cpu::execPsllqMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsllqMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psllq64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsllqMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsllqMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         auto shift = shiftFromU64(get(src));
         set(dst, Impl::psllq64(get(dst), shift));
     }
 
-    void Cpu::execPsrlwMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsrlwMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrlw64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrlwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsrlwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         auto shift = shiftFromU64(get(src));
         set(dst, Impl::psrlw64(get(dst), shift));
     }
 
-    void Cpu::execPsrldMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsrldMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrld64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrldMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsrldMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         auto shift = shiftFromU64(get(src));
         set(dst, Impl::psrld64(get(dst), shift));
     }
 
-    void Cpu::execPsrlqMMXImm(const X64Instruction& ins) {
+    void Cpu::execPsrlqMMXImm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrlq64(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrlqMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsrlqMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         auto shift = shiftFromU64(get(src));
@@ -6559,91 +6559,91 @@ namespace x64 {
         }
     }
 
-    void Cpu::execPsllwXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsllwXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psllw128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsllwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsllwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
         set(dst, Impl::psllw128(get(dst), shift));
     }
 
-    void Cpu::execPslldXMMImm(const X64Instruction& ins) {
+    void Cpu::execPslldXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::pslld128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPslldXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPslldXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
         set(dst, Impl::pslld128(get(dst), shift));
     }
 
-    void Cpu::execPsllqXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsllqXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psllq128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsllqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsllqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
         set(dst, Impl::psllq128(get(dst), shift));
     }
 
-    void Cpu::execPsrlwXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsrlwXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrlw128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrlwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsrlwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
         set(dst, Impl::psrlw128(get(dst), shift));
     }
 
-    void Cpu::execPsrldXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsrldXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrld128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrldXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsrldXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
         set(dst, Impl::psrld128(get(dst), shift));
     }
 
-    void Cpu::execPsrlqXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsrlqXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrlq128(get(dst), get<u8>(src)));
     }
-    void Cpu::execPsrlqXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsrlqXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         auto shift = shiftFromU128(get(src));
         set(dst, Impl::psrlq128(get(dst), shift));
     }
 
-    void Cpu::execPslldqXMMImm(const X64Instruction& ins) {
+    void Cpu::execPslldqXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::pslldq(get(dst), get<u8>(src)));
     }
 
-    void Cpu::execPsrldqXMMImm(const X64Instruction& ins) {
+    void Cpu::execPsrldqXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::psrldq(get(dst), get<u8>(src)));
     }
 
-    void Cpu::execPcmpistriXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPcmpistriXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& control = ins.op2<Imm>();
@@ -6651,7 +6651,7 @@ namespace x64 {
         set(R32::ECX, res);
     }
 
-    void Cpu::execPcmpestriXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPcmpestriXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& control = ins.op2<Imm>();
@@ -6661,657 +6661,657 @@ namespace x64 {
         set(R32::ECX, res);
     }
 
-    void Cpu::execPackuswbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPackuswbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::packuswb64(get(dst), get(src)));
     }
 
-    void Cpu::execPacksswbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPacksswbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::packsswb64(get(dst), get(src)));
     }
 
-    void Cpu::execPackssdwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPackssdwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::packssdw64(get(dst), get(src)));
     }
 
-    void Cpu::execPackuswbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPackuswbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::packuswb128(get(dst), get(src)));
     }
 
-    void Cpu::execPackusdwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPackusdwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::packusdw128(get(dst), get(src)));
     }
 
-    void Cpu::execPacksswbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPacksswbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::packsswb128(get(dst), get(src)));
     }
 
-    void Cpu::execPackssdwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPackssdwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::packssdw128(get(dst), get(src)));
     }
     
-    void Cpu::execUnpckhpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execUnpckhpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::unpckhps(get(dst), get(src)));
     }
 
-    void Cpu::execUnpckhpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execUnpckhpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::unpckhpd(get(dst), get(src)));
     }
 
-    void Cpu::execUnpcklpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execUnpcklpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::unpcklps(get(dst), get(src)));
     }
 
-    void Cpu::execUnpcklpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execUnpcklpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::unpcklpd(get(dst), get(src)));
     }
 
-    void Cpu::execMovmskpsR32XMM(const X64Instruction& ins) {
+    void Cpu::execMovmskpsR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::movmskps32(get(src)));
     }
 
-    void Cpu::execMovmskpsR64XMM(const X64Instruction& ins) {
+    void Cpu::execMovmskpsR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::movmskps64(get(src)));
     }
 
-    void Cpu::execMovmskpdR32XMM(const X64Instruction& ins) {
+    void Cpu::execMovmskpdR32XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::movmskpd32(get(src)));
     }
 
-    void Cpu::execMovmskpdR64XMM(const X64Instruction& ins) {
+    void Cpu::execMovmskpdR64XMM(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::movmskpd64(get(src)));
     }
 
-    void Cpu::execLddquXMMM128(const X64Instruction& ins) {
+    void Cpu::execLddquXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M128>();
         set(dst, get(resolve(src)));
     }
 
-    void Cpu::execMovshdupXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execMovshdupXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::movshdup(get(src)));
     }
 
-    void Cpu::execMovddupXMMXMM(const X64Instruction& ins) {
+    void Cpu::execMovddupXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::movddup128(get(src)));
     }
 
-    void Cpu::execMovddupXMMM64(const X64Instruction& ins) {
+    void Cpu::execMovddupXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::movddup64(get(resolve(src))));
     }
 
-    void Cpu::execAddsubpsXMXMMM128(const X64Instruction& ins) {
+    void Cpu::execAddsubpsXMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::addsubps(get(dst), get(src)));
     }
 
-    void Cpu::execAddsubpdXMXMMM128(const X64Instruction& ins) {
+    void Cpu::execAddsubpdXMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::addsubpd(get(dst), get(src)));
     }
 
-    void Cpu::execHaddpsXMXMMM128(const X64Instruction& ins) {
+    void Cpu::execHaddpsXMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::haddps(get(dst), get(src)));
     }
 
-    void Cpu::execHaddpdXMXMMM128(const X64Instruction& ins) {
+    void Cpu::execHaddpdXMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::haddpd(get(dst), get(src)));
     }
 
-    void Cpu::execPalignrMMXMMXM64Imm(const X64Instruction& ins) {
+    void Cpu::execPalignrMMXMMXM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::palignr64(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPalignrXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPalignrXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::palignr128(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPhaddwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPhaddwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::phaddw64(get(dst), get(src)));
     }
 
-    void Cpu::execPhaddwXMXXMXM128(const X64Instruction& ins) {
+    void Cpu::execPhaddwXMXXMXM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::phaddw128(get(dst), get(src)));
     }
 
-    void Cpu::execPhadddMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPhadddMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::phaddd64(get(dst), get(src)));
     }
 
-    void Cpu::execPhadddXMXXMXM128(const X64Instruction& ins) {
+    void Cpu::execPhadddXMXXMXM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::phaddd128(get(dst), get(src)));
     }
 
-    void Cpu::execPmaddubswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmaddubswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::pmaddubsw64(get(dst), get(src)));
     }
 
-    void Cpu::execPmaddubswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaddubswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmaddubsw128(get(dst), get(src)));
     }
 
-    void Cpu::execPmulhrswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPmulhrswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::pmulhrsw64(get(dst), get(src)));
     }
 
-    void Cpu::execPmulhrswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmulhrswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmulhrsw128(get(dst), get(src)));
     }
 
-    void Cpu::execPabsbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPabsbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::pabsb64(get(src)));
     }
 
-    void Cpu::execPabswMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPabswMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::pabsw64(get(src)));
     }
 
-    void Cpu::execPabsdMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPabsdMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::pabsd64(get(src)));
     }
 
-    void Cpu::execPabsbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPabsbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pabsb128(get(src)));
     }
 
-    void Cpu::execPabswXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPabswXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pabsw128(get(src)));
     }
 
-    void Cpu::execPabsdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPabsdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pabsd128(get(src)));
     }
 
-    void Cpu::execPsignbMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsignbMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::psignb64(get(dst), get(src)));
     }
 
-    void Cpu::execPsignwMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsignwMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::psignw64(get(dst), get(src)));
     }
 
-    void Cpu::execPsigndMMXMMXM64(const X64Instruction& ins) {
+    void Cpu::execPsigndMMXMMXM64(const Instruction& ins) {
         const auto& dst = ins.op0<MMX>();
         const auto& src = ins.op1<MMXM64>();
         set(dst, Impl::psignd64(get(dst), get(src)));
     }
 
-    void Cpu::execPsignbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsignbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::psignb128(get(dst), get(src)));
     }
 
-    void Cpu::execPsignwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsignwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::psignw128(get(dst), get(src)));
     }
 
-    void Cpu::execPsigndXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPsigndXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::psignd128(get(dst), get(src)));
     }
 
 
-    void Cpu::execPmaxuwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaxuwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmaxuw(get(dst), get(src)));
     }
 
-    void Cpu::execPmaxudXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaxudXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmaxud(get(dst), get(src)));
     }
 
-    void Cpu::execPminuwXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPminuwXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pminuw(get(dst), get(src)));
     }
 
-    void Cpu::execPminudXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPminudXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pminud(get(dst), get(src)));
     }
 
-    void Cpu::execPmaxsbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaxsbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmaxsb(get(dst), get(src)));
     }
 
-    void Cpu::execPmaxsdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmaxsdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmaxsd(get(dst), get(src)));
     }
 
-    void Cpu::execPminsbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPminsbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pminsb(get(dst), get(src)));
     }
 
-    void Cpu::execPminsdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPminsdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pminsd(get(dst), get(src)));
     }
 
-    void Cpu::execPmovzxbwXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovzxbwXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovzxbw(narrow<u64>(get(src))));
     }
 
-    void Cpu::execPmovzxbdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovzxbdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovzxbd(narrow<u32>(get(src))));
     }
 
-    void Cpu::execPmovzxbqXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovzxbqXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovzxbq(narrow<u16>(get(src))));
     }
 
-    void Cpu::execPmovzxwdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovzxwdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovzxwd(narrow<u64>(get(src))));
     }
 
-    void Cpu::execPmovzxwqXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovzxwqXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovzxwq(narrow<u32>(get(src))));
     }
 
-    void Cpu::execPmovzxdqXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovzxdqXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovzxdq(narrow<u64>(get(src))));
     }
 
-    void Cpu::execPmovzxbwXMMM64(const X64Instruction& ins) {
+    void Cpu::execPmovzxbwXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovzxbw(get(resolve(src))));
     }
 
-    void Cpu::execPmovzxbdXMMM32(const X64Instruction& ins) {
+    void Cpu::execPmovzxbdXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::pmovzxbd(get(resolve(src))));
     }
 
-    void Cpu::execPmovzxbqXMMM16(const X64Instruction& ins) {
+    void Cpu::execPmovzxbqXMMM16(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M16>();
         set(dst, Impl::pmovzxbq(get(resolve(src))));
     }
 
-    void Cpu::execPmovzxwdXMMM64(const X64Instruction& ins) {
+    void Cpu::execPmovzxwdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovzxwd(get(resolve(src))));
     }
 
-    void Cpu::execPmovzxwqXMMM32(const X64Instruction& ins) {
+    void Cpu::execPmovzxwqXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::pmovzxwq(get(resolve(src))));
     }
 
-    void Cpu::execPmovzxdqXMMM64(const X64Instruction& ins) {
+    void Cpu::execPmovzxdqXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovzxdq(get(resolve(src))));
     }
 
-    void Cpu::execPmovsxbwXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovsxbwXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovsxbw(narrow<u64>(get(src))));
     }
 
-    void Cpu::execPmovsxbdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovsxbdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovsxbd(narrow<u32>(get(src))));
     }
 
-    void Cpu::execPmovsxbqXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovsxbqXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovsxbq(narrow<u16>(get(src))));
     }
 
-    void Cpu::execPmovsxwdXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovsxwdXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovsxwd(narrow<u64>(get(src))));
     }
 
-    void Cpu::execPmovsxwqXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovsxwqXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovsxwq(narrow<u32>(get(src))));
     }
 
-    void Cpu::execPmovsxdqXMMXMM(const X64Instruction& ins) {
+    void Cpu::execPmovsxdqXMMXMM(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         set(dst, Impl::pmovsxdq(narrow<u64>(get(src))));
     }
 
-    void Cpu::execPmovsxbwXMMM64(const X64Instruction& ins) {
+    void Cpu::execPmovsxbwXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovsxbw(get(resolve(src))));
     }
 
-    void Cpu::execPmovsxbdXMMM32(const X64Instruction& ins) {
+    void Cpu::execPmovsxbdXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::pmovsxbd(get(resolve(src))));
     }
 
-    void Cpu::execPmovsxbqXMMM16(const X64Instruction& ins) {
+    void Cpu::execPmovsxbqXMMM16(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M16>();
         set(dst, Impl::pmovsxbq(get(resolve(src))));
     }
 
-    void Cpu::execPmovsxwdXMMM64(const X64Instruction& ins) {
+    void Cpu::execPmovsxwdXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovsxwd(get(resolve(src))));
     }
 
-    void Cpu::execPmovsxwqXMMM32(const X64Instruction& ins) {
+    void Cpu::execPmovsxwqXMMM32(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         set(dst, Impl::pmovsxwq(get(resolve(src))));
     }
 
-    void Cpu::execPmovsxdqXMMM64(const X64Instruction& ins) {
+    void Cpu::execPmovsxdqXMMM64(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         set(dst, Impl::pmovsxdq(get(resolve(src))));
     }
 
-    void Cpu::execRoundssXMMXMMImm(const X64Instruction& ins) {
+    void Cpu::execRoundssXMMXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundss128(get(dst), get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundssXMMM32Imm(const X64Instruction& ins) {
+    void Cpu::execRoundssXMMM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M32>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundss32(get(dst), get(resolve(src)), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundsdXMMXMMImm(const X64Instruction& ins) {
+    void Cpu::execRoundsdXMMXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundsd128(get(dst), get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundsdXMMM64Imm(const X64Instruction& ins) {
+    void Cpu::execRoundsdXMMM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<M64>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundsd64(get(dst), get(resolve(src)), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundpsXMMXMMImm(const X64Instruction& ins) {
+    void Cpu::execRoundpsXMMXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundps(get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execRoundpdXMMXMMImm(const X64Instruction& ins) {
+    void Cpu::execRoundpdXMMXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::roundpd(get(src), imm.as<u8>(), simdRoundingMode()));
     }
 
-    void Cpu::execPmulldXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPmulldXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pmulld(get(dst), get(src)));
     }
 
-    void Cpu::execPextrbR32XMMImm(const X64Instruction& ins) {
+    void Cpu::execPextrbR32XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, zeroExtend<u32, u8>(Impl::pextrb(get(src), get<u8>(imm))));
     }
 
-    void Cpu::execPextrbM8XMMImm(const X64Instruction& ins) {
+    void Cpu::execPextrbM8XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<M8>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(resolve(dst), Impl::pextrb(get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPextrdRM32XMMImm(const X64Instruction& ins) {
+    void Cpu::execPextrdRM32XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<RM32>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pextrd(get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPextrqRM64XMMImm(const X64Instruction& ins) {
+    void Cpu::execPextrqRM64XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pextrq(get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPinsrbXMMR32Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrbXMMR32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<R32>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pinsrb(get(dst), (u8)get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPinsrdXMMRM32Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrdXMMRM32Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM32>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pinsrd(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execPinsrqXMMRM64Imm(const X64Instruction& ins) {
+    void Cpu::execPinsrqXMMRM64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<RM64>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pinsrq(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execExtractpsM32XMMImm(const X64Instruction& ins) {
+    void Cpu::execExtractpsM32XMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<M32>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(resolve(dst), Impl::extractps(get(src), get<u8>(imm)));
     }
 
-    void Cpu::execInsertpsXMMXMMImm(const X64Instruction& ins) {
+    void Cpu::execInsertpsXMMXMMImm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMM>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::insertpsReg(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execBlendpsXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execBlendpsXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::blendps(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execBlendpdXMMXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execBlendpdXMMXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::blendpd(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execBlendvpsXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execBlendvpsXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::blendvps(get(dst), get(src), get(XMM::XMM0)));
     }
 
-    void Cpu::execBlendvpdXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execBlendvpdXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::blendvpd(get(dst), get(src), get(XMM::XMM0)));
     }
 
-    void Cpu::execPblendvbXMMXMMM128(const X64Instruction& ins) {
+    void Cpu::execPblendvbXMMXMMM128(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         set(dst, Impl::pblendvb(get(dst), get(src), get(XMM::XMM0)));
     }
 
-    void Cpu::execPblendwXMMM128Imm(const X64Instruction& ins) {
+    void Cpu::execPblendwXMMM128Imm(const Instruction& ins) {
         const auto& dst = ins.op0<XMM>();
         const auto& src = ins.op1<XMMM128>();
         const auto& imm = ins.op2<Imm>();
         set(dst, Impl::pblendw(get(dst), get(src), get<u8>(imm)));
     }
 
-    void Cpu::execCrc32R32RM8(const X64Instruction& ins) {
+    void Cpu::execCrc32R32RM8(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM8>();
         set(dst, Impl::crc32_8(get(dst), get(src)));
     }
 
-    void Cpu::execCrc32R32RM16(const X64Instruction& ins) {
+    void Cpu::execCrc32R32RM16(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM16>();
         set(dst, Impl::crc32_16(get(dst), get(src)));
     }
 
-    void Cpu::execCrc32R32RM32(const X64Instruction& ins) {
+    void Cpu::execCrc32R32RM32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<RM32>();
         set(dst, Impl::crc32_32(get(dst), get(src)));
     }
 
-    void Cpu::execCrc32R64RM64(const X64Instruction& ins) {
+    void Cpu::execCrc32R64RM64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<RM64>();
         set(dst, Impl::crc32_64(get(dst), get(src)));
     }
 
-    void Cpu::execSyscall(const X64Instruction&) {
+    void Cpu::execSyscall(const Instruction&) {
         callbacks_.forEach([&](Callback* callback) {
             callback->onSyscall();
         });
     }
 
-    void Cpu::execRdtsc(const X64Instruction&) {
+    void Cpu::execRdtsc(const Instruction&) {
         set(R32::EDX, 0);
         set(R32::EAX, 0);
     }
 
-    void Cpu::execCpuid(const X64Instruction&) {
+    void Cpu::execCpuid(const Instruction&) {
         host::CPUID cpuid = host::cpuid(get(R32::EAX), get(R32::ECX));
         set(R32::EAX, cpuid.a);
         set(R32::EBX, cpuid.b);
@@ -7319,7 +7319,7 @@ namespace x64 {
         set(R32::EDX, cpuid.d);
     }
 
-    void Cpu::execXgetbv(const X64Instruction&) {
+    void Cpu::execXgetbv(const Instruction&) {
         host::XGETBV xgetbv = host::xgetbv(get(R32::ECX));
         set(R32::EAX, xgetbv.a);
         set(R32::EDX, xgetbv.d);
@@ -7400,7 +7400,7 @@ namespace x64 {
         set(XMM::XMM15, s.xmm15);
     }
 
-    void Cpu::execFxsaveM4096(const X64Instruction& ins) {
+    void Cpu::execFxsaveM4096(const Instruction& ins) {
         const auto& dst = ins.op0<M4096>();
         mem::Ptr4096 dstPtr = resolve(dst);
         verify(dstPtr.address() % 16 == 0, "fxsave destination address must be 16-byte aligned");
@@ -7408,7 +7408,7 @@ namespace x64 {
         mmu_->copyToMmu(mem::Ptr8{dstPtr.address()}, (const u8*)&fpuState, sizeof(fpuState));
     }
 
-    void Cpu::execFxrstorM4096(const X64Instruction& ins) {
+    void Cpu::execFxrstorM4096(const Instruction& ins) {
         const auto& src = ins.op0<M4096>();
         mem::Ptr4096 srcPtr = resolve(src);
         verify(srcPtr.address() % 16 == 0, "fxrstor source address must be 16-byte aligned");
@@ -7418,28 +7418,28 @@ namespace x64 {
     }
 
     // NOLINTBEGIN(readability-convert-member-functions-to-static)
-    void Cpu::execRdpkru(const X64Instruction&) {
+    void Cpu::execRdpkru(const Instruction&) {
         verify(false, "Rdpkru not implemented");
     }
 
-    void Cpu::execWrpkru(const X64Instruction&) {
+    void Cpu::execWrpkru(const Instruction&) {
         verify(false, "Wrpkru not implemented");
     }
 
-    void Cpu::execRdsspd(const X64Instruction&) {
+    void Cpu::execRdsspd(const Instruction&) {
         // this is a nop
     }
 
-    void Cpu::execPause(const X64Instruction&) {
+    void Cpu::execPause(const Instruction&) {
         // this is a nop
     }
 
-    void Cpu::execFwait(const X64Instruction&) {
+    void Cpu::execFwait(const Instruction&) {
         
     }
     // NOLINTEND(readability-convert-member-functions-to-static)
 
-    void Cpu::execUnimplemented(const X64Instruction& ins) {
+    void Cpu::execUnimplemented(const Instruction& ins) {
         verify(false, [&]() {
             fmt::print("Instruction \"{}\" is not executable through pointer to member function", ins.toString());
         });

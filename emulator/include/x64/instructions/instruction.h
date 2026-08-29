@@ -1,5 +1,5 @@
-#ifndef X64INSTRUCTION_H
-#define X64INSTRUCTION_H
+#ifndef INSTRUCTION_H
+#define INSTRUCTION_H
 
 #include "x64/types.h"
 #include <array>
@@ -858,7 +858,7 @@ namespace x64 {
     template<size_t N>
     using Bytes = std::array<u8, N>;
 
-    class X64Instruction {
+    class Instruction {
         using ArgBuffer = Bytes<16>;
 
         static_assert(sizeof(R64) <= sizeof(ArgBuffer));
@@ -874,26 +874,26 @@ namespace x64 {
         };
 
         template<Insn insn, typename... Args>
-        static X64Instruction make(u64 address, u16 sizeInBytes, Args&& ...args) {
+        static Instruction make(u64 address, u16 sizeInBytes, Args&& ...args) {
             return make(address, insn, sizeInBytes, args...);
         }
 
-        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes) {
+        static Instruction make(u64 address, Insn insn, u16 sizeInBytes) {
             return make(address, insn, sizeInBytes, 0, 0, 0, 0);
         }
         
         template<typename Arg0>
-        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0) {
+        static Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0) {
             return make(address, insn, sizeInBytes, 1, arg0, 0, 0);
         }
         
         template<typename Arg0, typename Arg1>
-        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0, Arg1&& arg1) {
+        static Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0, Arg1&& arg1) {
             return make(address, insn, sizeInBytes, 2, arg0, arg1, 0);
         }
         
         template<typename Arg0, typename Arg1, typename Arg2>
-        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
+        static Instruction make(u64 address, Insn insn, u16 sizeInBytes, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
             return make(address, insn, sizeInBytes, 3, arg0, arg1, arg2);
         }
 
@@ -951,15 +951,15 @@ namespace x64 {
     private:
 
 #ifndef NDEBUG
-        X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2, u64 operandTypeMask) :
+        Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2, u64 operandTypeMask) :
             address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), operands_{op0, op1, op2}, operandTypeMask_(operandTypeMask) {} 
 #else
-        X64Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
+        Instruction(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, const ArgBuffer& op0, const ArgBuffer& op1, const ArgBuffer& op2) :
             address_(address), nextAddress_(address+sizeInBytes), insn_(insn), nbOperands_(nbOperands & 0x3), lock_(0), operands_{op0, op1, op2} {} 
 #endif
 
         template<typename Arg0, typename Arg1, typename Arg2>
-        static X64Instruction make(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
+        static Instruction make(u64 address, Insn insn, u16 sizeInBytes, u8 nbOperands, Arg0&& arg0, Arg1&& arg1, Arg2&& arg2) {
             static_assert(std::is_trivially_constructible_v<std::remove_reference_t<Arg0>>);
             static_assert(std::is_trivially_constructible_v<std::remove_reference_t<Arg1>>);
             static_assert(std::is_trivially_constructible_v<std::remove_reference_t<Arg2>>);
@@ -977,9 +977,9 @@ namespace x64 {
             std::memcpy(&buf2, &arg2, sizeof(arg2));
 #ifndef NDEBUG
             u64 operandTypeMask = typeMask<Arg0, Arg1, Arg2>();
-            return X64Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2, operandTypeMask);
+            return Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2, operandTypeMask);
 #else
-            return X64Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2);
+            return Instruction(address, insn, sizeInBytes, nbOperands, buf0, buf1, buf2);
 #endif
         }
 

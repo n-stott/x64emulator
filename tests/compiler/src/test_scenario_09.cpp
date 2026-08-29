@@ -12,33 +12,33 @@ int main(int argc, char**) {
     Mmu mmu(*addressSpace);
     Cpu cpu(mmu);
 
-    std::array<X64Instruction, 12> instructions {{
+    std::array<Instruction, 12> instructions {{
         // cvttsd2si rax,xmm1
-        X64Instruction::make(0x0, Insn::CVTTSD2SI_R64_XMM, 1, R64::RAX, XMM::XMM1),
+        Instruction::make(0x0, Insn::CVTTSD2SI_R64_XMM, 1, R64::RAX, XMM::XMM1),
         // pxor      xmm4,xmm4
-        X64Instruction::make(0x1, Insn::PXOR_XMM_XMMM128, 1, XMM::XMM4, XMMM128{true, XMM::XMM4, {}}),
+        Instruction::make(0x1, Insn::PXOR_XMM_XMMM128, 1, XMM::XMM4, XMMM128{true, XMM::XMM4, {}}),
         // andnpd    xmm0,xmm1
-        X64Instruction::make(0x2, Insn::ANDNPD_XMM_XMMM128, 1, XMM::XMM0, XMMM128{true, XMM::XMM1, {}}),
+        Instruction::make(0x2, Insn::ANDNPD_XMM_XMMM128, 1, XMM::XMM0, XMMM128{true, XMM::XMM1, {}}),
         // cvtsi2sd  xmm4,rax
-        X64Instruction::make(0x3, Insn::CVTSI2SD_XMM_RM64, 1, XMM::XMM4, RM64{true, R64::RAX, {}}),
+        Instruction::make(0x3, Insn::CVTSI2SD_XMM_RM64, 1, XMM::XMM4, RM64{true, R64::RAX, {}}),
         // mov       xmm2,xmm4
-        X64Instruction::make(0x4, Insn::MOV_XMM_XMM, 1, XMM::XMM2, XMM::XMM4),
+        Instruction::make(0x4, Insn::MOV_XMM_XMM, 1, XMM::XMM2, XMM::XMM4),
         // cmpsd     xmm2,xmm1
-        X64Instruction::make(0x5, Insn::CMPSD_XMM_XMM, 1, XMM::XMM2, XMM::XMM1, FCond::NLE),
+        Instruction::make(0x5, Insn::CMPSD_XMM_XMM, 1, XMM::XMM2, XMM::XMM1, FCond::NLE),
         // andpd     xmm2,xmm3
-        X64Instruction::make(0x6, Insn::ANDPD_XMM_XMMM128, 1, XMM::XMM2, XMMM128{true, XMM::XMM3, {}}),
+        Instruction::make(0x6, Insn::ANDPD_XMM_XMMM128, 1, XMM::XMM2, XMMM128{true, XMM::XMM3, {}}),
         // subsd     xmm4,xmm2
-        X64Instruction::make(0x7, Insn::SUBSD_XMM_XMM, 1, XMM::XMM4, XMM::XMM2),
+        Instruction::make(0x7, Insn::SUBSD_XMM_XMM, 1, XMM::XMM4, XMM::XMM2),
         // mov       xmm1,xmm4
-        X64Instruction::make(0x8, Insn::MOV_XMM_XMM, 1, XMM::XMM1, XMM::XMM4),
+        Instruction::make(0x8, Insn::MOV_XMM_XMM, 1, XMM::XMM1, XMM::XMM4),
         // orpd      xmm1,xmm0
-        X64Instruction::make(0x9, Insn::ORPD_XMM_XMMM128, 1, XMM::XMM1, XMMM128{true, XMM::XMM0, {}}),
+        Instruction::make(0x9, Insn::ORPD_XMM_XMMM128, 1, XMM::XMM1, XMMM128{true, XMM::XMM0, {}}),
         // cvttsd2si eax,xmm1
-        X64Instruction::make(0xa, Insn::CVTTSD2SI_R32_XMM, 1, R32::EAX, XMM::XMM1),
+        Instruction::make(0xa, Insn::CVTTSD2SI_R32_XMM, 1, R32::EAX, XMM::XMM1),
         // mov       DWORD PTR [rcx],eax
         // mov       eax,0x1
         // jmp 0
-        X64Instruction::make(0xb, Insn::JMP_U32, 1, (u32)0x0),
+        Instruction::make(0xb, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

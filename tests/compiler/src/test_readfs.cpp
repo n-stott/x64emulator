@@ -11,7 +11,7 @@ using namespace mem;
 using namespace x64;
 
 static BasicBlock create(Cpu* cpu, R64 dst, R64 base, R64 index) {
-    std::vector<X64Instruction> instructions;
+    std::vector<Instruction> instructions;
     auto src = M64 {
         Segment::FS,
         Encoding64 {
@@ -21,8 +21,8 @@ static BasicBlock create(Cpu* cpu, R64 dst, R64 base, R64 index) {
             0
         }
     };
-    instructions.push_back(X64Instruction::make(0x0, Insn::MOV_R64_M64, 1, dst, src));
-    instructions.push_back(X64Instruction::make(0x1, Insn::JCC, 1, Cond::E, (u64)0xaaaa));
+    instructions.push_back(Instruction::make(0x0, Insn::MOV_R64_M64, 1, dst, src));
+    instructions.push_back(Instruction::make(0x1, Insn::JCC, 1, Cond::E, (u64)0xaaaa));
     return cpu->createBasicBlock(instructions.data(), instructions.size());
 }
 

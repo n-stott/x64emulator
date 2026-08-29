@@ -11,13 +11,13 @@ using namespace mem;
 using namespace x64;
 
 static BasicBlock create(Cpu* cpu) {
-    std::vector<X64Instruction> instructions;
+    std::vector<Instruction> instructions;
     auto dst = M8 {
         Segment::DS,
         Encoding64 { R64::RDI, R64::ZERO, 1, 0 }
     };
-    instructions.push_back(X64Instruction::make(0x0, Insn::REP_STOS_M8_R8, 1, dst, R8::AL));
-    instructions.push_back(X64Instruction::make(0x1, Insn::JCC, 1, Cond::E, (u64)0xaaaa));
+    instructions.push_back(Instruction::make(0x0, Insn::REP_STOS_M8_R8, 1, dst, R8::AL));
+    instructions.push_back(Instruction::make(0x1, Insn::JCC, 1, Cond::E, (u64)0xaaaa));
     return cpu->createBasicBlock(instructions.data(), instructions.size());
 }
 

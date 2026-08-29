@@ -12,18 +12,18 @@ int main(int argc, char**) {
     Mmu mmu(*addressSpace);
     Cpu cpu(mmu);
 
-    std::array<X64Instruction, 11> instructions {{
-        X64Instruction::make(0x0, Insn::NOP, 1),
-        X64Instruction::make(0x1, Insn::POP_R64, 1, R64::RBX),
-        X64Instruction::make(0x2, Insn::POP_R64, 1, R64::R14),
-        X64Instruction::make(0x3, Insn::POP_R64, 1, R64::R13),
-        X64Instruction::make(0x4, Insn::POP_R64, 1, R64::R12),
-        X64Instruction::make(0x5, Insn::POP_R64, 1, R64::R11),
-        X64Instruction::make(0x6, Insn::POP_R64, 1, R64::R10),
-        X64Instruction::make(0x7, Insn::MOV_R64_R64, 1, R64::RSP, R64::RBP),
-        X64Instruction::make(0x8, Insn::POP_R64, 1, R64::RSP),
-        X64Instruction::make(0x9, Insn::POP_R64, 1, R64::RBP),
-        X64Instruction::make(0xa, Insn::RET, 1),
+    std::array<Instruction, 11> instructions {{
+        Instruction::make(0x0, Insn::NOP, 1),
+        Instruction::make(0x1, Insn::POP_R64, 1, R64::RBX),
+        Instruction::make(0x2, Insn::POP_R64, 1, R64::R14),
+        Instruction::make(0x3, Insn::POP_R64, 1, R64::R13),
+        Instruction::make(0x4, Insn::POP_R64, 1, R64::R12),
+        Instruction::make(0x5, Insn::POP_R64, 1, R64::R11),
+        Instruction::make(0x6, Insn::POP_R64, 1, R64::R10),
+        Instruction::make(0x7, Insn::MOV_R64_R64, 1, R64::RSP, R64::RBP),
+        Instruction::make(0x8, Insn::POP_R64, 1, R64::RSP),
+        Instruction::make(0x9, Insn::POP_R64, 1, R64::RBP),
+        Instruction::make(0xa, Insn::RET, 1),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

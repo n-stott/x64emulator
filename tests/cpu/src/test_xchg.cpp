@@ -16,7 +16,7 @@ int testXchgRegReg() {
     state.regs.set(R64::RBX, 0x5678);
     cpu.load(state);
 
-    X64Instruction xchgRaxRbx = X64Instruction::make(0x0, Insn::XCHG_RM64_R64, 1, RM64{true, R64::RAX, {}}, R64::RBX);
+    Instruction xchgRaxRbx = Instruction::make(0x0, Insn::XCHG_RM64_R64, 1, RM64{true, R64::RAX, {}}, R64::RBX);
     cpu.exec(xchgRaxRbx);
 
     Cpu::State state2;
@@ -48,7 +48,7 @@ int testXchgMemReg() {
     cpu.load(state);
 
     M64 mem { Segment::DS, Encoding64{R64::ZERO, R64::ZERO, 1, (i32)base.value()} };
-    X64Instruction xchgMemRax = X64Instruction::make(0x0, Insn::XCHG_RM64_R64, 1, RM64{false, R64::ZERO, mem}, R64::RAX);
+    Instruction xchgMemRax = Instruction::make(0x0, Insn::XCHG_RM64_R64, 1, RM64{false, R64::ZERO, mem}, R64::RAX);
     cpu.exec(xchgMemRax);
 
     Cpu::State state2;

@@ -17,10 +17,10 @@ int main(int, char**) {
     // mov  dl,r8b
     // mov  dh,bl
 
-    std::array<X64Instruction, 3> instructions {{
-        X64Instruction::make(0x4, Insn::MOV_R8_R8, 1, R8::DL, R8::R8B),
-        X64Instruction::make(0x5, Insn::MOV_R8_R8, 1, R8::DH, R8::BL),
-        X64Instruction::make(0x6, Insn::JNE, 1, (u64)0x0),
+    std::array<Instruction, 3> instructions {{
+        Instruction::make(0x4, Insn::MOV_R8_R8, 1, R8::DL, R8::R8B),
+        Instruction::make(0x5, Insn::MOV_R8_R8, 1, R8::DH, R8::BL),
+        Instruction::make(0x6, Insn::JNE, 1, (u64)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

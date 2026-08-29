@@ -1,5 +1,5 @@
 #include "x64/compiler/assembler.h"
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include "host/hostinstructions.h"
 #include "verify.h"
 #include <string>

@@ -1,7 +1,7 @@
 #ifndef CODEGENERATOR_H
 #define CODEGENERATOR_H
 
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/compiler/ir.h"
 #include <memory>

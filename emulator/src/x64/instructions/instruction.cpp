@@ -1,34 +1,34 @@
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include "x64/tostring.h"
 #include <fmt/core.h>
 
 namespace x64 {
 
 #ifndef NDEBUG
-    std::atomic<u8> X64Instruction::operandTypeId_ { 0 };
+    std::atomic<u8> Instruction::operandTypeId_ { 0 };
 #endif
     
-    std::string X64Instruction::toString(const char* mnemonic) const {
+    std::string Instruction::toString(const char* mnemonic) const {
         assert(nbOperands() == 0);
         return fmt::format("{:11}", mnemonic);
     }
 
     template<typename T0>
-    std::string X64Instruction::toString(const char* mnemonic) const {
+    std::string Instruction::toString(const char* mnemonic) const {
         return fmt::format("{:11}{}", mnemonic, utils::toString(op0<T0>()));
     }
 
     template<typename T0, typename T1>
-    std::string X64Instruction::toString(const char* mnemonic) const {
+    std::string Instruction::toString(const char* mnemonic) const {
         return fmt::format("{:11}{},{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()));
     }
 
     template<typename T0, typename T1, typename T2>
-    std::string X64Instruction::toString(const char* mnemonic) const {
+    std::string Instruction::toString(const char* mnemonic) const {
         return fmt::format("{:11}{},{},{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()));
     }
 
-    std::string X64Instruction::toString() const {
+    std::string Instruction::toString() const {
         switch(insn()) {
             case Insn::ADD_RM8_RM8:   return toString<RM8, RM8>("add");
             case Insn::ADD_RM8_IMM:   return toString<RM8, Imm>("add");
@@ -862,7 +862,7 @@ namespace x64 {
         return "unreachable";
     }
 
-    bool X64Instruction::isCall() const {
+    bool Instruction::isCall() const {
         switch(insn()) {
             case Insn::CALLDIRECT:
             case Insn::CALLINDIRECT_RM32:
@@ -873,17 +873,17 @@ namespace x64 {
         }
     }
 
-    bool X64Instruction::isSSE() const {
+    bool Instruction::isSSE() const {
         (void)insn_;
         return false;
     }
 
-    bool X64Instruction::isX87() const {
+    bool Instruction::isX87() const {
         (void)insn_;
         return false;
     }
 
-    bool X64Instruction::isBranch() const {
+    bool Instruction::isBranch() const {
         switch(insn()) {
             case Insn::RET:
             case Insn::RET_IMM:
@@ -904,7 +904,7 @@ namespace x64 {
         }
     }
 
-    bool X64Instruction::isFixedDestinationJump() const {
+    bool Instruction::isFixedDestinationJump() const {
         switch(insn()) {
             case Insn::JMP_U32:
             case Insn::JE:
@@ -917,7 +917,7 @@ namespace x64 {
         }
     }
 
-    bool X64Instruction::isDirectCall() const {
+    bool Instruction::isDirectCall() const {
         switch(insn()) {
             case Insn::CALLDIRECT:
                 return true;
@@ -926,7 +926,7 @@ namespace x64 {
         }
     }
 
-    bool X64Instruction::isIndirectCall() const {
+    bool Instruction::isIndirectCall() const {
         switch(insn()) {
             case Insn::CALLINDIRECT_RM32:
             case Insn::CALLINDIRECT_RM64:

@@ -4,7 +4,7 @@
 #include "mem/mmu.h"
 #include "x64/disassembler/disassembler.h"
 #include "x64/instructions/basicblock.h"
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include "utils.h"
 #include <algorithm>
 #include <map>
@@ -24,7 +24,7 @@ namespace x64 {
     struct ExecutableSection {
         u64 begin;
         u64 end;
-        std::vector<X64Instruction> instructions;
+        std::vector<Instruction> instructions;
         std::string filename;
 
         void trim();
@@ -45,7 +45,7 @@ namespace x64 {
     class DisassemblyCache : public mem::Mmu::Callback {
     public:
         DisassemblyCache();
-        void getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<X64Instruction>* instructions);
+        void getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<Instruction>* instructions);
 
         void onRegionCreation(u64, u64, BitFlags<mem::PROT>) override { }
         void onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) override;

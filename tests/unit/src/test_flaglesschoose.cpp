@@ -49,21 +49,21 @@ std::optional<u64> test_choice(u64 value, u64 value_if_zero, u64 value_if_nonzer
         M128 value_znz_addr{Segment::UNK, Encoding64{R64::RDI, R64::ZERO, 1, 32}};
         M64 value_addr{Segment::UNK, Encoding64{R64::RDI, R64::ZERO, 1, 48}};
 
-        std::vector<X64Instruction> instructions {
-            X64Instruction::make<Insn::MOV_M64_R64>(0, 1, value_z_addr, R64::RDX),
-            X64Instruction::make<Insn::MOV_M64_R64>(1, 1, value_nz_addr, R64::RCX),
-            X64Instruction::make<Insn::MOV_M64_R64>(2, 1, value_addr, R64::RSI),
-            X64Instruction::make<Insn::MOVDDUP_XMM_M64>(3, 1, XMM::XMM0, value_addr),
-            X64Instruction::make<Insn::PAND_XMM_XMMM128>(4, 1, XMM::XMM0, XMMM128{false, XMM::XMM0, mask_addr}),
-            X64Instruction::make<Insn::PXOR_XMM_XMMM128>(5, 1, XMM::XMM1, XMMM128{true, XMM::XMM1, {}}),
-            X64Instruction::make<Insn::PCMPEQQ_XMM_XMMM128>(6, 1, XMM::XMM1, XMMM128{true, XMM::XMM0, {}}),
-            X64Instruction::make<Insn::PXOR_XMM_XMMM128>(7, 1, XMM::XMM1, XMMM128{false, XMM::XMM0, zeroes_ones_addr}),
-            X64Instruction::make<Insn::MOVAPS_XMMM128_XMMM128>(8, 1, XMMM128{true, XMM::XMM0, {}}, XMMM128{false, XMM::XMM0, value_znz_addr}),
-            X64Instruction::make<Insn::PAND_XMM_XMMM128>(9, 1, XMM::XMM0, XMMM128{true, XMM::XMM1, {}}),
-            X64Instruction::make<Insn::MOVHLPS_XMM_XMM>(10, 1, XMM::XMM1, XMM::XMM0),
-            X64Instruction::make<Insn::POR_XMM_XMMM128>(11, 1, XMM::XMM0, XMMM128{true, XMM::XMM1, {}}),
-            X64Instruction::make<Insn::MOVQ_RM64_XMM>(12, 1, RM64{false, R64::ZERO, value_addr}, XMM::XMM0),
-            X64Instruction::make<Insn::MOV_R64_M64>(13, 1, R64::RAX, value_addr),
+        std::vector<Instruction> instructions {
+            Instruction::make<Insn::MOV_M64_R64>(0, 1, value_z_addr, R64::RDX),
+            Instruction::make<Insn::MOV_M64_R64>(1, 1, value_nz_addr, R64::RCX),
+            Instruction::make<Insn::MOV_M64_R64>(2, 1, value_addr, R64::RSI),
+            Instruction::make<Insn::MOVDDUP_XMM_M64>(3, 1, XMM::XMM0, value_addr),
+            Instruction::make<Insn::PAND_XMM_XMMM128>(4, 1, XMM::XMM0, XMMM128{false, XMM::XMM0, mask_addr}),
+            Instruction::make<Insn::PXOR_XMM_XMMM128>(5, 1, XMM::XMM1, XMMM128{true, XMM::XMM1, {}}),
+            Instruction::make<Insn::PCMPEQQ_XMM_XMMM128>(6, 1, XMM::XMM1, XMMM128{true, XMM::XMM0, {}}),
+            Instruction::make<Insn::PXOR_XMM_XMMM128>(7, 1, XMM::XMM1, XMMM128{false, XMM::XMM0, zeroes_ones_addr}),
+            Instruction::make<Insn::MOVAPS_XMMM128_XMMM128>(8, 1, XMMM128{true, XMM::XMM0, {}}, XMMM128{false, XMM::XMM0, value_znz_addr}),
+            Instruction::make<Insn::PAND_XMM_XMMM128>(9, 1, XMM::XMM0, XMMM128{true, XMM::XMM1, {}}),
+            Instruction::make<Insn::MOVHLPS_XMM_XMM>(10, 1, XMM::XMM1, XMM::XMM0),
+            Instruction::make<Insn::POR_XMM_XMMM128>(11, 1, XMM::XMM0, XMMM128{true, XMM::XMM1, {}}),
+            Instruction::make<Insn::MOVQ_RM64_XMM>(12, 1, RM64{false, R64::ZERO, value_addr}, XMM::XMM0),
+            Instruction::make<Insn::MOV_R64_M64>(13, 1, R64::RAX, value_addr),
         };
 
         Cpu cpu(mmu);

@@ -12,7 +12,7 @@
 namespace x64 {
 
     class BasicBlock;
-    class X64Instruction;
+    class Instruction;
     namespace ir {
         class IrGenerator;
         class Optimizer;
@@ -50,9 +50,9 @@ namespace x64 {
 
         std::optional<ir::IR> tryCompileIR(const BasicBlock&, const void* basicBlockPtr = nullptr, const void* jitBasicBlockPtr = nullptr, bool diagnose = false);
     private:
-        bool tryCompile(const X64Instruction&);
+        bool tryCompile(const Instruction&);
 
-        bool tryCompileLastInstruction(const X64Instruction&);
+        bool tryCompileLastInstruction(const Instruction&);
 
         std::optional<ir::IR> jitEntry();
         std::optional<ir::IR> basicBlockEntrypoint();

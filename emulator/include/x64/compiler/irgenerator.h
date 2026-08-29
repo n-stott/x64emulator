@@ -1,7 +1,7 @@
 #ifndef IRGENERATOR_H
 #define IRGENERATOR_H
 
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include "x64/instructions/basicblock.h"
 #include "x64/compiler/ir.h"
 #include <deque>

@@ -66,7 +66,7 @@ bool test(u128 initial, u128 expected, u128 replacement) {
         cpu.set(R64::RCX, replacement.hi);
         cpu.set(R64::RBX, replacement.lo);
 
-        X64Instruction ins = X64Instruction::make(0, Insn::CMPXCHG16B_M128, 1, M128{Segment::UNK, Encoding64{R64::ZERO, R64::ZERO, 1, (i32)base}});
+        Instruction ins = Instruction::make(0, Insn::CMPXCHG16B_M128, 1, M128{Segment::UNK, Encoding64{R64::ZERO, R64::ZERO, 1, (i32)base}});
 
         cpu.execCmpxchg16BM128(ins);
 

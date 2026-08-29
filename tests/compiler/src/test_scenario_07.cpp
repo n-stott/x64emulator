@@ -12,11 +12,11 @@ int main(int argc, char**) {
     Mmu mmu(*addressSpace);
     Cpu cpu(mmu);
 
-    std::array<X64Instruction, 2> instructions {{
+    std::array<Instruction, 2> instructions {{
         // shufps xmm0, xmm0, 0xff
-        X64Instruction::make(0x0, Insn::SHUFPS_XMM_XMMM128_IMM, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}, Imm{0xff}),
+        Instruction::make(0x0, Insn::SHUFPS_XMM_XMMM128_IMM, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}, Imm{0xff}),
         // jmp 0x0
-        X64Instruction::make(0xc, Insn::JMP_U32, 1, (u32)0x0),
+        Instruction::make(0xc, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

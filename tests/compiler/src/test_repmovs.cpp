@@ -11,7 +11,7 @@ using namespace mem;
 using namespace x64;
 
 static BasicBlock create(Cpu* cpu) {
-    std::vector<X64Instruction> instructions;
+    std::vector<Instruction> instructions;
     auto dst = M32 {
         Segment::DS,
         Encoding64 { R64::RDI, R64::ZERO, 1, 0 }
@@ -20,8 +20,8 @@ static BasicBlock create(Cpu* cpu) {
         Segment::DS,
         Encoding64 { R64::RSI, R64::ZERO, 1, 0 }
     };
-    instructions.push_back(X64Instruction::make(0x0, Insn::REP_MOVS_M32_M32, 1, dst, src));
-    instructions.push_back(X64Instruction::make(0x1, Insn::JCC, 1, Cond::E, (u64)0xaaaa));
+    instructions.push_back(Instruction::make(0x0, Insn::REP_MOVS_M32_M32, 1, dst, src));
+    instructions.push_back(Instruction::make(0x1, Insn::JCC, 1, Cond::E, (u64)0xaaaa));
     return cpu->createBasicBlock(instructions.data(), instructions.size());
 }
 

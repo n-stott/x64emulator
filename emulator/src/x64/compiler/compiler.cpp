@@ -264,7 +264,7 @@ namespace x64 {
         generator_->pop64(R64::R13);
     }
 
-    bool Compiler::tryCompile(const X64Instruction& ins) {
+    bool Compiler::tryCompile(const Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
         switch(ins.insn()) {
             case Insn::MOV_R8_IMM: return tryCompileMovR8Imm(ins.op0<R8>(), ins.op1<Imm>());
@@ -748,7 +748,7 @@ namespace x64 {
         return false;
     }
 
-    bool Compiler::tryCompileLastInstruction(const X64Instruction& ins) {
+    bool Compiler::tryCompileLastInstruction(const Instruction& ins) {
         if(!tryAdvanceInstructionPointer(ins.nextAddress())) return {};
         switch(ins.insn()) {
             case Insn::CALLDIRECT: return tryCompileCall(ins.op0<u64>(), ins.nextAddress());
@@ -787,7 +787,7 @@ namespace x64 {
         generator_->clear();
         const auto& instructions = basicBlock.instructions();
         for(size_t i = 0; i+1 < instructions.size(); ++i) {
-            const X64Instruction& ins = instructions[i].first;
+            const Instruction& ins = instructions[i].first;
             if(!tryCompile(ins)) {
                 if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, instructions.size());
                 return {};
@@ -808,7 +808,7 @@ namespace x64 {
     std::optional<ir::IR> Compiler::basicBlockExit(const BasicBlock& basicBlock, bool diagnose) {
         generator_->clear();
         const auto& instructions = basicBlock.instructions();
-        const X64Instruction& lastInstruction = instructions.back().first;
+        const Instruction& lastInstruction = instructions.back().first;
         auto jumps = tryCompileLastInstruction(lastInstruction);
         if(!jumps) {
             if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), instructions.size(), instructions.size());

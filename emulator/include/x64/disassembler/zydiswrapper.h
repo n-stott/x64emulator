@@ -2,7 +2,7 @@
 #define ZYDISWRAPPER_H
 
 #include "x64/disassembler/disassembler.h"
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include "x64/types.h"
 #include <vector>
 
@@ -14,7 +14,7 @@ namespace x64 {
         DisassemblyResult disassembleRange(const u8* begin, size_t size, u64 address) override;
 
     private:
-        std::vector<X64Instruction> instructions_;
+        std::vector<Instruction> instructions_;
     };
 }
 

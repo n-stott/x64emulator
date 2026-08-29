@@ -12,9 +12,9 @@ int main(int argc, char**) {
     Mmu mmu(*addressSpace);
     Cpu cpu(mmu);
 
-    std::array<X64Instruction, 2> instructions {{
-        X64Instruction::make(0x0, Insn::PXOR_XMM_XMMM128, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}),
-        X64Instruction::make(0x4, Insn::JMP_U32, 1, (u32)0x0),
+    std::array<Instruction, 2> instructions {{
+        Instruction::make(0x0, Insn::PXOR_XMM_XMMM128, 1, XMM::XMM0, XMMM128{true, XMM::XMM0, {}}),
+        Instruction::make(0x4, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

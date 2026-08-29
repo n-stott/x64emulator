@@ -22,19 +22,19 @@ int main() {
     u64 bbretstart = page1.value();
     u16 callsize = 1;
 
-    std::vector<X64Instruction> veccall {
-        X64Instruction::make(bbcallstart, Insn::CALLDIRECT, callsize, bbretstart)
+    std::vector<Instruction> veccall {
+        Instruction::make(bbcallstart, Insn::CALLDIRECT, callsize, bbretstart)
     };
     BasicBlock bbcall = Cpu::createBasicBlock(veccall.data(), veccall.size());
 
-    std::vector<X64Instruction> vecret {
-        X64Instruction::make(bbretstart, Insn::RET, 1)
+    std::vector<Instruction> vecret {
+        Instruction::make(bbretstart, Insn::RET, 1)
     };
     BasicBlock bbret = Cpu::createBasicBlock(vecret.data(), vecret.size());
 
     u64 bbnextstart = bbcallstart + callsize;
-    std::vector<X64Instruction> vecnext {
-        X64Instruction::make(bbnextstart, Insn::JMP_U32, 1, (u32)0),
+    std::vector<Instruction> vecnext {
+        Instruction::make(bbnextstart, Insn::JMP_U32, 1, (u32)0),
     };
     BasicBlock bbnext = Cpu::createBasicBlock(vecnext.data(), vecnext.size());
 

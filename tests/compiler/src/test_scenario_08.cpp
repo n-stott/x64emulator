@@ -12,9 +12,9 @@ int main(int, char**) {
     Mmu mmu(*addressSpace);
     Cpu cpu(mmu);
 
-    std::array<X64Instruction, 1> instructions {{
+    std::array<Instruction, 1> instructions {{
         // ret
-        X64Instruction::make(0x0, Insn::RET, 1),
+        Instruction::make(0x0, Insn::RET, 1),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

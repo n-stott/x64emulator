@@ -12,68 +12,68 @@ int main(int argc, char**) {
     Mmu mmu(*addressSpace);
     Cpu cpu(mmu);
 
-    std::array<X64Instruction, 31> instructions {{
+    std::array<Instruction, 31> instructions {{
         // paddsw    mm2,mm3
-        X64Instruction::make(0x0, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM3, {}}),
+        Instruction::make(0x0, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM3, {}}),
         // mov       mm3,mm7
-        X64Instruction::make(0x1, Insn::MOV_MMX_MMX, 1, MMX::MM3, MMX::MM7),
+        Instruction::make(0x1, Insn::MOV_MMX_MMX, 1, MMX::MM3, MMX::MM7),
         // mov       mm5,mm7
-        X64Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM5, MMX::MM7),
+        Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM5, MMX::MM7),
         // paddsw    mm3,mm0
-        X64Instruction::make(0x3, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM0, {}}),
+        Instruction::make(0x3, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM0, {}}),
         // paddsw    mm5,mm1
-        X64Instruction::make(0x4, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM5, MMXM64{true, MMX::MM1, {}}),
+        Instruction::make(0x4, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM5, MMXM64{true, MMX::MM1, {}}),
         // paddsw    mm7,mm2
-        X64Instruction::make(0x5, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM7, MMXM64{true, MMX::MM2, {}}),
+        Instruction::make(0x5, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM7, MMXM64{true, MMX::MM2, {}}),
         // paddsw    mm0,mm6
-        X64Instruction::make(0x6, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM0, MMXM64{true, MMX::MM6, {}}),
+        Instruction::make(0x6, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM0, MMXM64{true, MMX::MM6, {}}),
         // paddsw    mm1,mm6
-        X64Instruction::make(0x7, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM1, MMXM64{true, MMX::MM6, {}}),
+        Instruction::make(0x7, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM1, MMXM64{true, MMX::MM6, {}}),
         // paddsw    mm2,mm6
-        X64Instruction::make(0x8, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM6, {}}),
+        Instruction::make(0x8, Insn::PADDSW_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM6, {}}),
         // packuswb  mm0,mm1
-        X64Instruction::make(0x9, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM0, MMXM64{true, MMX::MM1, {}}),
+        Instruction::make(0x9, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM0, MMXM64{true, MMX::MM1, {}}),
         // packuswb  mm3,mm5
-        X64Instruction::make(0xa, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM5, {}}),
+        Instruction::make(0xa, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM5, {}}),
         // packuswb  mm2,mm2
-        X64Instruction::make(0xb, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM2, {}}),
+        Instruction::make(0xb, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM2, {}}),
         // mov       mm1,mm0
-        X64Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM1, MMX::MM0),
+        Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM1, MMX::MM0),
         // packuswb  mm7,mm7
-        X64Instruction::make(0xb, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM7, MMXM64{true, MMX::MM7, {}}),
+        Instruction::make(0xb, Insn::PACKUSWB_MMX_MMXM64, 1, MMX::MM7, MMXM64{true, MMX::MM7, {}}),
         // punpcklbw mm0,mm3
-        X64Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM3, {}}),
+        Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM3, {}}),
         // punpckhbw mm1,mm3
-        X64Instruction::make(0xb, Insn::PUNPCKHBW_MMX_MMXM64, 1, MMX::MM1, MMXM64{true, MMX::MM3, {}}),
+        Instruction::make(0xb, Insn::PUNPCKHBW_MMX_MMXM64, 1, MMX::MM1, MMXM64{true, MMX::MM3, {}}),
         // punpcklbw mm2,mm7
-        X64Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM2, MMXM32{true, MMX::MM7, {}}),
+        Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM2, MMXM32{true, MMX::MM7, {}}),
         // pcmpeqd   mm3,mm3
-        X64Instruction::make(0xb, Insn::PCMPEQD_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM3, {}}),
+        Instruction::make(0xb, Insn::PCMPEQD_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM3, {}}),
         // mov       mm5,mm0
-        X64Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM5, MMX::MM0),
+        Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM5, MMX::MM0),
         // mov       mm6,mm1
-        X64Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM6, MMX::MM1),
+        Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM6, MMX::MM1),
         // punpckhbw mm5,mm2
-        X64Instruction::make(0xb, Insn::PUNPCKHBW_MMX_MMXM64, 1, MMX::MM5, MMXM64{true, MMX::MM2, {}}),
+        Instruction::make(0xb, Insn::PUNPCKHBW_MMX_MMXM64, 1, MMX::MM5, MMXM64{true, MMX::MM2, {}}),
         // punpcklbw mm0,mm2
-        X64Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM2, {}}),
+        Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM2, {}}),
         // punpckhbw mm6,mm3
-        X64Instruction::make(0xb, Insn::PUNPCKHBW_MMX_MMXM64, 1, MMX::MM6, MMXM64{true, MMX::MM3, {}}),
+        Instruction::make(0xb, Insn::PUNPCKHBW_MMX_MMXM64, 1, MMX::MM6, MMXM64{true, MMX::MM3, {}}),
         // punpcklbw mm1,mm3
-        X64Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM1, MMXM32{true, MMX::MM3, {}}),
+        Instruction::make(0xb, Insn::PUNPCKLBW_MMX_MMXM32, 1, MMX::MM1, MMXM32{true, MMX::MM3, {}}),
         // mov       mm2,mm0
-        X64Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM2, MMX::MM0),
+        Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM2, MMX::MM0),
         // mov       mm3,mm5
-        X64Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM3, MMX::MM5),
+        Instruction::make(0x2, Insn::MOV_MMX_MMX, 1, MMX::MM3, MMX::MM5),
         // punpcklwd mm0,mm1
-        X64Instruction::make(0xb, Insn::PUNPCKLWD_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM1, {}}),
+        Instruction::make(0xb, Insn::PUNPCKLWD_MMX_MMXM32, 1, MMX::MM0, MMXM32{true, MMX::MM1, {}}),
         // punpckhwd mm2,mm1
-        X64Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM1, {}}),
+        Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM2, MMXM64{true, MMX::MM1, {}}),
         // punpcklwd mm5,mm6
-        X64Instruction::make(0xb, Insn::PUNPCKLWD_MMX_MMXM32, 1, MMX::MM5, MMXM32{true, MMX::MM6, {}}),
+        Instruction::make(0xb, Insn::PUNPCKLWD_MMX_MMXM32, 1, MMX::MM5, MMXM32{true, MMX::MM6, {}}),
         // punpckhwd mm3,mm6
-        X64Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM6, {}}),
-        X64Instruction::make(0xc, Insn::JMP_U32, 1, (u32)0x0),
+        Instruction::make(0xb, Insn::PUNPCKHWD_MMX_MMXM64, 1, MMX::MM3, MMXM64{true, MMX::MM6, {}}),
+        Instruction::make(0xc, Insn::JMP_U32, 1, (u32)0x0),
     }};
 
     auto bb = cpu.createBasicBlock(instructions.data(), instructions.size());

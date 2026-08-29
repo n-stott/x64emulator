@@ -83,7 +83,7 @@ add_library(x64cpu ${LIB_KIND}
     src/x64/nativecpuimpl.cpp
     src/x64/registers.cpp
     src/x64/simd.cpp
-    src/x64/instructions/x64instruction.cpp
+    src/x64/instructions/instruction.cpp
     src/x64/x87.cpp
     src/x64/types.cpp
 )

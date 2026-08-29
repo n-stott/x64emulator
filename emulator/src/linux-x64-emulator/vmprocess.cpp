@@ -210,8 +210,8 @@ namespace x64 {
 
     void VMProcess::dumpInstructionStats(const std::vector<const x64::CodeSegment*>& segments) const {
         if(segments.empty()) return;
-        std::vector<std::pair<x64::X64Instruction, u64>> instructionCalls;
-        auto addInstructionCalls = [&](const x64::X64Instruction& ins, u64 count) {
+        std::vector<std::pair<x64::Instruction, u64>> instructionCalls;
+        auto addInstructionCalls = [&](const x64::Instruction& ins, u64 count) {
             u32 insncode = (u32)ins.insn();
             if(instructionCalls.size() <= insncode) instructionCalls.resize(insncode+1, std::make_pair(ins, 0));
             instructionCalls[insncode].first = ins;
@@ -232,7 +232,7 @@ namespace x64 {
             return count + p.second;
         });
         if(totalcalls == 0) totalcalls = 1;
-        auto dummy = std::make_pair(x64::X64Instruction::make(0, x64::Insn::EMMS, 0), 0);
+        auto dummy = std::make_pair(x64::Instruction::make(0, x64::Insn::EMMS, 0), 0);
         if(instructionCalls.size() >= 50) instructionCalls.resize(50, dummy);
         fmt::println("Top instructions called:");
         for(const auto& p : instructionCalls) {

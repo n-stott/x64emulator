@@ -1,7 +1,7 @@
 #ifndef BASICBLOCK_H
 #define BASICBLOCK_H
 
-#include "x64/instructions/x64instruction.h"
+#include "x64/instructions/instruction.h"
 #include <algorithm>
 #include <optional>
 #include <vector>
@@ -10,11 +10,11 @@ namespace x64 {
 
     class Cpu;
 
-    using CpuExecPtr = void(*)(Cpu&, const X64Instruction&);
+    using CpuExecPtr = void(*)(Cpu&, const Instruction&);
 
     class BasicBlock {
     public:
-        BasicBlock(std::vector<std::pair<X64Instruction, CpuExecPtr>> instructions)
+        BasicBlock(std::vector<std::pair<Instruction, CpuExecPtr>> instructions)
                 : instructions_(std::move(instructions)) {
             assert(!instructions_.empty());
             endsWithFixedDestinationJump_ = instructions_.back().first.isFixedDestinationJump();
@@ -25,7 +25,7 @@ namespace x64 {
             });
         }
 
-        const std::vector<std::pair<X64Instruction, CpuExecPtr>>& instructions() const {
+        const std::vector<std::pair<Instruction, CpuExecPtr>>& instructions() const {
             return instructions_;
         }
 
@@ -46,7 +46,7 @@ namespace x64 {
         }
 
     private:
-        std::vector<std::pair<X64Instruction, CpuExecPtr>> instructions_;
+        std::vector<std::pair<Instruction, CpuExecPtr>> instructions_;
         bool endsWithFixedDestinationJump_ { false };
         bool endsWithDirectCall_ { false };
         bool endsWithIndirectCall_ { false };

@@ -8,15 +8,15 @@ namespace x64 {
         disassembler_ = std::make_unique<x64::ZydisWrapper>();
     }
 
-    void DisassemblyCache::getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<x64::X64Instruction>* instructions) {
+    void DisassemblyCache::getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<x64::Instruction>* instructions) {
         LOCK_CACHE();
         assert(!!instructions);
         instructions->clear();
         while(true) {
             auto pos = findSectionWithAddress(address, retriever);
             verify(!!pos.section, "Unable to disassemble block");
-            const x64::X64Instruction* it = pos.section->instructions.data() + pos.index;
-            const x64::X64Instruction* end = pos.section->instructions.data() + pos.section->instructions.size();
+            const x64::Instruction* it = pos.section->instructions.data() + pos.index;
+            const x64::Instruction* end = pos.section->instructions.data() + pos.section->instructions.size();
             bool foundBranch = false;
             while(it != end) {
                 instructions->push_back(*it);
@@ -80,7 +80,7 @@ namespace x64 {
         section.filename = name_;
         section.instructions = std::move(result.instructions);
         verify(!section.instructions.empty(), [&]() {
-            fmt::print("Disassembly of {:#x} provided no instructions", address);
+            fmt::println("Disassembly of {:#x} provided no instructions", address);
         });
         verify(section.end == section.instructions.back().nextAddress());
         section.trim();
@@ -151,7 +151,7 @@ namespace x64 {
         // Assume that the first instruction is a basic block entry instruction
         // This is probably wrong, because we may not have disassembled the last bit of the previous section.
         struct BasicBlock {
-            const x64::X64Instruction* instructions;
+            const x64::Instruction* instructions;
             u32 size;
         };
 
@@ -176,7 +176,7 @@ namespace x64 {
         // We will probably disassemble them again, but they will be put in the
         // correct basic block then.
         if(!!lastBasicBlock) {
-            auto packedInstructions = std::distance((const x64::X64Instruction*)instructions.data(), begin);
+            auto packedInstructions = std::distance((const x64::Instruction*)instructions.data(), begin);
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
             this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
         }
