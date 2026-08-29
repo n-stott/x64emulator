@@ -4,10 +4,15 @@
 #include <memory>
 #include <vector>
 
+namespace profiling {
+    class ProfilingData;
+}
+
 namespace kernel::gnulinux {
 
     class Kernel;
     class Process;
+    class Thread;
 
     class ProcessTable {
     public:
@@ -19,6 +24,8 @@ namespace kernel::gnulinux {
         Process* createMainProcess();
         Process* addProcess(std::unique_ptr<Process>);
 
+        std::unique_ptr<Thread> makeThread(Process* process, int tid);
+
         Process* findByPid(int pid);
 
         int allocatedPid();
@@ -28,6 +35,7 @@ namespace kernel::gnulinux {
         void cleanup();
 
         void dumpSummary() const;
+        void retrieveProfilingData(profiling::ProfilingData*);
 
     private:
         int hostPid_ { 0 };

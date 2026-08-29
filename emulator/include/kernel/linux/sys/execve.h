@@ -5,10 +5,6 @@
 #include <string>
 #include <vector>
 
-namespace x64 {
-    class Mmu;
-}
-
 namespace kernel::gnulinux {
 
     class FS;

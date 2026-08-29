@@ -3,7 +3,6 @@
 
 #include "kernel/linux/threadblocker.h"
 #include "kernel/timers.h"
-#include "x64/types.h"
 #include "scopeguard.h"
 #include "utils.h"
 #include <atomic>
@@ -13,18 +12,6 @@
 #include <memory>
 #include <mutex>
 #include <vector>
-
-namespace x64 {
-    class Cpu;
-}
-
-namespace emulator {
-    class VM;
-}
-
-namespace profiling {
-    class ProfilingData;
-}
 
 namespace kernel::gnulinux {
 
@@ -64,10 +51,7 @@ namespace kernel::gnulinux {
 
         void suspendUntilVmReleased(Thread* thread);
 
-        void dumpThreadSummary() const;
         void dumpBlockerSummary() const;
-
-        void retrieveProfilingData(profiling::ProfilingData*);
 
         PreciseTime kernelTime() const { return currentTime_; }
 
@@ -181,8 +165,6 @@ namespace kernel::gnulinux {
         std::vector<VmReleaseBlocker> vmReleaseBlockers_;
         
         std::condition_variable schedulerHasRunnableThread_;
-
-        std::unordered_map<u64, std::string> addressToSymbol_;
 
         static constexpr size_t DEFAULT_TIME_SLICE = 1'000'000;
         static constexpr size_t ATOMIC_TIME_SLICE = 100;

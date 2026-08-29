@@ -1,7 +1,10 @@
 #include "kernel/linux/processtable.h"
 #include "kernel/linux/process.h"
+#include "kernel/linux/thread.h"
 #include "kernel/linux/kernel.h"
+#include "profilingdata.h"
 #include "host/host.h"
+#include <unordered_set>
 
 namespace kernel::gnulinux {
 
@@ -19,6 +22,10 @@ namespace kernel::gnulinux {
         return ptr;
     }
 
+    std::unique_ptr<Thread> ProcessTable::makeThread(Process* process, int tid) {
+        return kernel_.makeThread(process, tid);
+    }
+
     int ProcessTable::allocatedPid() {
         ++lastUsedPid_;
         ++lastUsedTid_;
@@ -32,7 +39,7 @@ namespace kernel::gnulinux {
     }
 
     Process* ProcessTable::createMainProcess() {
-        auto process = Process::tryCreate(*this, virtualMemoryInMB_, kernel_.fs());
+        auto process = kernel_.makeProcess(*this, virtualMemoryInMB_, kernel_.fs());
         process->setProfiling(kernel_.isProfiling());
         return addProcess(std::move(process));
     }
@@ -41,6 +48,7 @@ namespace kernel::gnulinux {
         for(auto& process : processes_) {
             process->addressSpace().dumpRegions();
             process->fds().dumpSummary();
+            process->dumpThreadSummary();
         }
     }
 
@@ -72,6 +80,27 @@ namespace kernel::gnulinux {
             return it->get();
         }
         return nullptr;
+    }
+
+    void ProcessTable::retrieveProfilingData(profiling::ProfilingData* profilingData) {
+        if(!profilingData) return;
+        verify(processes_.size() == 1, "Cannot profile more than 1 process");
+        Process* process = processes_[0].get();
+        process->retrieveProfilingData(profilingData);
+        std::unordered_set<u64> calls;
+        for(size_t i = 0; i < profilingData->nbThreads(); ++i) {
+            const auto& td = profilingData->threadData(i);
+            td.forEachCallEvent([&](const auto& event) {
+                calls.insert(event.address);
+            });
+        }
+        std::vector<u64> addresses(calls.begin(), calls.end());
+        std::sort(addresses.begin(), addresses.end());
+        std::unordered_map<u64, std::string> addressToSymbol;
+        process->tryRetrieveSymbols(addresses, &addressToSymbol);
+        for(const auto& kv : addressToSymbol) {
+            profilingData->addSymbol(kv.first, kv.second);
+        }
     }
 
 }

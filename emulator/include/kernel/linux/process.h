@@ -6,10 +6,6 @@
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
 #include "mem/mmu.h"
-#include "x64/compiler/jit.h"
-#include "x64/compiler/jitstats.h"
-#include "x64/disassembler/disassemblycache.h"
-#include "x64/codesegment.h"
 #include "intervalvector.h"
 #include "verify.h"
 #include <memory>
@@ -26,8 +22,7 @@ namespace kernel::gnulinux {
 
     class Process : public mem::Mmu::Callback {
     public:
-        static std::unique_ptr<Process> tryCreate(ProcessTable&, u32 addressSpaceSizeInMB, FS& fs);
-        ~Process();
+        virtual ~Process() = default;
 
         enum class CloneFlags {
             VM = (1 << 0),
@@ -44,6 +39,8 @@ namespace kernel::gnulinux {
         mem::AddressSpace& addressSpace() { return *addressSpace_; }
         size_t addressSpaceRefCount() const { return addressSpace_.use_count(); }
 
+        SymbolProvider& symbolProvider() { return symbolProvider_; }
+
         Thread* addThread(ProcessTable& processTable);
 
         FileDescriptors& fds() { return *fds_; }
@@ -53,34 +50,12 @@ namespace kernel::gnulinux {
         void setProfiling(bool profiling) { profiling_ = profiling; }
         bool isProfiling() const { return profiling_; }
 
-        x64::DisassemblyCache* disassemblyCache() { return &disassemblyCache_; }
+        void retrieveProfilingData(profiling::ProfilingData*);
+
         std::string functionName(u64 address);
         void tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols);
 
-        x64::CodeSegment* fetchSegment(mem::Mmu& mmu, u64 address);
-
-        void dumpGraphviz(std::ostream&) const;
-
-        x64::Jit* jit() { return jit_.get(); }
-        x64::CompilationQueue& compilationQueue() { return compilationQueue_; }
-    
-        bool jitEnabled() const { return !!jit_; }
-        void setJitOptions(const x64::Jit::Options& options) {
-            if(!options.enabled) {
-                jit_.reset();
-            } else {
-                jit_ = x64::Jit::tryCreate(options);
-            }
-        }
-
-        bool jitChainingEnabled() const {
-            if(!!jit_) return jit_->jitChainingEnabled();
-            return false;
-        }
-
-        void setJitStatsLevel(int level) { jitStatsLevel_ = level; }
-        int jitStatsLevel() const { return jitStatsLevel_; }
-        x64::JitStats* jitStats() { return &jitStats_; }
+        void dumpThreadSummary() const;
 
         Process* tryGetChild(int pid) const {
             auto it = std::find_if(children_.begin(), children_.end(), [&](Process* process) {
@@ -104,34 +79,20 @@ namespace kernel::gnulinux {
         std::optional<ExitedChild> tryRetrieveExitedChild(int pid);
         std::optional<ExitedChild> tryRetrieveExitedChild();
 
-        class SymbolRetriever : public x64::DisassemblyCacheCallback {
-        public:
-            explicit SymbolRetriever(Process*);
-            ~SymbolRetriever();
-            void onNewDisassembly(const std::string& filename, u64 base) override;
-            
-        private:
-            SymbolRetriever(const SymbolRetriever&) = delete;
-            x64::DisassemblyCache* disassemblyCache_ { nullptr };
-            SymbolProvider* symbolProvider_ { nullptr };
-            bool jitEnabled_ { false };
-        };
-
         void releaseMemory();
 
     protected:
-        void onRegionCreation(u64 base, u64 length, BitFlags<mem::PROT> prot) override;
-        void onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) override;
-        void onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) override;
+        Process(ProcessTable&, std::shared_ptr<mem::AddressSpace> addressSpace, FS& fs);
+
+        virtual std::string functionSource(u64 address) = 0;
+        virtual std::unique_ptr<Process> cloneDerived(ProcessTable&, std::shared_ptr<mem::AddressSpace>, kernel::gnulinux::FS&, BitFlags<CloneFlags> flags) = 0;
+        virtual void prepareExecDerived() = 0;
+        virtual void releaseMemoryDerived() = 0;
 
     private:
-        Process(int pid, std::shared_ptr<mem::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd);
 
         void notifyChildCreated(Process* process);
         void notifyChildExited(Process* process, int status, std::optional<int> signal);
-
-        void dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks);
-        void dumpInstructionStats(const std::vector<const x64::CodeSegment*>& blocks) const;
         
         // Information
         int pid_ { 0 };
@@ -152,20 +113,6 @@ namespace kernel::gnulinux {
 
         // Flags;
         bool profiling_ { false };
-
-        // Jit
-        std::unique_ptr<x64::Jit> jit_;
-        x64::CompilationQueue compilationQueue_;
-        x64::JitStats jitStats_;
-        int jitStatsLevel_ { 0 };
-
-        // Cpu
-        x64::DisassemblyCache disassemblyCache_;
-
-        std::mutex segmentGuard_;
-        std::vector<x64::X64Instruction> blockInstructions_;
-        IntervalVector<x64::CodeSegment> codeSegments_;
-        std::unordered_map<u64, x64::CodeSegment*> codeSegmentsByAddress_;
 
         SymbolProvider symbolProvider_;
         std::unordered_map<u64, std::string> functionNameCache_;

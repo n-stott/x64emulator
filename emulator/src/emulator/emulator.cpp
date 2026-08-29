@@ -1,6 +1,8 @@
 #include "emulator/emulator.h"
+#include "emulator/vmprocess.h"
+#include "emulator/vmthread.h"
 #include "kernel/linux/kernel.h"
-#include "kernel/linux/scheduler.h"
+#include "kernel/linux/processtable.h"
 #include "kernel/linux/thread.h"
 #include "mem/mmu.h"
 #include "verify.h"
@@ -76,19 +78,43 @@ namespace emulator {
     }
 
     int Emulator::run(const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables) const {
-        kernel::gnulinux::Kernel::Options options;
-        options.jit.enabled = enableJit_;
-        options.jit.chainingEnabled = enableJitChaining_;
-        options.jit.callChainingEnabled = enableJitCallChaining_;
-        options.jit.optimizationLevel = optimizationLevel_;
-        options.jit.directGpr = enableJitDirectGpr_;
-        options.jit.directMmx = enableJitDirectMmx_;
-        options.jit.directXmm = enableJitDirectXmm_;
-        kernel::gnulinux::Kernel kernel(options);
+        class X64ProcessAndThreadProducer : public kernel::gnulinux::ProcessAndThreadProducer {
+        public:
+            explicit X64ProcessAndThreadProducer(const Emulator* emulator) : emulator_(emulator) { };
+
+            std::unique_ptr<kernel::gnulinux::Process> makeProcess(kernel::gnulinux::ProcessTable& table, u32 virtualMemoryInMB, kernel::gnulinux::FS& fs) override {
+                auto process = x64::VMProcess::tryCreate(table, virtualMemoryInMB, fs);
+                if(process) {
+                    x64::Jit::Options jitoptions;
+                    jitoptions.enabled = emulator_->enableJit_;
+                    jitoptions.chainingEnabled = emulator_->enableJitChaining_;
+                    jitoptions.callChainingEnabled = emulator_->enableJitCallChaining_;
+                    jitoptions.optimizationLevel = emulator_->optimizationLevel_;
+                    jitoptions.directGpr = emulator_->enableJitDirectGpr_;
+                    jitoptions.directMmx = emulator_->enableJitDirectMmx_;
+                    jitoptions.directXmm = emulator_->enableJitDirectXmm_;
+                    process->setJitOptions(jitoptions);
+                    process->setJitStatsLevel(emulator_->jitStatsLevel_);
+                }
+                return process;
+            }
+
+            std::unique_ptr<kernel::gnulinux::Thread> makeThread(kernel::gnulinux::Process* process, int tid) override {
+                if(auto* vmprocess = dynamic_cast<x64::VMProcess*>(process)) {
+                    return std::make_unique<x64::VMThread>(vmprocess, tid);
+                } else {
+                    return {};
+                }
+            }
+
+        private:
+            const Emulator* emulator_ { nullptr };
+        } x64ThreadProducer(this);
+
+        kernel::gnulinux::Kernel kernel(x64ThreadProducer);
         
         kernel.setLogSyscalls(logSyscalls_);
         kernel.setProfiling(isProfiling_);
-        kernel.setJitStatsLevel(jitStatsLevel_);
         kernel.setEnableShm(enableShm_);
         kernel.setEnableFork(enableFork_);
         kernel.setNbCores(nbCores_);
@@ -101,7 +127,7 @@ namespace emulator {
         if(isProfiling_) {
             using namespace profiling;
             ProfilingData profilingData;
-            kernel.scheduler().retrieveProfilingData(&profilingData);
+            kernel.processTable().retrieveProfilingData(&profilingData);
             
             std::ofstream outputJsonFile("output.json");
             profilingData.toJson(outputJsonFile);

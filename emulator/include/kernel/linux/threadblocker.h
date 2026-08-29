@@ -1,7 +1,7 @@
 #ifndef THREADBLOCKER_H
 #define THREADBLOCKER_H
 
-#include "x64/types.h"
+#include "mem/mmutypes.h"
 #include "kernel/timers.h"
 #include "kernel/linux/fs/fs.h"
 #include "utils.h"

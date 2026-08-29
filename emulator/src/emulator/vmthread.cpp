@@ -1,6 +1,10 @@
 #include "emulator/vmthread.h"
+#include "emulator/vm.h"
+#include "emulator/vmprocess.h"
+#include "kernel/linux/process.h"
+#include "profilingdata.h"
 
-namespace emulator {
+namespace x64 {
 
     void VMThread::dumpRegisters() const {
         fmt::print("Registers:\n");
@@ -54,12 +58,50 @@ namespace emulator {
         }
     }
 
-    void VMThread::reportInfoFrom(const VMThread& other) {
-        stack_ = other.stack_;
-        callpoint_ = other.callpoint_;
-        callstack_ = other.callstack_;
-        savedCpuState_ = other.savedCpuState_;
-        savedJitState_ = other.savedJitState_;
+    void VMThread::cloneState(const kernel::gnulinux::Thread& other) {
+        const VMThread& otherThread = dynamic_cast<const VMThread&>(other);
+        stack_ = otherThread.stack_;
+        callpoint_ = otherThread.callpoint_;
+        callstack_ = otherThread.callstack_;
+        savedCpuState_ = otherThread.savedCpuState_;
+        savedJitState_ = otherThread.savedJitState_;
         std::fill(savedJitState_.callstack.begin(), savedJitState_.callstack.end(), nullptr);
+    }
+
+    void VMThread::dumpSummary() const {
+        fmt::print("Thread #{} : {}\n", description().tid, toString());
+        fmt::print("    instructions   {:<10} \n", time().nbInstructions());
+        fmt::print("    syscalls       {:<10} \n", stats().syscalls);
+        fmt::print("    function calls {:<10} \n", stats().functionCalls);
+        dumpRegisters();
+        std::vector<u64> addresses;
+        for(u64 address : callstack()) {
+            addresses.push_back(address);
+        }
+        std::unordered_map<u64, std::string> addressToSymbol;
+        process()->tryRetrieveSymbols(addresses, &addressToSymbol);
+        dumpStackTrace(addressToSymbol);
+        fmt::print("\n");
+    }
+
+    void VMThread::retrieveProfilingData(profiling::ProfilingData* profilingData) {
+        profiling::ThreadProfilingData& threadProfileData
+            = profilingData->addThread(description().pid, description().tid);
+        forEachCallEvent([&](const VMThread::CallEvent& event) {
+            threadProfileData.addCallEvent(event.tick, event.address);
+        });
+        forEachRetEvent([&](const VMThread::RetEvent& event) {
+            threadProfileData.addRetEvent(event.tick);
+        });
+        forEachSyscallEvent([&](const VMThread::SyscallEvent& event) {
+            threadProfileData.addSyscallEvent(event.tick, event.syscallNumber);
+        });
+    }
+
+    void VMThread::execute() {
+        mem::Mmu mmu(process()->addressSpace());
+        VMProcess::SymbolRetriever retriever(vmprocess());
+        x64::VM vm(mmu);
+        vm.execute(this);
     }
 }

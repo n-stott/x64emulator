@@ -10,7 +10,6 @@
 #include "host/host.h"
 #include "mem/mmu.h"
 #include "elf-reader/elf-reader.h"
-#include "x64/registers.h"
 #include "utils.h"
 #include <numeric>
 #include <variant>
@@ -237,7 +236,7 @@ namespace kernel::gnulinux {
         return stackBase.value() + stackSize;
     }
 
-    static void pushProgramArguments(mem::Mmu* mmu, x64::Registers* regs, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables, const Auxiliary& auxiliary) {
+    static void pushProgramArguments(mem::Mmu* mmu, u64* stackptr, const std::string& programFilePath, const std::vector<std::string>& arguments, const std::vector<std::string>& environmentVariables, const Auxiliary& auxiliary) {
         size_t requiredSize = programFilePath.size()+1;
         requiredSize = std::accumulate(arguments.begin(), arguments.end(), requiredSize, [](size_t size, const std::string& arg) {
             return size + arg.size() + 1;
@@ -299,8 +298,8 @@ namespace kernel::gnulinux {
         std::vector<u64> data = auxvec.create();
 
         auto push64 = [&](u64 value) {
-            regs->rsp() -= 8;
-            mmu->write64(mem::Ptr64{regs->rsp()}, value);
+            *stackptr -= 8;
+            mmu->write64(mem::Ptr64{*stackptr}, value);
         };
 
         size_t nbElementsOnStack = data.size() + argumentPositions.size() + 1;
@@ -371,7 +370,6 @@ namespace kernel::gnulinux {
     
             mem::Mmu mmu(process_.addressSpace());
             mmu.addCallback(&process_);
-            mmu.addCallback(process_.disassemblyCache());
             u64 entrypoint = loadElf(objects.program.get(), &mmu, &aux, objects.programPath, true);
             if(objects.elfInterpreter) {
                 entrypoint = loadElf(objects.elfInterpreter.get(), &mmu, nullptr, objects.interpreterPath, false);
@@ -380,11 +378,11 @@ namespace kernel::gnulinux {
             u64 stackTop = setupMemory(&mmu, &aux);
     
             Thread* mainThread = process_.addThread(processTable_);
-            Thread::SavedCpuState& cpuState = mainThread->savedCpuState();
-            cpuState.regs.rip() = entrypoint;
-            cpuState.regs.rsp() = (stackTop & 0xFFFFFFFFFFFFFF00); // stack needs to be 16-byte aligned
-            
-            pushProgramArguments(&mmu, &cpuState.regs, programPath.value(), arguments, environmentVariables, aux);
+            stackTop = stackTop & 0xFFFFFFFFFFFFFF00; // stack needs to be 16-byte aligned            
+            pushProgramArguments(&mmu, &stackTop, programPath.value(), arguments, environmentVariables, aux);
+
+            mainThread->setInstructionPtr(entrypoint);
+            mainThread->setStackPtr(stackTop);
     
             scheduler_.addThread(mainThread);
     

@@ -146,26 +146,7 @@ target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
 
 
 if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    add_library(x64emulator ${LIB_KIND}
-        src/emulator/vm.cpp
-        src/emulator/vmthread.cpp
-    )
-    target_compile_options(x64emulator PRIVATE ${COMPILE_OPTIONS})
-    target_include_directories(x64emulator PUBLIC
-        include
-        ${CMAKE_SOURCE_DIR}/profiling/include
-    )
-    target_link_libraries(x64emulator PUBLIC
-        x64cpu
-        x64jit
-        profiling
-        fmt::fmt-header-only
-    )
-    target_compile_definitions(x64emulator PRIVATE ${COMPILE_DEFINITIONS})
-
-
     add_library(x64linuxkernel ${LIB_KIND}
-        src/emulator/emulator.cpp
         src/host/host.cpp
         src/kernel/linux/dev/hostdevice.cpp
         src/kernel/linux/dev/nulldevice.cpp
@@ -210,9 +191,6 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     )
     target_link_directories(x64linuxkernel PRIVATE ${capstone_BINARY_DIR})
     target_link_libraries(x64linuxkernel PUBLIC
-        x64cpu
-        x64jit
-        x64emulator
         profiling
         fmt::fmt-header-only
     )
@@ -231,13 +209,16 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 
     add_executable(emulator
         src/main.cpp
+        src/emulator/emulator.cpp
+        src/emulator/vm.cpp
+        src/emulator/vmprocess.cpp
+        src/emulator/vmthread.cpp
     )
     target_compile_options(emulator PRIVATE ${COMPILE_OPTIONS})
     target_include_directories(emulator PRIVATE include)
     target_link_libraries(emulator PUBLIC
         x64cpu
         x64jit
-        x64emulator
         x64linuxkernel
         fmt::fmt-header-only
         argparse

@@ -2,7 +2,6 @@
 #define TIMERS_H
 
 #include "mem/mmutypes.h"
-#include "x64/types.h"
 #include "utils.h"
 #include <memory>
 #include <optional>

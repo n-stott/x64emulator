@@ -1,11 +1,14 @@
 #ifndef VMTHREAD_H
 #define VMTHREAD_H
 
+#include "emulator/vmprocess.h"
+#include "kernel/linux/thread.h"
 #include "x64/registers.h"
 #include "x64/flags.h"
 #include "x64/simd.h"
 #include "x64/x87.h"
 #include "x64/types.h"
+#include "span.h"
 #include "verify.h"
 #include <atomic>
 #include <deque>
@@ -16,7 +19,7 @@ namespace kernel::gnulinux {
     class Process;
 }
 
-namespace emulator {
+namespace x64 {
 
     class ThreadProfileData {
     public:
@@ -120,44 +123,53 @@ namespace emulator {
         std::vector<u64> callstack_;
     };
 
-    class ThreadTime {
-        u64 waitTime_ { 0 };
-        u64 nbInstructions_ { 0 };
-        std::atomic<u64> instructionLimit_ { 0 };
-
+    class VMThread : public kernel::gnulinux::Thread,
+                   public ThreadProfileData,
+                   public ThreadCallstackData {
     public:
-        bool isStopAsked() const {
-            return nbInstructions_ >= instructionLimit_;
+        VMThread(VMProcess* process, int tid) :
+                kernel::gnulinux::Thread(process, tid),
+                vmprocess_(process) {
+            
         }
 
-        u64 nbInstructions() const { return nbInstructions_; }
-        u64 ns() const { return waitTime_ + nbInstructions_; }
-
-        void tick(u64 count) {
-            nbInstructions_ += count;
+        void loadSyscallInput(u64* number, Span<u64> arguments) override {
+            if(!!number) *number = savedCpuState_.regs.get(R64::RAX);
+            verify(arguments.size() == 6);
+            arguments[0] = savedCpuState_.regs.get(x64::R64::RDI);
+            arguments[1] = savedCpuState_.regs.get(x64::R64::RSI);
+            arguments[2] = savedCpuState_.regs.get(x64::R64::RDX);
+            arguments[3] = savedCpuState_.regs.get(x64::R64::R10);
+            arguments[4] = savedCpuState_.regs.get(x64::R64::R8);
+            arguments[5] = savedCpuState_.regs.get(x64::R64::R9);
         }
 
-        u64* ticks() { return &nbInstructions_; }
-
-        void setSlice(u64 current, u64 sliceDuration) {
-            verify(current >= waitTime_ + nbInstructions_);
-            waitTime_ = current - nbInstructions_;
-            instructionLimit_ = nbInstructions_ + sliceDuration;
+        void setSyscallOutput(u64 value) override {
+            savedCpuState_.regs.set(R64::RAX, value);
         }
 
-        void yield() {
-            instructionLimit_ = nbInstructions_;
+        void setInstructionPtr(u64 value) override {
+            savedCpuState_.regs.set(R64::RIP, value);
         }
-    };
 
-    class VMThread : public ThreadProfileData,
-                     public ThreadCallstackData {
-    public:
-        VMThread() = default;
-        virtual ~VMThread() = default;
+        void setStackPtr(u64 value) override {
+            savedCpuState_.regs.set(R64::RSP, value);
+        }
 
-        virtual std::string id() const = 0;
-        virtual kernel::gnulinux::Process* process() = 0;
+        void setTlsBase(u64 value) override {
+            savedCpuState_.fsBase = value;
+        }
+
+        void setProfiling(bool profiling) override {
+            ThreadProfileData::setProfiling(profiling);
+        }
+
+        void execute() override;
+
+        void dumpSummary() const override;
+        void retrieveProfilingData(profiling::ProfilingData*) override;
+
+        VMProcess* vmprocess() { return vmprocess_; }
 
         struct SavedCpuState {
             x64::Flags flags;
@@ -185,66 +197,42 @@ namespace emulator {
             std::deque<FunctionCall> calls;
         };
 
-        ThreadTime& time() { return time_; }
-        const ThreadTime& time() const { return time_; }
-        void yield() { time_.yield(); }
-
         SavedCpuState& savedCpuState() { return savedCpuState_; }
         SavedJitState& savedJitState() { return savedJitState_; }
 
         Stats& stats() { return stats_; }
         const Stats& stats() const { return stats_; }
 
-        bool requestsSyscall() const { return requestsSyscall_; }
-        void resetSyscallRequest() { requestsSyscall_ = false; }
-
-        void enterSyscall() {
-            yield();
-            requestsSyscall_ = true;
-        }
-
         void didSyscall(u64 syscallNumber) {
-            ThreadProfileData::didSyscall(time_.ns(), syscallNumber);
+            ThreadProfileData::didSyscall(time().ns(), syscallNumber);
         }
-
-        bool requestsAtomic() const { return requestsAtomic_; }
-        void resetAtomicRequest() { requestsAtomic_ = false; }
-
-        void enterAtomic() {
-            yield();
-            requestsAtomic_ = true;
-        }
-
         void pushCallstack(u64 stackptr, u64 from, u64 to) {
-            ThreadProfileData::pushCallstack(time_.ns(), to);
+            ThreadProfileData::pushCallstack(time().ns(), to);
             ThreadCallstackData::pushCallstack(stackptr, from, to);
         }
 
         void popCallstack() {
-            ThreadProfileData::popCallstack(time_.ns());
+            ThreadProfileData::popCallstack(time().ns());
             ThreadCallstackData::popCallstack();
         }
 
         void popCallstackUntil(u64 stackptr) {
             u32 stacksRemoved = ThreadCallstackData::popCallstackUntil(stackptr);
             for(u32 i = 0; i < stacksRemoved; ++i) {
-                ThreadProfileData::popCallstack(time_.ns());
+                ThreadProfileData::popCallstack(time().ns());
             }
         }
 
         void dumpRegisters() const;
         void dumpStackTrace(const std::unordered_map<u64, std::string>& addressToSymbol) const;
 
-        void reportInfoFrom(const VMThread& other);
+        void cloneState(const kernel::gnulinux::Thread& other) override;
 
     protected:
+        VMProcess* vmprocess_ { nullptr };
         SavedCpuState savedCpuState_;
         SavedJitState savedJitState_;
-        ThreadTime time_;
         Stats stats_;
-
-        bool requestsSyscall_ { false };
-        bool requestsAtomic_ { false };
     };
 
 }

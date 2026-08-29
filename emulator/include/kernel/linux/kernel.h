@@ -1,14 +1,11 @@
 #ifndef KERNEL_H
 #define KERNEL_H
 
+#include "utils.h"
 #include <cassert>
 #include <memory>
 #include <string>
 #include <vector>
-
-namespace x64 {
-    class Mmu;
-}
 
 namespace kernel {
     class Timers;
@@ -24,21 +21,16 @@ namespace kernel::gnulinux {
     class Sys;
     class Thread;
 
+    class ProcessAndThreadProducer {
+    public:
+        virtual ~ProcessAndThreadProducer() = default;
+        virtual std::unique_ptr<Process> makeProcess(ProcessTable&, u32 virtualMemoryInMB, FS&) = 0;
+        virtual std::unique_ptr<Thread> makeThread(Process*, int tid) = 0;
+    };
+
     class Kernel {
     public:
-        struct Options {
-            struct Jit {
-                bool enabled { false };
-                bool chainingEnabled { false };
-                bool callChainingEnabled { false };
-                int optimizationLevel { 0 };
-                bool directGpr { false };
-                bool directMmx { false };
-                bool directXmm { false };
-            } jit;
-        };
-
-        explicit Kernel(Options);
+        explicit Kernel(ProcessAndThreadProducer&);
         ~Kernel();
 
         int run(const std::string& programFilePath,
@@ -47,7 +39,6 @@ namespace kernel::gnulinux {
 
         void setProfiling(bool isProfiling);
         void setLogSyscalls(bool logSyscalls);
-        void setJitStatsLevel(int jitStatsLevel);
         void setEnableShm(bool enableShm);
         void setEnableFork(bool enableFork);
         void setNbCores(int nbCores);
@@ -55,7 +46,6 @@ namespace kernel::gnulinux {
 
         bool isProfiling() const { return isProfiling_; }
         bool logSyscalls() const { return logSyscalls_; }
-        int jitStatsLevel() const { return jitStatsLevel_; }
         bool isShmEnabled() const { return enableShm_; }
         bool isForkEnabled() const { return enableFork_; }
         int nbCores() const { return nbCores_; }
@@ -88,6 +78,9 @@ namespace kernel::gnulinux {
         void panic();
         bool hasPanicked() const { return hasPanicked_; }
         void dumpPanicInfo() const;
+
+        std::unique_ptr<Process> makeProcess(ProcessTable&, u32 virtualMemoryInMB, FS&);
+        std::unique_ptr<Thread> makeThread(Process* process, int tid);
     
     private:
         std::unique_ptr<FS> fs_;
@@ -96,12 +89,11 @@ namespace kernel::gnulinux {
         std::unique_ptr<Sys> sys_;
         std::unique_ptr<Timers> timers_;
         std::unique_ptr<ProcessTable> processTable_;
+        ProcessAndThreadProducer& processAndThreadProducer_;
         bool hasPanicked_ { false };
 
         bool logSyscalls_ { false };
         bool isProfiling_ { false };
-        Options options_;
-        int jitStatsLevel_ { 0 };
         bool enableShm_ { false };
         bool enableFork_ { false };
         int nbCores_ { 1 };

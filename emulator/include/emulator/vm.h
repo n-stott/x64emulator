@@ -22,15 +22,10 @@ namespace x64 {
     class JitBasicBlock;
     class Jit;
     class JitStats;
-}
-
-namespace emulator {
-
-    class VM;
 
     class VM {
     public:
-        explicit VM(mem::Mmu& mmu, x64::JitStats* stats);
+        explicit VM(mem::Mmu& mmu);
         ~VM();
 
         void execute(VMThread* thread);
@@ -57,13 +52,12 @@ namespace emulator {
         void syncThread();
         void enterSyscall();
 
-        void updateJitStats(const x64::CodeSegment&);
+        void updateJitStats(x64::JitStats* stats, const x64::CodeSegment&);
 
         x64::Cpu cpu_;
         mem::Mmu& mmu_;
 
         VMThread* currentThread_ { nullptr };
-        x64::JitStats* stats_ { nullptr };
 
 #ifdef VM_BASICBLOCK_TELEMETRY
         u64 blockCacheHits_ { 0 };

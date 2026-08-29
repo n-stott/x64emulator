@@ -15,8 +15,12 @@
 #include <optional>
 
 namespace emulator {
+    extern bool signal_interrupt;
+}
 
-    VM::VM(mem::Mmu& mmu, x64::JitStats* stats) : cpu_(mmu), mmu_(mmu), stats_(stats) { }
+namespace x64 {
+
+    VM::VM(mem::Mmu& mmu) : cpu_(mmu), mmu_(mmu) { }
 
     VM::~VM() {
 #ifdef VM_ATOMIC_TELEMETRY
@@ -45,7 +49,7 @@ namespace emulator {
             state.mxcsr = cpuState.mxcsr;
             state.fsBase = cpuState.segmentBase[(u8)x64::Segment::FS];
 
-            if(auto* jit = currentThread_->process()->jit()) {
+            if(auto* jit = currentThread_->vmprocess()->jit()) {
                 VMThread::SavedJitState& jitState = currentThread_->savedJitState();
                 jitState.callstack.resize(VMThread::SavedJitState::MAX_SIZE);
                 verify(jit->callstackSize() <= jitState.callstack.size());
@@ -77,7 +81,7 @@ namespace emulator {
             cpuState.segmentBase[(u8)x64::Segment::FS] = currentThreadState.fsBase;
             cpu_.load(cpuState);
 
-            if(auto* jit = currentThread_->process()->jit()) {
+            if(auto* jit = currentThread_->vmprocess()->jit()) {
                 VMThread::SavedJitState& jitState = currentThread_->savedJitState();
                 jit->setCallstack(jitState.callstack.data(), jitState.size);
             }
@@ -88,17 +92,22 @@ namespace emulator {
         }
     }
 
-    extern bool signal_interrupt;
-
     void VM::execute(VMThread* thread) {
         if(!thread) return;
         contextSwitch(thread);
         ScopeGuard onExit([=]() {
+            if(thread->requestsSyscall()) {
+                thread->stats().syscalls++;
+                if(thread->process()->isProfiling()) {
+                    thread->didSyscall(thread->savedCpuState().regs.get(x64::R64::RAX));
+                }
+            }
             contextSwitch(nullptr);
         });
-        ThreadTime& time = thread->time();
-        kernel::gnulinux::Process* process = thread->process();
+        kernel::gnulinux::ThreadTime& time = thread->time();
+        VMProcess* process = thread->vmprocess();
         x64::Jit* jit = process->jit();
+        x64::JitStats* stats = process->jitStats();
         x64::CompilationQueue& compilationQueue = process->compilationQueue();
 
         x64::CodeSegment* currentSegment = nullptr;
@@ -128,7 +137,7 @@ namespace emulator {
 
         CpuCallback callback(&cpu_, this);
         while(!time.isStopAsked()) {
-            verify(!signal_interrupt);
+            verify(!emulator::signal_interrupt);
             std::swap(currentSegment, nextSegment);
 #ifdef VM_BASICBLOCK_TELEMETRY
             ++basicBlockCount_[currentBasicBlock->start()];
@@ -151,8 +160,8 @@ namespace emulator {
                             time.ticks(),
                             (void**)&currentSegment,
                             currentSegment->jitBasicBlock());
-                    if(stats_) ++stats_->jitExits_;
-                    updateJitStats(*currentSegment);
+                    if(stats) ++stats->jitExits_;
+                    updateJitStats(stats, *currentSegment);
                 } else {
                     currentSegment->onCpuCall();
                     cpu_.exec(currentSegment->basicBlock());
@@ -185,7 +194,7 @@ namespace emulator {
                 && currentSegment->basicBlock().endsWithFixedDestinationJump()
                 && !!nextSegment->jitBasicBlock()) {
                     if(jit->jitChainingEnabled()) currentSegment->tryPatch(*jit);
-                    if(stats_) ++stats_->avoidableExits_;
+                    if(stats) ++stats->avoidableExits_;
                 }
                 if(currentSegment->basicBlock().endsWithDirectCall()
                     || currentSegment->basicBlock().endsWithIndirectCall()) {
@@ -205,7 +214,7 @@ namespace emulator {
 
     void VM::notifyCall(u64 address) {
         currentThread_->stats().functionCalls++;
-        if(auto* jit = currentThread_->process()->jit()) {
+        if(auto* jit = currentThread_->vmprocess()->jit()) {
             jit->notifyCall();
         } else {
             currentThread_->pushCallstack(cpu_.get(x64::R64::RSP), cpu_.get(x64::R64::RIP), address);
@@ -213,7 +222,7 @@ namespace emulator {
     }
 
     void VM::notifyRet() {
-        if(auto* jit = currentThread_->process()->jit()) {
+        if(auto* jit = currentThread_->vmprocess()->jit()) {
             jit->notifyRet();
         } else {
             currentThread_->popCallstack();
@@ -221,7 +230,7 @@ namespace emulator {
     }
 
     void VM::notifyStackChange(u64 stackptr) {
-        if(auto* jit = currentThread_->process()->jit()) {
+        if(auto* jit = currentThread_->vmprocess()->jit()) {
             jit->nukeCallstack();
         } else {
             currentThread_->popCallstackUntil(stackptr);
@@ -252,49 +261,49 @@ namespace emulator {
         if(!!vm_) vm_->notifyStackChange(stackptr);
     }
 
-    void VM::updateJitStats(const x64::CodeSegment& seg) {
-        if(!stats_) return;
+    void VM::updateJitStats(x64::JitStats* stats, const x64::CodeSegment& seg) {
+        if(!stats) return;
         auto lastInsn = seg.basicBlock().instructions().back().first.insn();
         if(lastInsn == x64::Insn::JMP_U32) {
-            stats_->jitExitJmp_ += 1;
+            stats->jitExitJmp_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitJmp_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitJmp_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::JCC || lastInsn == x64::Insn::JE || lastInsn == x64::Insn::JNE) {
-            stats_->jitExitJcc_ += 1;
+            stats->jitExitJcc_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitJcc_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitJcc_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::CALLDIRECT) {
-            stats_->jitExitCall_ += 1;
+            stats->jitExitCall_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitCall_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitCall_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::SYSCALL) {
-            stats_->jitExitSyscall_ += 1;
+            stats->jitExitSyscall_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitSyscall_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitSyscall_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::RET) {
-            stats_->jitExitRet_ += 1;
+            stats->jitExitRet_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitRet_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::CALLINDIRECT_RM64) {
-            stats_->jitExitCallRM64_ += 1;
+            stats->jitExitCallRM64_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitCallRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
         if(lastInsn == x64::Insn::JMP_RM64) {
-            stats_->jitExitJmpRM64_ += 1;
+            stats->jitExitJmpRM64_ += 1;
 #ifdef VM_JIT_TELEMETRY
-            stats_->distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
+            stats->distinctJitExitJmpRM64_.insert(cpu_.get(x64::R64::RIP));
 #endif
         }
     }

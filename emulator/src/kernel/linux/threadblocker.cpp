@@ -47,12 +47,12 @@ namespace kernel::gnulinux {
             verify(!!timer);
             PreciseTime now = timer->now();
             if(now > timeLimit_) {
-                thread_->savedCpuState().regs.set(x64::R64::RAX, (u64)(-ETIMEDOUT));
+                thread_->setSyscallOutput((u64)(-ETIMEDOUT));
                 return true;
             }
         }
         if(ptr != wordPtr_) return false;
-        thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+        thread_->setSyscallOutput(0);
         return true;
     }
 
@@ -115,10 +115,10 @@ namespace kernel::gnulinux {
                 allpollfds_[i].revents = allpolldatas_[i].revents;
             }
             mmu.writeToMmu(pollfds_, allpollfds_);
-            thread_->savedCpuState().regs.set(x64::R64::RAX, nzrevents);
+            thread_->setSyscallOutput(nzrevents);
             return true;
         } else if (timeout) {
-            thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+            thread_->setSyscallOutput(0);
             return true;
         } else {
             return false;
@@ -187,7 +187,7 @@ namespace kernel::gnulinux {
         if(!!writefds_) mmu.copyToMmu(writefds_, (const u8*)&selectData_.writefds, sizeof(selectData_.writefds));
         if(!!exceptfds_) mmu.copyToMmu(exceptfds_, (const u8*)&selectData_.exceptfds, sizeof(selectData_.exceptfds));
         if(ret >= 0) ret = (int)nzevents;
-        thread_->savedCpuState().regs.set(x64::R64::RAX, (u64)ret);
+        thread_->setSyscallOutput((u64)ret);
         return true;
     }
 
@@ -242,10 +242,10 @@ namespace kernel::gnulinux {
             }
             mem::Mmu mmu(thread_->process()->addressSpace());
             mmu.writeToMmu(events_, eventsForMemory);
-            thread_->savedCpuState().regs.set(x64::R64::RAX, epollEvents.size());
+            thread_->setSyscallOutput(epollEvents.size());
             return true;
         } else if (timeout) {
-            thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+            thread_->setSyscallOutput(0);
             return true;
         } else {
             return false;
@@ -273,7 +273,7 @@ namespace kernel::gnulinux {
         verify(timer_ == timer, "Mutated timer");
         PreciseTime now = timer_->now();
         if(now < targetTime_) return false;
-        thread_->savedCpuState().regs.set(x64::R64::RAX, 0);
+        thread_->setSyscallOutput(0);
         return true;
     }
 
@@ -287,7 +287,7 @@ namespace kernel::gnulinux {
         if(pid_ > 0) {
             if(auto ec = thread_->process()->tryRetrieveExitedChild(pid_)) {
                 verify(ec->pid == pid_);
-                thread_->savedCpuState().regs.set(x64::R64::RAX, pid_);
+                thread_->setSyscallOutput(pid_);
                 if(wstatus_) {
                     mem::Mmu mmu(thread_->process()->addressSpace());
                     int status = (ec->status << 8) | ec->signal.value_or(0);
@@ -300,7 +300,7 @@ namespace kernel::gnulinux {
         }
         if(pid_ == -1) {
             if(auto ec = thread_->process()->tryRetrieveExitedChild()) {
-                thread_->savedCpuState().regs.set(x64::R64::RAX, ec->pid);
+                thread_->setSyscallOutput(ec->pid);
                 if(wstatus_) {
                     mem::Mmu mmu(thread_->process()->addressSpace());
                     int status = (ec->status << 8) | ec->signal.value_or(0);
@@ -331,7 +331,7 @@ namespace kernel::gnulinux {
             mmu.copyToMmu(buf_, buffer.data(), buffer.size());
             return (ssize_t)buffer.size();
         });
-        thread_->savedCpuState().regs.set(x64::R64::RAX, ret);
+        thread_->setSyscallOutput(ret);
         return true;
     }
 

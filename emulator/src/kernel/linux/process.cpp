@@ -2,21 +2,15 @@
 #include "kernel/linux/processtable.h"
 #include "kernel/linux/fs/fs.h"
 #include "mem/mmu.h"
-#include "x64/cpu.h"
-#include "x64/compiler/compiler.h"
 #include "host/host.h"
 #include "fmt/format.h"
 #include <numeric>
 
 namespace kernel::gnulinux {
 
-    std::unique_ptr<Process> Process::tryCreate(ProcessTable& processTable, u32 addressSpaceSizeInMB, FS& fs) {
-        auto addressSpace = mem::AddressSpace::tryCreate(addressSpaceSizeInMB);
-        if(!addressSpace) {
-            fmt::println("Unable to create address space");
-            return {};
-        }
-
+    Process::Process(ProcessTable& processTable, std::shared_ptr<mem::AddressSpace> addressSpace, FS& fs) :
+            addressSpace_(std::move(addressSpace)),
+            fs_(fs) {
         auto bufferOrError = Host::getcwd(1024);
         verify(!bufferOrError.isError());
         std::string cwdpathname;
@@ -25,49 +19,22 @@ namespace kernel::gnulinux {
             return 0;
         });
         auto cwdPath = Path::tryCreate(cwdpathname);
-        verify(!!cwdPath);
-        if(!cwdPath) {
-            fmt::println("Unable to create path \"{}\"", cwdpathname);
-            return {};
-        }
-        auto* currentWorkDirectory = fs.findCurrentWorkDirectory(*cwdPath);
-        if(!currentWorkDirectory) {
-            fmt::println("Unable to get cwd");
-            return {};
-        }
+        verify(!!cwdPath, fmt::format("Unable to create path \"{}\"", cwdpathname));
+        currentWorkDirectory_ = fs.findCurrentWorkDirectory(*cwdPath);
+        verify(!!currentWorkDirectory_, "Unable to get cwd");
+
         int pid = processTable.allocatedPid();
+        pid_ = pid;
+        pgid_ = pid;
+        sid_ = pid;
 
-        auto fds = std::make_unique<FileDescriptors>(fs);
-        fds->createStandardStreams(fs.ttyPath());
-        return std::unique_ptr<Process>(new Process(pid, std::move(addressSpace), fs, std::move(fds), currentWorkDirectory));
-    }
-
-    Process::Process(int pid, std::shared_ptr<mem::AddressSpace> addressSpace, FS& fs, std::shared_ptr<FileDescriptors> fds, Directory* cwd) :
-            pid_(pid),
-            pgid_(pid),
-            sid_(pid),
-            addressSpace_(std::move(addressSpace)),
-            fs_(fs),
-            fds_(fds),
-            currentWorkDirectory_(cwd) {
-        jit_ = x64::Jit::tryCreate();
-    }
-
-    Process::~Process() {
-        jitStats_.dump(jitStatsLevel());
-        if(jitStatsLevel() > 0) {
-            std::vector<const x64::CodeSegment*> segments;
-            segments.reserve(codeSegments_.size());
-            codeSegments_.forEach([&](const x64::CodeSegment& seg) {
-                segments.push_back(&seg);
-            });
-            dumpJitTelemetry(segments);
-        }
+        fds_ = std::make_unique<FileDescriptors>(fs);
+        fds_->createStandardStreams(fs.ttyPath());
     }
 
     Thread* Process::addThread(ProcessTable& processTable) {
         int tid = threads_.empty() ? pid_ : processTable.allocatedTid();
-        auto thread = std::make_unique<Thread>(this, tid);
+        auto thread = processTable.makeThread(this, tid);
         thread->setProfiling(isProfiling());
         Thread* threadPtr = thread.get();
         threads_.push_back(std::move(thread));
@@ -81,32 +48,21 @@ namespace kernel::gnulinux {
         } else {
             addressSpace = mem::AddressSpace::tryCreate(processTable.availableVirtualMemoryInMB());
         }
-        if(!addressSpace) return {};
-        int newpid = processTable.allocatedPid();
-        auto fds = fds_->clone();
-        auto process = std::unique_ptr<Process>(new Process(newpid, std::move(addressSpace), fs_, std::move(fds), currentWorkDirectory_));
-        process->pgid_ = pgid_;
-        process->sid_ = sid_;
+        auto process = cloneDerived(processTable, std::move(addressSpace), fs_, flags);
         if(flags.test(CloneFlags::VM)) {
-            process->blockInstructions_ = blockInstructions_;
-            codeSegments_.forEachInterval([&](u64 start, u64 end) {
-                process->codeSegments_.reserve(start, end);
-            });
-            codeSegments_.forEach([&](const x64::CodeSegment& segment) {
-                process->codeSegments_.add(segment.start(), std::make_unique<x64::CodeSegment>(segment));
-            });
             process->symbolProvider_ = symbolProvider_;
             process->functionNameCache_ = functionNameCache_;
         } else {
             mem::Mmu mmu(process->addressSpace(), mem::Mmu::WITHOUT_SIDE_EFFECTS::YES);
             mmu.addCallback(process.get());
-            mmu.addCallback(process->disassemblyCache());
             process->addressSpace().clone(mmu, *addressSpace_);
         }
+        process->currentWorkDirectory_ = currentWorkDirectory_;
+        process->fds_ = fds_->clone();
+        process->pid_ = processTable.allocatedPid();
+        process->pgid_ = pgid_;
+        process->sid_ = sid_;
         process->parent_ = this;
-        if(jit_) {
-            process->jit_ = jit_->clone();
-        }
         notifyChildCreated(process.get());
         return process;
     }
@@ -125,8 +81,7 @@ namespace kernel::gnulinux {
         }
 
         // Let's just fail
-        auto maybeName = disassemblyCache_.tryFindContainingFile(address);
-        return maybeName.value_or("???");
+        return functionSource(address);
     }
 
     void Process::tryRetrieveSymbols(const std::vector<u64>& addresses, std::unordered_map<u64, std::string>* addressesToSymbols) {
@@ -135,101 +90,6 @@ namespace kernel::gnulinux {
             auto symbol = functionName(address);
             addressesToSymbols->emplace(address, std::move(symbol));
         }
-    }
-
-    void Process::onRegionCreation(u64 base, u64 length, BitFlags<mem::PROT> prot) {
-        if(!prot.test(mem::PROT::EXEC)) return;
-        codeSegments_.reserve(base, base+length);
-    }
-
-    void Process::onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) {
-        // if executable flag didn't change, we don't need to to anything
-        if(protBefore.test(mem::PROT::EXEC) == protAfter.test(mem::PROT::EXEC)) return;
-
-        if(!protAfter.test(mem::PROT::EXEC)) {
-            // if we become non-executable, purge the basic blocks
-            if(jitStatsLevel() >= 2) {
-                std::vector<const x64::CodeSegment*> segments;
-                codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
-                    segments.push_back(&seg);
-                });
-                dumpJitTelemetry(segments);
-            }
-            codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
-                codeSegmentsByAddress_.erase(seg.start());
-                seg.removeFromCaches();
-            });
-            codeSegments_.remove(base, base+length);
-        } else {
-            // if we become executable, reserve basic blocks
-            codeSegments_.reserve(base, base+length);
-        }
-    }
-
-    void Process::onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) {
-        if(!prot.test(mem::PROT::EXEC)) return;
-
-        if(jitStatsLevel() >= 2) {
-            std::vector<const x64::CodeSegment*> segments;
-            codeSegments_.forEach(base, base+length, [&](const x64::CodeSegment& seg) {
-                segments.push_back(&seg);
-            });
-            dumpJitTelemetry(segments);
-        }
-        codeSegments_.forEachMutable(base, base+length, [&](x64::CodeSegment& seg) {
-            codeSegmentsByAddress_.erase(seg.start());
-            seg.removeFromCaches();
-        });
-        codeSegments_.remove(base, base+length);
-    }
-
-    x64::CodeSegment* Process::fetchSegment(mem::Mmu& mmu, u64 address) {
-#ifdef MULTIPROCESSING
-        std::unique_lock lock(segmentGuard_);
-#endif
-        auto it = codeSegmentsByAddress_.find(address);
-        if(it != codeSegmentsByAddress_.end()) {
-            return it->second;
-        } else {
-            x64::MmuBytecodeRetriever bytecodeRetriever(mmu, disassemblyCache_);
-            disassemblyCache_.getBasicBlock(address, &bytecodeRetriever, &blockInstructions_);
-            verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
-                fmt::print("did not find bb exit branch for bb starting at {:#x}\n", address);
-            });
-            x64::BasicBlock cpuBb = x64::Cpu::createBasicBlock(blockInstructions_.data(), blockInstructions_.size());
-            verify(!cpuBb.instructions().empty(), "Cannot create empty basic block");
-            std::unique_ptr<x64::CodeSegment> seg = std::make_unique<x64::CodeSegment>(std::move(cpuBb));
-            x64::CodeSegment* segptr = seg.get();
-            u64 segstart = seg->start();
-            codeSegments_.add(segstart, std::move(seg));
-            codeSegmentsByAddress_[address] = segptr;
-            return segptr;
-        }
-    }
-
-    void Process::dumpGraphviz(std::ostream& stream) const {
-        stream << "digraph G {\n";
-        std::unordered_map<void*, u32> counter;
-        for(auto p : codeSegmentsByAddress_) {
-            p.second->dumpGraphviz(stream, counter);
-        }
-        stream << '}';
-    }
-
-    Process::SymbolRetriever::SymbolRetriever(Process* process) :
-            disassemblyCache_(&process->disassemblyCache_),
-            symbolProvider_(&process->symbolProvider_),
-            jitEnabled_(process->jitEnabled()) {
-        disassemblyCache_->addCallback(this);
-    }
-
-    Process::SymbolRetriever::~SymbolRetriever() {
-        disassemblyCache_->removeCallback(this);
-    }
-
-    void Process::SymbolRetriever::onNewDisassembly(const std::string& filename, u64 base) {
-        if(jitEnabled_) return;
-        symbolProvider_->tryRetrieveSymbolsFromExecutable(filename, base);
     }
 
     void Process::notifyExit(int status, std::optional<int> signal) {
@@ -289,7 +149,6 @@ namespace kernel::gnulinux {
         {
             mem::Mmu mmu(addressSpace());
             mmu.addCallback(this);
-            mmu.addCallback(disassemblyCache());
             mmu.clearAllRegions();
             mmu.ensureNullPage();
         }
@@ -297,130 +156,11 @@ namespace kernel::gnulinux {
         deletedThreads_.insert(deletedThreads_.end(), std::make_move_iterator(threads_.begin()), std::make_move_iterator(threads_.end()));
         threads_.clear();
         // fds_->something();
-        disassemblyCache_ = {};
-        codeSegments_ = {};
-        codeSegmentsByAddress_ = {};
         symbolProvider_ = {};
         functionNameCache_ = {};
-        if(!!jit_) {
-            auto previousOptions = jit_->options();
-            jit_ = x64::Jit::tryCreate(previousOptions);
-        }
         children_ = {};
         exitedChildren_ = {};
-    }
-
-#define JIT_THRESHOLD 1024
-
-    void Process::dumpJitTelemetry(const std::vector<const x64::CodeSegment*>& blocks) {
-        if(blocks.empty()) return;
-        std::vector<const x64::CodeSegment*> jittedBlocks;
-        std::vector<const x64::CodeSegment*> nonjittedBlocks;
-        size_t jitted = 0;
-        u64 emulatedInstructions = 0;
-        u64 jittedInstructions = 0;
-        u64 jitCandidateInstructions = 0;
-        for(const x64::CodeSegment* bb : blocks) {
-            if(bb->jitBasicBlock() != nullptr) {
-                jitted += 1;
-                jittedBlocks.push_back(bb);
-                jittedInstructions += bb->basicBlock().instructions().size() * bb->calls();
-            } else {
-                emulatedInstructions += bb->basicBlock().instructions().size() * bb->calls();
-                if(bb->calls() < JIT_THRESHOLD) continue;
-                nonjittedBlocks.push_back(bb);
-                jitCandidateInstructions += bb->basicBlock().instructions().size() * bb->calls();
-                
-            }
-        }
-        fmt::print("{} / candidate {} blocks jitted ({} total). {} / {} instructions jitted ({:.4f}% of all, {:.4f}% of candidates)\n",
-                jitted, nonjittedBlocks.size()+jitted,
-                blocks.size(),
-                jittedInstructions, emulatedInstructions+jittedInstructions,
-                100.0*(double)jittedInstructions/(1.0+(double)emulatedInstructions+(double)jittedInstructions),
-                100.0*(double)jittedInstructions/(1.0+(double)jitCandidateInstructions+(double)jittedInstructions));
-        const size_t topCount = 50;
-        const mem::Mmu mmu(*addressSpace_);
-        if(jitStatsLevel() >= 5) {
-            std::sort(jittedBlocks.begin(), jittedBlocks.end(), [](const auto* a, const auto* b) {
-                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
-            });
-            if(jittedBlocks.size() >= topCount) jittedBlocks.resize(topCount);
-            for(const auto* bb : jittedBlocks) {
-                const auto* region = mmu.findAddress(bb->start());
-                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), !!region ? region->name() : "unknonwn region");
-                for(const auto& ins : bb->basicBlock().instructions()) {
-                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-                }
-                {
-                    x64::Compiler compiler(x64::CompilerOptions { 0 });
-                    auto ir = compiler.tryCompileIR(bb->basicBlock(), nullptr, nullptr, false);
-                    assert(!!ir);
-                    fmt::print("    unoptimized IR: {} instructions\n", ir->instructions.size());
-                    for(const auto& ins : ir->instructions) {
-                        fmt::print("      {}\n", ins.toString());
-                    }
-                }
-                {
-                    x64::Compiler compiler(x64::CompilerOptions { 1 });
-                    auto ir = compiler.tryCompileIR(bb->basicBlock(), nullptr, nullptr, false);
-                    assert(!!ir);
-                    fmt::print("    optimized IR: {} instructions\n", ir->instructions.size());
-                    for(const auto& ins : ir->instructions) {
-                        fmt::print("      {}\n", ins.toString());
-                    }
-                }
-            }
-        }
-        if(jitStatsLevel() >= 4) {
-            std::sort(nonjittedBlocks.begin(), nonjittedBlocks.end(), [](const auto* a, const auto* b) {
-                return a->calls() * a->basicBlock().instructions().size() > b->calls() * b->basicBlock().instructions().size();
-            });
-            if(nonjittedBlocks.size() >= topCount) nonjittedBlocks.resize(topCount);
-            for(auto* bb : nonjittedBlocks) {
-                const auto* region = mmu.findAddress(bb->start());
-                fmt::print("  Calls: {}. Jitted: {}. Size: {}. Source: {}\n",
-                    bb->calls(), !!bb->jitBasicBlock(), bb->basicBlock().instructions().size(), !!region ? region->name() : "unknown region");
-                for(const auto& ins : bb->basicBlock().instructions()) {
-                    fmt::print("      {:#12x} {}\n", ins.first.address(), ins.first.toString());
-                }
-                x64::Compiler compiler(x64::CompilerOptions { 1 });
-                [[maybe_unused]] auto jitBasicBlock = compiler.tryCompile(bb->basicBlock(), {}, {}, true);
-            }
-        }
-    }
-
-    void Process::dumpInstructionStats(const std::vector<const x64::CodeSegment*>& segments) const {
-        if(segments.empty()) return;
-        std::vector<std::pair<x64::X64Instruction, u64>> instructionCalls;
-        auto addInstructionCalls = [&](const x64::X64Instruction& ins, u64 count) {
-            u32 insncode = (u32)ins.insn();
-            if(instructionCalls.size() <= insncode) instructionCalls.resize(insncode+1, std::make_pair(ins, 0));
-            instructionCalls[insncode].first = ins;
-            instructionCalls[insncode].second += count;
-        };
-        for(const x64::CodeSegment* seg : segments) {
-            u64 calls = seg->calls();
-            for(const auto& ins : seg->basicBlock().instructions()) {
-                addInstructionCalls(ins.first, calls);
-            }
-        }
-        std::stable_sort(instructionCalls.begin(), instructionCalls.end(), [](const auto& p, const auto& q) {
-            if(p.second > q.second) return true;
-            if(p.second < q.second) return false;
-            return (u32)p.first.insn() < (u32)q.first.insn();
-        });
-        u64 totalcalls = std::accumulate(instructionCalls.begin(), instructionCalls.end(), (u64)0, [](u64 count, const auto& p) {
-            return count + p.second;
-        });
-        if(totalcalls == 0) totalcalls = 1;
-        auto dummy = std::make_pair(x64::X64Instruction::make(0, x64::Insn::EMMS, 0), 0);
-        if(instructionCalls.size() >= 50) instructionCalls.resize(50, dummy);
-        fmt::println("Top instructions called:");
-        for(const auto& p : instructionCalls) {
-            fmt::println("  ({:4f}%) {:12} : {}", (100.0*(double)p.second)/(double)totalcalls, p.second, p.first.toString());
-        }
+        prepareExecDerived();
     }
 
     Directory* Process::chdir(const Path& path) {
@@ -441,13 +181,21 @@ namespace kernel::gnulinux {
         threads_.clear();
         deletedThreads_.clear();
         fds_.reset();
-        jit_.reset();
-        releaseMemoryFrom(disassemblyCache_);
-        releaseMemoryFrom(blockInstructions_);
-        releaseMemoryFrom(codeSegments_);
-        releaseMemoryFrom(codeSegmentsByAddress_);
+        releaseMemoryDerived();
         releaseMemoryFrom(symbolProvider_);
         releaseMemoryFrom(functionNameCache_);
+    }
+
+    void Process::dumpThreadSummary() const {
+        for(const auto& thread : threads_) {
+            thread->dumpSummary();
+        }
+    }
+
+    void Process::retrieveProfilingData(profiling::ProfilingData* profilingData) {
+        for(const auto& thread : threads_) {
+            thread->retrieveProfilingData(profilingData);
+        }
     }
 
 }

@@ -11,7 +11,6 @@
 #include "kernel/timers.h"
 #include "host/host.h"
 #include "mem/mmu.h"
-#include "x64/compiler/jit.h"
 #include "scopeguard.h"
 #include "verify.h"
 #include "elf-reader/elf-reader.h"
@@ -20,7 +19,8 @@
 
 namespace kernel::gnulinux {
 
-    Kernel::Kernel(Options options) : options_(options) {
+    Kernel::Kernel(ProcessAndThreadProducer& processAndThreadProducer) : 
+            processAndThreadProducer_(processAndThreadProducer) {
         fs_ = std::make_unique<FS>();
         shm_ = std::make_unique<SharedMemory>();
         scheduler_ = std::make_unique<Scheduler>(*this);
@@ -37,10 +37,6 @@ namespace kernel::gnulinux {
 
     void Kernel::setProfiling(bool isProfiling) {
         isProfiling_ = isProfiling;
-    }
-
-    void Kernel::setJitStatsLevel(int jitStatsLevel) {
-        jitStatsLevel_ = jitStatsLevel;
     }
 
     void Kernel::setEnableShm(bool enableShm) {
@@ -74,16 +70,6 @@ namespace kernel::gnulinux {
                 return errnoOrThread.value_or(nullptr);
             }();
             verify(mainThread, fmt::format("Unable to exec \"{}\"", programFilePath));
-            x64::Jit::Options jitoptions;
-            jitoptions.enabled = options_.jit.enabled;
-            jitoptions.chainingEnabled = options_.jit.chainingEnabled;
-            jitoptions.callChainingEnabled = options_.jit.callChainingEnabled;
-            jitoptions.optimizationLevel = options_.jit.optimizationLevel;
-            jitoptions.directGpr = options_.jit.directGpr;
-            jitoptions.directMmx = options_.jit.directMmx;
-            jitoptions.directXmm = options_.jit.directXmm;
-            mainProcess->setJitOptions(jitoptions);
-            mainProcess->setJitStatsLevel(jitStatsLevel());
             scheduler().run();
             exitCode = mainThread->exitStatus();
             if(hasPanicked()) {
@@ -102,9 +88,16 @@ namespace kernel::gnulinux {
     }
 
     void Kernel::dumpPanicInfo() const {
-        scheduler_->dumpThreadSummary();
         scheduler_->dumpBlockerSummary();
         fs_->dumpSummary();
         processTable_->dumpSummary();
+    }
+
+    std::unique_ptr<Process> Kernel::makeProcess(ProcessTable& table, u32 virtualMemoryInMB, FS& fs) {
+        return processAndThreadProducer_.makeProcess(table, virtualMemoryInMB, fs);
+    }
+
+    std::unique_ptr<Thread> Kernel::makeThread(Process* process, int tid) {
+        return processAndThreadProducer_.makeThread(process, tid);
     }
 }

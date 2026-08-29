@@ -6,9 +6,8 @@
 #include "kernel/linux/thread.h"
 #include "kernel/linux/symbolprovider.h"
 #include "mem/mmu.h"
-#include "emulator/vm.h"
-#include "x64/disassembler/disassemblycache.h"
 #include "scopeguard.h"
+#include "smallvector.h"
 #include "profilingdata.h"
 #include "verify.h"
 #include <algorithm>
@@ -16,7 +15,6 @@
 
 namespace emulator {
     extern bool signal_interrupt;
-    class DisassemblyCache;
 }
 
 namespace kernel::gnulinux {
@@ -91,32 +89,6 @@ namespace kernel::gnulinux {
         if(emulator::signal_interrupt && !didShowCrashMessage) {
             kernel_.panic();
         }
-
-        // Before the VM dies, we should retrieve the symbols and function names
-        // If we are profiling, we retrieve all called addresses
-        if(kernel_.isProfiling()) {
-            std::unique_lock lock(schedulerMutex_);
-            // we get the relevant addresses
-            forEachThread([&](const Thread& thread) {
-                std::vector<u64> addresses;
-                thread.forEachCallEvent([&](const Thread::CallEvent& event) {
-                    addresses.push_back(event.address);
-                });
-                thread.process()->tryRetrieveSymbols(addresses, &addressToSymbol_);
-            });
-        }
-        // If we have panicked, we retrieve the callstacks
-        if(kernel_.hasPanicked()) {
-            std::unique_lock lock(schedulerMutex_);
-            // we get the relevant addresses
-            forEachThread([&](const Thread& thread) {
-                std::vector<u64> addresses;
-                for(u64 address : thread.callstack()) {
-                    addresses.push_back(address);
-                }
-                thread.process()->tryRetrieveSymbols(addresses, &addressToSymbol_);
-            });
-        }
     }
 
     void Scheduler::runUserspace(Thread* thread) {
@@ -132,12 +104,9 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), DEFAULT_TIME_SLICE);
 
-        mem::Mmu mmu(thread->process()->addressSpace());
-        emulator::VM vm(mmu, thread->process()->jitStats());
-        Process::SymbolRetriever retriever(thread->process());
         while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, nullptr);
-            vm.execute(thread);
+            thread->execute();
         }
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
     }
@@ -156,12 +125,9 @@ namespace kernel::gnulinux {
         // fmt::print(stderr, "{}: run thread {}\n", worker.id, thread->description().tid);
         thread->time().setSlice(currentTime_.count(), ATOMIC_TIME_SLICE);
 
-        mem::Mmu mmu(thread->process()->addressSpace());
-        emulator::VM vm(mmu, thread->process()->jitStats());
-        Process::SymbolRetriever retriever(thread->process());
         while(!thread->time().isStopAsked()) {
             syncThreadTimeSlice(thread, &lock);
-            vm.execute(thread);
+            thread->execute();
         }
         thread->resetAtomicRequest();
         // fmt::print(stderr, "{}: stop thread {}\n", worker.id, thread->description().tid);
@@ -615,6 +581,7 @@ namespace kernel::gnulinux {
     }
 
     void Scheduler::kill(int pid, int tid, [[maybe_unused]] int signal) {
+        verify(signal == 0);
         std::vector<Thread*> threads;
         forEachThread([&](Thread& t) {
             if(t.description().pid != pid) return;
@@ -789,18 +756,6 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
-    void Scheduler::dumpThreadSummary() const {
-        forEachThread([&](const Thread& thread) {
-            fmt::print("Thread #{} : {}\n", thread.description().tid, thread.toString());
-            fmt::print("    instructions   {:<10} \n", thread.time().nbInstructions());
-            fmt::print("    syscalls       {:<10} \n", thread.stats().syscalls);
-            fmt::print("    function calls {:<10} \n", thread.stats().functionCalls);
-            thread.dumpRegisters();
-            thread.dumpStackTrace(addressToSymbol_);
-            fmt::print("\n");
-        });
-    }
-
     namespace {
         template<typename B>
         class BlockerSorter {
@@ -851,26 +806,6 @@ namespace kernel::gnulinux {
         fmt::print("Vm release blockers :\n");
         for(const VmReleaseBlocker& blocker : vmReleaseBlockers_) {
             fmt::print("  {}\n", blocker.toString());
-        }
-    }
-
-    void Scheduler::retrieveProfilingData(profiling::ProfilingData* profilingData) {
-        if(!profilingData) return;
-        forEachThread([&](const Thread& thread) {
-            profiling::ThreadProfilingData& threadProfileData
-                    = profilingData->addThread(thread.description().pid, thread.description().tid);
-            thread.forEachCallEvent([&](const Thread::CallEvent& event) {
-                threadProfileData.addCallEvent(event.tick, event.address);
-            });
-            thread.forEachRetEvent([&](const Thread::RetEvent& event) {
-                threadProfileData.addRetEvent(event.tick);
-            });
-            thread.forEachSyscallEvent([&](const Thread::SyscallEvent& event) {
-                threadProfileData.addSyscallEvent(event.tick, event.syscallNumber);
-            });
-        });
-        for(const auto& kv : addressToSymbol_) {
-            profilingData->addSymbol(kv.first, kv.second);
         }
     }
 

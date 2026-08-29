@@ -1,8 +1,8 @@
 #ifndef SYSCALLS_H
 #define SYSCALLS_H
 
+#include "mem/mmutypes.h"
 #include "utils.h"
-#include "x64/types.h"
 #include <array>
 #include <cstddef>
 #include <cstdint>
