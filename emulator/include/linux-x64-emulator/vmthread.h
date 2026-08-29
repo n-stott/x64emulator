@@ -1,7 +1,7 @@
 #ifndef VMTHREAD_H
 #define VMTHREAD_H
 
-#include "emulator/vmprocess.h"
+#include "linux-x64-emulator/vmprocess.h"
 #include "kernel/linux/thread.h"
 #include "x64/registers.h"
 #include "x64/flags.h"

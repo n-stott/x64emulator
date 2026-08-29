@@ -209,10 +209,10 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
 
     add_executable(emulator
         src/main.cpp
-        src/emulator/emulator.cpp
-        src/emulator/vm.cpp
-        src/emulator/vmprocess.cpp
-        src/emulator/vmthread.cpp
+        src/linux-x64-emulator/emulator.cpp
+        src/linux-x64-emulator/vm.cpp
+        src/linux-x64-emulator/vmprocess.cpp
+        src/linux-x64-emulator/vmthread.cpp
     )
     target_compile_options(emulator PRIVATE ${COMPILE_OPTIONS})
     target_include_directories(emulator PRIVATE include)

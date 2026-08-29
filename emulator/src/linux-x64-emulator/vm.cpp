@@ -1,5 +1,5 @@
-#include "emulator/vm.h"
-#include "emulator/vmthread.h"
+#include "linux-x64-emulator/vm.h"
+#include "linux-x64-emulator/vmthread.h"
 #include "kernel/linux/process.h"
 #include "kernel/linux/thread.h"
 #include "mem/mmu.h"

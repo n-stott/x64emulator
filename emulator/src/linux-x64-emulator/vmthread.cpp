@@ -1,6 +1,6 @@
-#include "emulator/vmthread.h"
-#include "emulator/vm.h"
-#include "emulator/vmprocess.h"
+#include "linux-x64-emulator/vmthread.h"
+#include "linux-x64-emulator/vm.h"
+#include "linux-x64-emulator/vmprocess.h"
 #include "kernel/linux/process.h"
 #include "profilingdata.h"
 

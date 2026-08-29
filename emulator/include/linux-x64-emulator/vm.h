@@ -1,7 +1,7 @@
 #ifndef VM_H
 #define VM_H
 
-#include "emulator/vmthread.h"
+#include "linux-x64-emulator/vmthread.h"
 #include "mem/mmu.h"
 #include "x64/compiler/jit.h"
 #include "x64/codesegment.h"
