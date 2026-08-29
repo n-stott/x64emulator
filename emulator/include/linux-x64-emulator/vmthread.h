@@ -133,16 +133,7 @@ namespace x64 {
             
         }
 
-        void loadSyscallInput(u64* number, Span<u64> arguments) override {
-            if(!!number) *number = savedCpuState_.regs.get(R64::RAX);
-            verify(arguments.size() == 6);
-            arguments[0] = savedCpuState_.regs.get(x64::R64::RDI);
-            arguments[1] = savedCpuState_.regs.get(x64::R64::RSI);
-            arguments[2] = savedCpuState_.regs.get(x64::R64::RDX);
-            arguments[3] = savedCpuState_.regs.get(x64::R64::R10);
-            arguments[4] = savedCpuState_.regs.get(x64::R64::R8);
-            arguments[5] = savedCpuState_.regs.get(x64::R64::R9);
-        }
+        void loadSyscallInput(kernel::gnulinux::SYSCALL* number, Span<u64> arguments) override;
 
         void setSyscallOutput(u64 value) override {
             savedCpuState_.regs.set(R64::RAX, value);

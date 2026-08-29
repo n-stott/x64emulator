@@ -15,12 +15,6 @@ namespace mem {
     class Mmu;
 }
 
-namespace kernel {
-    class Process;
-    class Scheduler;
-    class Thread;
-}
-
 namespace kernel::gnulinux {
     class Host;
     class Kernel;

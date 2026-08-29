@@ -1,6 +1,7 @@
 #ifndef THREAD_H
 #define THREAD_H
 
+#include "kernel/linux/syscallenums.h"
 #include "mem/mmu.h"
 #include "profilingdata.h"
 #include "span.h"
@@ -49,7 +50,7 @@ namespace kernel::gnulinux {
     public:
         Thread(Process* process, int tid);
 
-        virtual void loadSyscallInput(u64* number, Span<u64> arguments) = 0;
+        virtual void loadSyscallInput(SYSCALL* number, Span<u64> arguments) = 0;
         virtual void setSyscallOutput(u64 value) = 0;
         virtual void setInstructionPtr(u64 value) = 0;
         virtual void setStackPtr(u64 value) = 0;
