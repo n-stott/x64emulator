@@ -1,0 +1,7676 @@
+#include "arch/x64/compiler/compiler.h"
+#include "arch/x64/compiler/assembler.h"
+#include "arch/x64/compiler/codegenerator.h"
+#include "arch/x64/compiler/irgenerator.h"
+#include "arch/x64/compiler/jit.h"
+#include "arch/x64/compiler/optimizer.h"
+#include "arch/x64/disassembler/zydiswrapper.h"
+#include "verify.h"
+#include <fmt/format.h>
+#include <algorithm>
+#include <memory>
+
+namespace x64 {
+
+    M32 make32(R64 base, i32 disp);
+    M32 make32(R64 base, R64 index, u8 scale, i32 disp);
+
+    M64 make64(R64 base, i32 disp);
+    M64 make64(R64 base, R64 index, u8 scale, i32 disp);
+
+    Compiler::Compiler(CompilerOptions options) : options_(options) {
+        generator_ = std::make_unique<ir::IrGenerator>();
+        optimizer_ = std::make_unique<ir::Optimizer>();
+        auto r64Live = directR64()
+                ? ir::DeadCodeElimination::R64_ALWAYS_LIVE::YES
+                : ir::DeadCodeElimination::R64_ALWAYS_LIVE::NO;
+        auto mmxLive = directMmx()
+                ? ir::DeadCodeElimination::MMX_ALWAYS_LIVE::YES
+                : ir::DeadCodeElimination::MMX_ALWAYS_LIVE::NO;
+        auto xmmLive = directXmm()
+                ? ir::DeadCodeElimination::XMM_ALWAYS_LIVE::YES
+                : ir::DeadCodeElimination::XMM_ALWAYS_LIVE::NO;
+        optimizer_->addPass<ir::DeadCodeElimination>(r64Live, mmxLive, xmmLive);
+        optimizer_->addPass<ir::ImmediateReadBackElimination>();
+        optimizer_->addPass<ir::DelayedReadBackElimination>();
+        optimizer_->addPass<ir::DuplicateInstructionElimination>();
+        codeGenerator_ = std::make_unique<CodeGenerator>();
+        assembler_ = std::make_unique<Assembler>();
+    }
+
+    Compiler::~Compiler() = default;
+
+    std::optional<ir::IR> Compiler::tryCompileIR(const BasicBlock& basicBlock, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
+#ifdef COMPILER_DEBUG
+        std::vector<Insn> must {
+
+        };
+
+        for(Insn insn : must) {
+            if(std::none_of(basicBlock.instructions().begin(), basicBlock.instructions().end(), [=](const auto& ins) {
+                return ins.first.insn() == insn;
+            })) return {};
+        }
+#endif
+        try {
+            // Generate the block's entrypoint
+            auto entry = basicBlockEntrypoint();
+            if(!entry) return {};
+
+            // Try compiling all non-terminating instructions.
+            auto body = basicBlockBody(basicBlock, diagnose);
+            if(!body) return {};
+
+            if(options_.optimizationLevel >= 1) {
+                ir::Optimizer::Stats stats;
+                optimizer_->optimize(body.value(), &stats);
+            }
+
+            // Then, just before the last instruction is where we are sure to still be on the execution path
+            // Update everything here (e.g. number of ticks)
+            auto exitPreparation = prepareExit((u32)basicBlock.instructions().size(), (u64)basicBlockPtr, (u64)jitBasicBlockPtr);
+            if(!exitPreparation) return {};
+
+            // Then, try compiling the last instruction
+            auto basicBlockExit = Compiler::basicBlockExit(basicBlock, diagnose);
+            if(!basicBlockExit) return {};
+            
+            ir::IR wholeIr;
+            wholeIr.reserveInstructions(
+                    entry->nbInstructions()
+                    + body->nbInstructions()
+                    + exitPreparation->nbInstructions()
+                    + basicBlockExit->nbInstructions());
+            wholeIr.reserveLabels(
+                    entry->nbLabels()
+                    + body->nbLabels()
+                    + exitPreparation->nbLabels()
+                    + basicBlockExit->nbLabels());
+            wholeIr
+                .add(entry.value())
+                .add(body.value())
+                .add(exitPreparation.value())
+                .add(basicBlockExit.value());
+            return wholeIr;
+        } catch(std::exception& e) {
+            warn(fmt::format("Error while compiling: {}", e.what()));
+            return {};
+        }
+    }
+
+    std::optional<NativeBasicBlock> Compiler::tryCompile(const BasicBlock& basicBlock, const void* basicBlockPtr, const void* jitBasicBlockPtr, bool diagnose) {
+        auto wholeIr = tryCompileIR(basicBlock, basicBlockPtr, jitBasicBlockPtr, diagnose);
+        if(!wholeIr) return {};
+        auto bb = codeGenerator_->tryGenerate(wholeIr.value());
+        
+        if(false && !bb) {
+            for(size_t i = 0; i < wholeIr->instructions.size(); ++i) {
+                for(size_t j = 0; j < wholeIr->labels.size(); ++j) {
+                    if(wholeIr->labels[j] == i) fmt::print("Label {}:\n", j);
+                }
+                const auto& ins = wholeIr->instructions[i];
+                fmt::print("{}\n", ins.toString());
+            }
+            fmt::print("\n");
+            std::abort();
+        }
+        if(!bb) return {};
+        
+        if(!!bb->offsetOfReplaceableCallstackPush) {
+            size_t offset = bb->offsetOfReplaceableCallstackPush->first;
+            auto* replacementLocation = bb->nativecode.data() + offset;
+            const auto& replacementCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+            assert(offset + replacementCode.size() <= bb->nativecode.size());
+            memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
+        }
+        
+        if(!!bb->offsetOfReplaceableCallstackPop) {
+            auto* replacementLocation = bb->nativecode.data() + bb->offsetOfReplaceableCallstackPop.value();
+            const auto& replacementCode = popCallstackCode(Reg::GPR0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+            assert(bb->offsetOfReplaceableCallstackPop.value() + replacementCode.size() <= bb->nativecode.size());
+            memcpy(replacementLocation, replacementCode.data(), replacementCode.size());
+        }
+        
+#ifdef COMPILER_DEBUG
+        fmt::print("Compile block:\n");
+        for(const auto& blockIns : basicBlock.instructions()) {
+            fmt::print("  {:#8x} {}\n", blockIns.first.address(), blockIns.first.toString());
+        }
+        fmt::print("Compilation success !\n");
+        fmt::print("IR:\n");
+        size_t pos = 0;
+        for(const auto& ins : wholeIr->instructions) {
+            for(size_t l = 0; l < wholeIr->labels.size(); ++l) {
+                if(wholeIr->labels[l] == pos) fmt::print("     Label {}\n", l);
+            }
+            fmt::print("  {:3} {}\n", pos, ins.toString());
+            ++pos;
+        }
+        fwrite(bb->nativecode.data(), 1, bb->nativecode.size(), stderr);
+#endif
+        return bb;
+    }
+
+    std::optional<NativeBasicBlock> Compiler::tryCompileJitTrampoline() {
+        // Add the entrypoint code for when we are entering jitted code from the emulator
+        auto entryCode = jitEntry();
+        if(!entryCode) return {};
+
+        // Finally, add the exit code for when we need to return execution to the emulator
+        auto exitCode = jitExit();
+        if(!exitCode) return {};
+
+        ir::IR trampolineIr;
+        trampolineIr.add(entryCode.value())
+               .add(exitCode.value());
+
+        auto code = codeGenerator_->tryGenerate(trampolineIr);
+        return code;
+    }
+
+    void Compiler::tryCompileBlockLookup() {
+        // save R13, R14 and R15
+        generator_->push64(R64::R13);
+        generator_->push64(R64::R14);
+        generator_->push64(R64::R15);
+
+        // load the table ptr into R13
+        // 1- load the ptr to the basic block ptr
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
+        static_assert(BBPTR_OFFSET == 0x58);
+        M64 bbPtr = make64(get(Reg::JIT_ARGS), BBPTR_OFFSET);
+        generator_->mov(R64::R13, bbPtr);
+        // 2- load the ptr to the lookup table
+        M64 tablePtr = make64(R64::R13, BLOCK_LOOKUP_TABLE_OFFSET);
+        generator_->lea(R64::R13, tablePtr);
+        const R64 TABLE_BASE = R64::R13;
+
+        // load the lookup address into R14
+        readReg64(Reg::GPR0, R64::RIP);
+        const R64 SEARCHED_ADDRESS = R64::R14;
+        generator_->mov(SEARCHED_ADDRESS, get(Reg::GPR0));
+
+        // load the size of the table into R15
+        R64 TABLE_SIZE = R64::R15;
+        generator_->mov(TABLE_SIZE, make64(TABLE_BASE, 0));
+
+        // zero the counter (in GPR1)
+        R64 COUNTER = get(Reg::GPR1);
+        generator_->xor_(COUNTER, COUNTER);
+
+        ir::IrGenerator::Label& loopBody = generator_->label();
+        ir::IrGenerator::Label& nextLoop = generator_->label();
+        ir::IrGenerator::Label& fail = generator_->label();
+        ir::IrGenerator::Label& exit = generator_->label();
+
+        // LOOP BODY
+        generator_->putLabel(loopBody);
+
+        // if the counter is equal to the table size, fail the lookup
+        generator_->cmp(COUNTER, TABLE_SIZE);
+        generator_->jumpCondition(x64::Cond::E, &fail);
+
+        // load the address of the currently looked-at entry in the table
+        constexpr size_t ADDRESS_LOOKUP_OFFSET = offsetof(BlockLookupTable, addresses);
+        static_assert(ADDRESS_LOOKUP_OFFSET == 0x08);
+        generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, ADDRESS_LOOKUP_OFFSET));
+        generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
+
+        // if it's not the address that we look for, go to the next loop iteration
+        generator_->cmp(get(Reg::GPR0), SEARCHED_ADDRESS);
+        generator_->jumpCondition(x64::Cond::NE, &nextLoop);
+
+        // if it is, load the basic block address and succeed
+        constexpr size_t BASICBLOCK_LOOKUP_OFFSET = offsetof(BlockLookupTable, blocks);
+        static_assert(BASICBLOCK_LOOKUP_OFFSET == 0x10);
+        generator_->mov(get(Reg::GPR0), make64(TABLE_BASE, BASICBLOCK_LOOKUP_OFFSET));
+        generator_->mov(get(Reg::GPR1), make64(get(Reg::GPR0), get(Reg::GPR1), 8, 0));
+
+        // GPR1 now holds the pointer to the emulator::JitBasicBlock
+        generator_->test(get(Reg::GPR1), get(Reg::GPR1));
+        generator_->jumpCondition(x64::Cond::E, &fail);
+
+        generator_->mov(get(Reg::GPR0), make64(get(Reg::GPR1), NATIVE_BLOCK_OFFSET));
+
+        // GPR0 how holds the pointer to the native basic block
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        generator_->jumpCondition(x64::Cond::E, &fail);
+        generator_->jump(&exit);
+
+
+        // NEXT LOOP
+        generator_->putLabel(nextLoop);
+        
+        // increment the counter
+        generator_->inc(COUNTER);
+        generator_->jump(&loopBody);
+
+        // FAIL
+        generator_->putLabel(fail);
+
+        // store nullptr
+        generator_->xor_(get(Reg::GPR0), get(Reg::GPR0));
+        // fallthrough to exit
+
+        // EXIT
+        generator_->putLabel(exit);
+        
+        // GPR0 contains the pointer to the block
+
+        // restore R15, R14 and R13
+        generator_->pop64(R64::R15);
+        generator_->pop64(R64::R14);
+        generator_->pop64(R64::R13);
+    }
+
+    bool Compiler::tryCompile(const Instruction& ins) {
+        if(!tryAdvanceInstructionPointer(ins.nextAddress())) return false;
+        switch(ins.insn()) {
+            case Insn::MOV_R8_IMM: return tryCompileMovR8Imm(ins.op0<R8>(), ins.op1<Imm>());
+            case Insn::MOV_M8_IMM: return tryCompileMovM8Imm(ins.op0<M8>(), ins.op1<Imm>());
+            case Insn::MOV_R8_R8: return tryCompileMovR8R8(ins.op0<R8>(), ins.op1<R8>());
+            case Insn::MOV_R8_M8: return tryCompileMovR8M8(ins.op0<R8>(), ins.op1<M8>());
+            case Insn::MOV_M8_R8: return tryCompileMovM8R8(ins.op0<M8>(), ins.op1<R8>());
+            case Insn::MOV_R16_IMM: return tryCompileMovR16Imm(ins.op0<R16>(), ins.op1<Imm>());
+            case Insn::MOV_M16_IMM: return tryCompileMovM16Imm(ins.op0<M16>(), ins.op1<Imm>());
+            case Insn::MOV_R16_R16: return tryCompileMovR16R16(ins.op0<R16>(), ins.op1<R16>());
+            case Insn::MOV_R16_M16: return tryCompileMovR16M16(ins.op0<R16>(), ins.op1<M16>());
+            case Insn::MOV_M16_R16: return tryCompileMovM16R16(ins.op0<M16>(), ins.op1<R16>());
+            case Insn::MOV_R32_IMM: return tryCompileMovR32Imm(ins.op0<R32>(), ins.op1<Imm>());
+            case Insn::MOV_M32_IMM: return tryCompileMovM32Imm(ins.op0<M32>(), ins.op1<Imm>());
+            case Insn::MOV_R32_R32: return tryCompileMovR32R32(ins.op0<R32>(), ins.op1<R32>());
+            case Insn::MOV_R32_M32: {
+                const auto& mem = ins.op1<M32>();
+                if(mem.encoding.base == R64::RIP) {
+                    return tryCompileMovR32M32RIP(ins.op0<R32>(), ins.op1<M32>(), ins.nextAddress());
+                } else {
+                    return tryCompileMovR32M32(ins.op0<R32>(), ins.op1<M32>());
+                }
+            }
+            case Insn::MOV_M32_R32: return tryCompileMovM32R32(ins.op0<M32>(), ins.op1<R32>());
+            case Insn::MOV_R64_IMM: return tryCompileMovR64Imm(ins.op0<R64>(), ins.op1<Imm>());
+            case Insn::MOV_M64_IMM: return tryCompileMovM64Imm(ins.op0<M64>(), ins.op1<Imm>());
+            case Insn::MOV_R64_R64: return tryCompileMovR64R64(ins.op0<R64>(), ins.op1<R64>());
+            case Insn::MOV_R64_M64: {
+                const auto& mem = ins.op1<M64>();
+                if(mem.encoding.base == R64::RIP) {
+                    return tryCompileMovR64M64RIP(ins.op0<R64>(), ins.op1<M64>(), ins.nextAddress());
+                } else {
+                    return tryCompileMovR64M64(ins.op0<R64>(), ins.op1<M64>());
+                }
+            }
+            case Insn::MOV_M64_R64: return tryCompileMovM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::MOVZX_R16_RM8: return tryCompileMovzxR16RM8(ins.op0<R16>(), ins.op1<RM8>());
+            case Insn::MOVZX_R32_RM8: return tryCompileMovzxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
+            case Insn::MOVZX_R32_RM16: return tryCompileMovzxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
+            case Insn::MOVZX_R64_RM8: return tryCompileMovzxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
+            case Insn::MOVZX_R64_RM16: return tryCompileMovzxR64RM16(ins.op0<R64>(), ins.op1<RM16>());
+            case Insn::MOVSX_R16_RM8: return tryCompileMovsxR16RM8(ins.op0<R16>(), ins.op1<RM8>());
+            case Insn::MOVSX_R32_RM8: return tryCompileMovsxR32RM8(ins.op0<R32>(), ins.op1<RM8>());
+            case Insn::MOVSX_R32_RM16: return tryCompileMovsxR32RM16(ins.op0<R32>(), ins.op1<RM16>());
+            case Insn::MOVSX_R64_RM8: return tryCompileMovsxR64RM8(ins.op0<R64>(), ins.op1<RM8>());
+            case Insn::MOVSX_R64_RM16: return tryCompileMovsxR64RM16(ins.op0<R64>(), ins.op1<RM16>());
+            case Insn::MOVSX_R64_RM32: return tryCompileMovsxR64RM32(ins.op0<R64>(), ins.op1<RM32>());
+            case Insn::ADD_RM8_RM8: return tryCompileAddRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::ADD_RM8_IMM: return tryCompileAddRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::ADD_RM16_RM16: return tryCompileAddRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::ADD_RM16_IMM: return tryCompileAddRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::ADD_RM32_RM32: return tryCompileAddRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::ADD_RM32_IMM: return tryCompileAddRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::ADD_RM64_RM64: return tryCompileAddRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::ADD_RM64_IMM: return tryCompileAddRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ADC_RM32_RM32: return tryCompileAdcRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::ADC_RM32_IMM: return tryCompileAdcRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SUB_RM8_RM8: return tryCompileSubRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::SUB_RM8_IMM: return tryCompileSubRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::SUB_RM16_RM16: return tryCompileSubRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::SUB_RM16_IMM: return tryCompileSubRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::SUB_RM32_RM32: return tryCompileSubRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::SUB_RM32_IMM: return tryCompileSubRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SUB_RM64_RM64: return tryCompileSubRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::SUB_RM64_IMM: return tryCompileSubRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SBB_RM8_RM8: return tryCompileSbbRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::SBB_RM8_IMM: return tryCompileSbbRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::SBB_RM32_RM32: return tryCompileSbbRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::SBB_RM32_IMM: return tryCompileSbbRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SBB_RM64_RM64: return tryCompileSbbRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::SBB_RM64_IMM: return tryCompileSbbRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::CMP_RM8_RM8: return tryCompileCmpRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::CMP_RM8_IMM: return tryCompileCmpRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::CMP_RM16_RM16: return tryCompileCmpRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::CMP_RM16_IMM: return tryCompileCmpRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::CMP_RM32_RM32: return tryCompileCmpRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::CMP_RM32_IMM: return tryCompileCmpRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::CMP_RM64_RM64: return tryCompileCmpRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::CMP_RM64_IMM: return tryCompileCmpRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHL_RM32_R8: return tryCompileShlRM32R8(ins.op0<RM32>(), ins.op1<R8>());
+            case Insn::SHL_RM32_IMM: return tryCompileShlRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SHL_RM64_R8: return tryCompileShlRM64R8(ins.op0<RM64>(), ins.op1<R8>());
+            case Insn::SHL_RM64_IMM: return tryCompileShlRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SHR_RM8_R8: return tryCompileShrRM8R8(ins.op0<RM8>(), ins.op1<R8>());
+            case Insn::SHR_RM8_IMM: return tryCompileShrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::SHR_RM16_R8: return tryCompileShrRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::SHR_RM16_IMM: return tryCompileShrRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::SHR_RM32_R8: return tryCompileShrRM32R8(ins.op0<RM32>(), ins.op1<R8>());
+            case Insn::SHR_RM32_IMM: return tryCompileShrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SHR_RM64_R8: return tryCompileShrRM64R8(ins.op0<RM64>(), ins.op1<R8>());
+            case Insn::SHR_RM64_IMM: return tryCompileShrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::SAR_RM16_R8: return tryCompileSarRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::SAR_RM16_IMM: return tryCompileSarRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::SAR_RM32_R8: return tryCompileSarRM32R8(ins.op0<RM32>(), ins.op1<R8>());
+            case Insn::SAR_RM32_IMM: return tryCompileSarRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::SAR_RM64_R8: return tryCompileSarRM64R8(ins.op0<RM64>(), ins.op1<R8>());
+            case Insn::SAR_RM64_IMM: return tryCompileSarRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ROL_RM16_R8: return tryCompileRolRM16R8(ins.op0<RM16>(), ins.op1<R8>());
+            case Insn::ROL_RM16_IMM: return tryCompileRolRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::ROL_RM32_R8: return tryCompileRolRM32R8(ins.op0<RM32>(), ins.op1<R8>());
+            case Insn::ROL_RM32_IMM: return tryCompileRolRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::ROR_RM32_R8: return tryCompileRorRM32R8(ins.op0<RM32>(), ins.op1<R8>());
+            case Insn::ROR_RM32_IMM: return tryCompileRorRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::ROL_RM64_R8: return tryCompileRolRM64R8(ins.op0<RM64>(), ins.op1<R8>());
+            case Insn::ROL_RM64_IMM: return tryCompileRolRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::ROR_RM64_R8: return tryCompileRorRM64R8(ins.op0<RM64>(), ins.op1<R8>());
+            case Insn::ROR_RM64_IMM: return tryCompileRorRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::MUL_RM32: return tryCompileMulRM32(ins.op0<RM32>());
+            case Insn::MUL_RM64: return tryCompileMulRM64(ins.op0<RM64>());
+            case Insn::IMUL1_RM32: return tryCompileImulRM32(ins.op0<RM32>());
+            case Insn::IMUL1_RM64: return tryCompileImulRM64(ins.op0<RM64>());
+            case Insn::IMUL2_R16_RM16: return tryCompileImulR16RM16(ins.op0<R16>(), ins.op1<RM16>());
+            case Insn::IMUL2_R32_RM32: return tryCompileImulR32RM32(ins.op0<R32>(), ins.op1<RM32>());
+            case Insn::IMUL2_R64_RM64: return tryCompileImulR64RM64(ins.op0<R64>(), ins.op1<RM64>());
+            case Insn::IMUL3_R16_RM16_IMM: return tryCompileImulR16RM16Imm(ins.op0<R16>(), ins.op1<RM16>(), ins.op2<Imm>());
+            case Insn::IMUL3_R32_RM32_IMM: return tryCompileImulR32RM32Imm(ins.op0<R32>(), ins.op1<RM32>(), ins.op2<Imm>());
+            case Insn::IMUL3_R64_RM64_IMM: return tryCompileImulR64RM64Imm(ins.op0<R64>(), ins.op1<RM64>(), ins.op2<Imm>());
+            case Insn::DIV_RM32: return tryCompileDivRM32(ins.op0<RM32>());
+            case Insn::DIV_RM64: return tryCompileDivRM64(ins.op0<RM64>());
+            case Insn::IDIV_RM32: return tryCompileIdivRM32(ins.op0<RM32>());
+            case Insn::IDIV_RM64: return tryCompileIdivRM64(ins.op0<RM64>());
+            case Insn::TEST_RM8_R8: return tryCompileTestRM8R8(ins.op0<RM8>(), ins.op1<R8>());
+            case Insn::TEST_RM8_IMM: return tryCompileTestRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::TEST_RM16_R16: return tryCompileTestRM16R16(ins.op0<RM16>(), ins.op1<R16>());
+            case Insn::TEST_RM16_IMM: return tryCompileTestRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::TEST_RM32_R32: return tryCompileTestRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::TEST_RM32_IMM: return tryCompileTestRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::TEST_RM64_R64: return tryCompileTestRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::TEST_RM64_IMM: return tryCompileTestRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::AND_RM8_RM8: return tryCompileAndRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::AND_RM8_IMM: return tryCompileAndRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::AND_RM16_RM16: return tryCompileAndRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::AND_RM16_IMM: return tryCompileAndRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::AND_RM32_RM32: return tryCompileAndRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::AND_RM32_IMM: return tryCompileAndRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::AND_RM64_RM64: return tryCompileAndRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::AND_RM64_IMM: return tryCompileAndRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::OR_RM8_RM8: return tryCompileOrRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::OR_RM8_IMM: return tryCompileOrRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::OR_RM16_RM16: return tryCompileOrRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::OR_RM16_IMM: return tryCompileOrRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::OR_RM32_RM32: return tryCompileOrRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::OR_RM32_IMM: return tryCompileOrRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::OR_RM64_RM64: return tryCompileOrRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::OR_RM64_IMM: return tryCompileOrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::XOR_RM8_RM8: return tryCompileXorRM8RM8(ins.op0<RM8>(), ins.op1<RM8>());
+            case Insn::XOR_RM8_IMM: return tryCompileXorRM8Imm(ins.op0<RM8>(), ins.op1<Imm>());
+            case Insn::XOR_RM16_RM16: return tryCompileXorRM16RM16(ins.op0<RM16>(), ins.op1<RM16>());
+            case Insn::XOR_RM16_IMM: return tryCompileXorRM16Imm(ins.op0<RM16>(), ins.op1<Imm>());
+            case Insn::XOR_RM32_RM32: return tryCompileXorRM32RM32(ins.op0<RM32>(), ins.op1<RM32>());
+            case Insn::XOR_RM32_IMM: return tryCompileXorRM32Imm(ins.op0<RM32>(), ins.op1<Imm>());
+            case Insn::XOR_RM64_RM64: return tryCompileXorRM64RM64(ins.op0<RM64>(), ins.op1<RM64>());
+            case Insn::XOR_RM64_IMM: return tryCompileXorRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::NOT_RM32: return tryCompileNotRM32(ins.op0<RM32>());
+            case Insn::NOT_RM64: return tryCompileNotRM64(ins.op0<RM64>());
+            case Insn::NEG_RM8: return tryCompileNegRM8(ins.op0<RM8>());
+            case Insn::NEG_RM16: return tryCompileNegRM16(ins.op0<RM16>());
+            case Insn::NEG_RM32: return tryCompileNegRM32(ins.op0<RM32>());
+            case Insn::NEG_RM64: return tryCompileNegRM64(ins.op0<RM64>());
+            case Insn::INC_RM32: return tryCompileIncRM32(ins.op0<RM32>());
+            case Insn::INC_RM64: return tryCompileIncRM64(ins.op0<RM64>());
+            case Insn::DEC_RM8: return tryCompileDecRM8(ins.op0<RM8>());
+            case Insn::DEC_RM16: return tryCompileDecRM16(ins.op0<RM16>());
+            case Insn::DEC_RM32: return tryCompileDecRM32(ins.op0<RM32>());
+            case Insn::DEC_RM64: return tryCompileDecRM64(ins.op0<RM64>());
+#ifndef MULTIPROCESSING
+            case Insn::XCHG_RM8_R8: return tryCompileXchgRM8R8(ins.op0<RM8>(), ins.op1<R8>());
+            case Insn::XCHG_RM16_R16: return tryCompileXchgRM16R16(ins.op0<RM16>(), ins.op1<R16>());
+            case Insn::XCHG_RM32_R32: return tryCompileXchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::XCHG_RM64_R64: return tryCompileXchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::CMPXCHG_RM32_R32: return tryCompileCmpxchgRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::CMPXCHG_RM64_R64: return tryCompileCmpxchgRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::LOCK_CMPXCHG_M32_R32: return tryCompileLockCmpxchgM32R32(ins.op0<M32>(), ins.op1<R32>());
+            case Insn::LOCK_CMPXCHG_M64_R64: return tryCompileLockCmpxchgM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::LOCK_XADD_M32_R32: return tryCompileLockXaddM32R32(ins.op0<M32>(), ins.op1<R32>());
+#endif
+            case Insn::CWDE: return tryCompileCwde();
+            case Insn::CDQE: return tryCompileCdqe();
+            case Insn::CDQ: return tryCompileCdq();
+            case Insn::CQO: return tryCompileCqo();
+            case Insn::PUSH_IMM: return tryCompilePushImm(ins.op0<Imm>());
+            case Insn::PUSH_RM64: return tryCompilePushRM64(ins.op0<RM64>());
+            case Insn::POP_R64: return tryCompilePopR64(ins.op0<R64>());
+            case Insn::LEAVE: return tryCompileLeave();
+            case Insn::LEA_R32_ENCODING32: return tryCompileLeaR32Enc32(ins.op0<R32>(), ins.op1<Encoding32>());
+            case Insn::LEA_R32_ENCODING64: return tryCompileLeaR32Enc64(ins.op0<R32>(), ins.op1<Encoding64>());
+            case Insn::LEA_R64_ENCODING64: return tryCompileLeaR64Enc64(ins.op0<R64>(), ins.op1<Encoding64>());
+            case Insn::NOP:
+            case Insn::PAUSE: return tryCompileNop();
+            case Insn::BSF_R32_R32: return tryCompileBsfR32R32(ins.op0<R32>(), ins.op1<R32>());
+            case Insn::BSF_R64_R64: return tryCompileBsfR64R64(ins.op0<R64>(), ins.op1<R64>());
+            case Insn::BSR_R32_R32: return tryCompileBsrR32R32(ins.op0<R32>(), ins.op1<R32>());
+            case Insn::TZCNT_R32_RM32: return tryCompileTzcntR32RM32(ins.op0<R32>(), ins.op1<RM32>());
+            case Insn::SET_RM8: return tryCompileSetRM8(ins.op0<Cond>(), ins.op1<RM8>());
+            case Insn::CMOV_R32_RM32: return tryCompileCmovR32RM32(ins.op0<Cond>(), ins.op1<R32>(), ins.op2<RM32>());
+            case Insn::CMOV_R64_RM64: return tryCompileCmovR64RM64(ins.op0<Cond>(), ins.op1<R64>(), ins.op2<RM64>());
+            case Insn::BSWAP_R32: return tryCompileBswapR32(ins.op0<R32>());
+            case Insn::BSWAP_R64: return tryCompileBswapR64(ins.op0<R64>());
+            case Insn::BT_RM32_R32: return tryCompileBtRM32R32(ins.op0<RM32>(), ins.op1<R32>());
+            case Insn::BT_RM64_R64: return tryCompileBtRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::BTR_RM64_R64: return tryCompileBtrRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::BTR_RM64_IMM: return tryCompileBtrRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::BTS_RM64_R64: return tryCompileBtsRM64R64(ins.op0<RM64>(), ins.op1<R64>());
+            case Insn::BTS_RM64_IMM: return tryCompileBtsRM64Imm(ins.op0<RM64>(), ins.op1<Imm>());
+            case Insn::REP_STOS_M8_R8: return tryCompileRepStosM8R8(ins.op0<M8>(), ins.op1<R8>());
+            case Insn::REP_STOS_M32_R32: return tryCompileRepStosM32R32(ins.op0<M32>(), ins.op1<R32>());
+            case Insn::REP_STOS_M64_R64: return tryCompileRepStosM64R64(ins.op0<M64>(), ins.op1<R64>());
+            case Insn::REP_MOVS_M8_M8: return tryCompileRepMovsM8M8(ins.op0<M8>(), ins.op1<M8>());
+            case Insn::REP_MOVS_M16_M16: return tryCompileRepMovsM16M16(ins.op0<M16>(), ins.op1<M16>());
+            case Insn::REP_MOVS_M32_M32: return tryCompileRepMovsM32M32(ins.op0<M32>(), ins.op1<M32>());
+            case Insn::REP_MOVS_M64_M64: return tryCompileRepMovsM64M64(ins.op0<M64>(), ins.op1<M64>());
+
+            // MMX
+            case Insn::MOV_MMX_MMX: return tryCompileMovMmxMmx(ins.op0<MMX>(), ins.op1<MMX>());
+            case Insn::MOVD_MMX_RM32: return tryCompileMovdMmxRM32(ins.op0<MMX>(), ins.op1<RM32>());
+            case Insn::MOVD_RM32_MMX: return tryCompileMovdRM32Mmx(ins.op0<RM32>(), ins.op1<MMX>());
+            case Insn::MOVQ_MMX_RM64: return tryCompileMovqMmxRM64(ins.op0<MMX>(), ins.op1<RM64>());
+            case Insn::MOVQ_RM64_MMX: return tryCompileMovqRM64Mmx(ins.op0<RM64>(), ins.op1<MMX>());
+            case Insn::PMOVMSKB_R32_MMX: return tryCompilePmovmskbR32Mmx(ins.op0<R32>(), ins.op1<MMX>());
+
+            case Insn::PAND_MMX_MMXM64: return tryCompilePandMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::POR_MMX_MMXM64: return tryCompilePorMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PXOR_MMX_MMXM64: return tryCompilePxorMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDB_MMX_MMXM64: return tryCompilePaddbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDW_MMX_MMXM64: return tryCompilePaddwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDD_MMX_MMXM64: return tryCompilePadddMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDQ_MMX_MMXM64: return tryCompilePaddqMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDSB_MMX_MMXM64: return tryCompilePaddsbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDSW_MMX_MMXM64: return tryCompilePaddswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDUSB_MMX_MMXM64: return tryCompilePaddusbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PADDUSW_MMX_MMXM64: return tryCompilePadduswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBB_MMX_MMXM64: return tryCompilePsubbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBW_MMX_MMXM64: return tryCompilePsubwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBD_MMX_MMXM64: return tryCompilePsubdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBSB_MMX_MMXM64: return tryCompilePsubsbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBSW_MMX_MMXM64: return tryCompilePsubswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBUSB_MMX_MMXM64: return tryCompilePsubusbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSUBUSW_MMX_MMXM64: return tryCompilePsubuswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+
+            case Insn::PMADDWD_MMX_MMXM64: return tryCompilePmaddwdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSADBW_MMX_MMXM64: return tryCompilePsadbwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMULHW_MMX_MMXM64: return tryCompilePmulhwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMULLW_MMX_MMXM64: return tryCompilePmullwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PAVGB_MMX_MMXM64: return tryCompilePavgbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PAVGW_MMX_MMXM64: return tryCompilePavgwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMAXUB_MMX_MMXM64: return tryCompilePmaxubMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMINUB_MMX_MMXM64: return tryCompilePminubMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            
+            case Insn::PCMPEQB_MMX_MMXM64: return tryCompilePcmpeqbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PCMPEQW_MMX_MMXM64: return tryCompilePcmpeqwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PCMPEQD_MMX_MMXM64: return tryCompilePcmpeqdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSLLW_MMX_IMM: return tryCompilePsllwMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSLLD_MMX_IMM: return tryCompilePslldMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSLLQ_MMX_IMM: return tryCompilePsllqMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRLW_MMX_IMM: return tryCompilePsrlwMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRLD_MMX_IMM: return tryCompilePsrldMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRLQ_MMX_IMM: return tryCompilePsrlqMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRAW_MMX_MMXM64: return tryCompilePsrawMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSRAW_MMX_IMM: return tryCompilePsrawMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+            case Insn::PSRAD_MMX_MMXM64: return tryCompilePsradMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSRAD_MMX_IMM: return tryCompilePsradMmxImm(ins.op0<MMX>(), ins.op1<Imm>());
+
+            case Insn::PSHUFB_MMX_MMXM64: return tryCompilePshufbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PSHUFW_MMX_MMXM64_IMM: return tryCompilePshufwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>(), ins.op2<Imm>());
+
+            case Insn::PUNPCKLBW_MMX_MMXM32: return tryCompilePunpcklbwMmxMmxM32(ins.op0<MMX>(), ins.op1<MMXM32>());
+            case Insn::PUNPCKLWD_MMX_MMXM32: return tryCompilePunpcklwdMmxMmxM32(ins.op0<MMX>(), ins.op1<MMXM32>());
+            case Insn::PUNPCKLDQ_MMX_MMXM32: return tryCompilePunpckldqMmxMmxM32(ins.op0<MMX>(), ins.op1<MMXM32>());
+            case Insn::PUNPCKHBW_MMX_MMXM64: return tryCompilePunpckhbwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PUNPCKHWD_MMX_MMXM64: return tryCompilePunpckhwdMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PUNPCKHDQ_MMX_MMXM64: return tryCompilePunpckhdqMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            
+            case Insn::PACKSSWB_MMX_MMXM64: return tryCompilePacksswbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PACKSSDW_MMX_MMXM64: return tryCompilePackssdwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PACKUSWB_MMX_MMXM64: return tryCompilePackuswbMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+
+            // SSE
+            case Insn::MOV_XMM_XMM: return tryCompileMovXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MOVQ_XMM_RM64: return tryCompileMovqXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
+            case Insn::MOVQ_RM64_XMM: return tryCompileMovqRM64Xmm(ins.op0<RM64>(), ins.op1<XMM>());
+            case Insn::MOV_UNALIGNED_M128_XMM: return tryCompileMovuM128Xmm(ins.op0<M128>(), ins.op1<XMM>());
+            case Insn::MOV_UNALIGNED_XMM_M128: return tryCompileMovuXmmM128(ins.op0<XMM>(), ins.op1<M128>());
+            case Insn::MOV_ALIGNED_M128_XMM: return tryCompileMovaM128Xmm(ins.op0<M128>(), ins.op1<XMM>());
+            case Insn::MOV_ALIGNED_XMM_M128: return tryCompileMovaXmmM128(ins.op0<XMM>(), ins.op1<M128>());
+            case Insn::MOVD_XMM_RM32: return tryCompileMovdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
+            case Insn::MOVD_RM32_XMM: return tryCompileMovdRM32Xmm(ins.op0<RM32>(), ins.op1<XMM>());
+            case Insn::MOVSS_XMM_M32: return tryCompileMovssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::MOVSS_M32_XMM: return tryCompileMovssM32Xmm(ins.op0<M32>(), ins.op1<XMM>());
+            case Insn::MOVSS_XMM_XMM: return tryCompileMovssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MOVSD_XMM_M64: return tryCompileMovsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MOVSD_M64_XMM: return tryCompileMovsdM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
+            case Insn::MOVLPS_XMM_M64: return tryCompileMovlpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MOVLPS_M64_XMM: return tryCompileMovlpsM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
+            case Insn::MOVHPS_XMM_M64: return tryCompileMovhpsXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MOVHPS_M64_XMM: return tryCompileMovhpsM64Xmm(ins.op0<M64>(), ins.op1<XMM>());
+            case Insn::MOVHLPS_XMM_XMM: return tryCompileMovhlpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MOVLHPS_XMM_XMM: return tryCompileMovlhpsXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::PMOVMSKB_R32_XMM: return tryCompilePmovmskbR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
+            case Insn::MOVQ2DQ_XMM_MM: return tryCompileMovq2qdXMMMMX(ins.op0<XMM>(), ins.op1<MMX>());
+            
+            case Insn::PAND_XMM_XMMM128: return tryCompilePandXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PANDN_XMM_XMMM128: return tryCompilePandnXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::POR_XMM_XMMM128: return tryCompilePorXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PXOR_XMM_XMMM128: return tryCompilePxorXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDB_XMM_XMMM128: return tryCompilePaddbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDW_XMM_XMMM128: return tryCompilePaddwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDD_XMM_XMMM128: return tryCompilePadddXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDQ_XMM_XMMM128: return tryCompilePaddqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDSB_XMM_XMMM128: return tryCompilePaddsbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDSW_XMM_XMMM128: return tryCompilePaddswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDUSB_XMM_XMMM128: return tryCompilePaddusbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PADDUSW_XMM_XMMM128: return tryCompilePadduswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBB_XMM_XMMM128: return tryCompilePsubbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBW_XMM_XMMM128: return tryCompilePsubwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBD_XMM_XMMM128: return tryCompilePsubdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBSB_XMM_XMMM128: return tryCompilePsubsbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBSW_XMM_XMMM128: return tryCompilePsubswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBUSB_XMM_XMMM128: return tryCompilePsubusbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSUBUSW_XMM_XMMM128: return tryCompilePsubuswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::PMADDWD_XMM_XMMM128: return tryCompilePmaddwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULHW_XMM_XMMM128: return tryCompilePmulhwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULLW_XMM_XMMM128: return tryCompilePmullwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULHUW_XMM_XMMM128: return tryCompilePmulhuwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULUDQ_XMM_XMMM128:return tryCompilePmuludqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PAVGB_XMM_XMMM128: return tryCompilePavgbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PAVGW_XMM_XMMM128: return tryCompilePavgwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMAXUB_XMM_XMMM128: return tryCompilePmaxubXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMINUB_XMM_XMMM128: return tryCompilePminubXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PTEST_XMM_XMMM128: return tryCompilePtestXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            
+            case Insn::PCMPEQB_XMM_XMMM128: return tryCompilePcmpeqbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPEQW_XMM_XMMM128: return tryCompilePcmpeqwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPEQD_XMM_XMMM128: return tryCompilePcmpeqdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPGTB_XMM_XMMM128: return tryCompilePcmpgtbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPGTW_XMM_XMMM128: return tryCompilePcmpgtwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PCMPGTD_XMM_XMMM128: return tryCompilePcmpgtdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSLLW_XMM_XMMM128: return tryCompilePsllwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSLLW_XMM_IMM: return tryCompilePsllwXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLD_XMM_XMMM128: return tryCompilePslldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSLLD_XMM_IMM: return tryCompilePslldXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLQ_XMM_XMMM128: return tryCompilePsllqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSLLQ_XMM_IMM: return tryCompilePsllqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSLLDQ_XMM_IMM: return tryCompilePslldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLW_XMM_XMMM128: return tryCompilePsrlwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSRLW_XMM_IMM: return tryCompilePsrlwXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLD_XMM_XMMM128: return tryCompilePsrldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSRLD_XMM_IMM: return tryCompilePsrldXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLQ_XMM_XMMM128: return tryCompilePsrlqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSRLQ_XMM_IMM: return tryCompilePsrlqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRLDQ_XMM_IMM: return tryCompilePsrldqXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRAW_XMM_XMMM128: return tryCompilePsrawXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSRAW_XMM_IMM: return tryCompilePsrawXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+            case Insn::PSRAD_XMM_XMMM128: return tryCompilePsradXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSRAD_XMM_IMM: return tryCompilePsradXmmImm(ins.op0<XMM>(), ins.op1<Imm>());
+
+            case Insn::PSHUFB_XMM_XMMM128: return tryCompilePshufbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PSHUFD_XMM_XMMM128_IMM: return tryCompilePshufdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::PSHUFLW_XMM_XMMM128_IMM: return tryCompilePshuflwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::PSHUFHW_XMM_XMMM128_IMM: return tryCompilePshufhwXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::PINSRW_XMM_R32_IMM: return tryCompilePinsrwXmmR32Imm(ins.op0<XMM>(), ins.op1<R32>(), ins.op2<Imm>());
+            case Insn::PINSRW_XMM_M16_IMM: return tryCompilePinsrwXmmM16Imm(ins.op0<XMM>(), ins.op1<M16>(), ins.op2<Imm>());
+            case Insn::PEXTRW_M16_XMM_IMM: return tryCompilePextrwM16XmmImm(ins.op0<M16>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::PEXTRW_R32_XMM_IMM: return tryCompilePextrwR32XmmImm(ins.op0<R32>(), ins.op1<XMM>(), ins.op2<Imm>());
+
+            case Insn::PUNPCKLBW_XMM_XMMM128: return tryCompilePunpcklbwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKLWD_XMM_XMMM128: return tryCompilePunpcklwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKLDQ_XMM_XMMM128: return tryCompilePunpckldqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKLQDQ_XMM_XMMM128: return tryCompilePunpcklqdqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKHBW_XMM_XMMM128: return tryCompilePunpckhbwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKHWD_XMM_XMMM128: return tryCompilePunpckhwdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKHDQ_XMM_XMMM128: return tryCompilePunpckhdqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PUNPCKHQDQ_XMM_XMMM128: return tryCompilePunpckhqdqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::PACKSSWB_XMM_XMMM128: return tryCompilePacksswbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PACKSSDW_XMM_XMMM128: return tryCompilePackssdwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PACKUSWB_XMM_XMMM128: return tryCompilePackuswbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PACKUSDW_XMM_XMMM128: return tryCompilePackusdwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::ADDSS_XMM_XMM: return tryCompileAddssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::ADDSS_XMM_M32: return tryCompileAddssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::SUBSS_XMM_XMM: return tryCompileSubssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::SUBSS_XMM_M32: return tryCompileSubssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::MULSS_XMM_XMM: return tryCompileMulssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MULSS_XMM_M32: return tryCompileMulssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::DIVSS_XMM_XMM: return tryCompileDivssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::DIVSS_XMM_M32: return tryCompileDivssXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::COMISS_XMM_XMM: return tryCompileComissXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSS2SD_XMM_XMM: return tryCompileCvtss2sdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSS2SD_XMM_M32: return tryCompileCvtss2sdXmmM32(ins.op0<XMM>(), ins.op1<M32>());
+            case Insn::CVTSI2SS_XMM_RM32: return tryCompileCvtsi2ssXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
+            case Insn::CVTSI2SS_XMM_RM64: return tryCompileCvtsi2ssXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
+
+            case Insn::ADDSD_XMM_XMM: return tryCompileAddsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::ADDSD_XMM_M64: return tryCompileAddsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::SUBSD_XMM_XMM: return tryCompileSubsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::SUBSD_XMM_M64: return tryCompileSubsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MULSD_XMM_XMM: return tryCompileMulsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MULSD_XMM_M64: return tryCompileMulsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::DIVSD_XMM_XMM: return tryCompileDivsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::DIVSD_XMM_M64: return tryCompileDivsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::CMPSD_XMM_XMM: return tryCompileCmpsdXmmXmmFcond(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<FCond>());
+            case Insn::CMPSD_XMM_M64: return tryCompileCmpsdXmmM64Fcond(ins.op0<XMM>(), ins.op1<M64>(), ins.op2<FCond>());
+            case Insn::COMISD_XMM_XMM: return tryCompileComisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::COMISD_XMM_M64: return tryCompileComisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::UCOMISD_XMM_XMM: return tryCompileUcomisdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::UCOMISD_XMM_M64: return tryCompileUcomisdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::MAXSD_XMM_XMM: return tryCompileMaxsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MINSD_XMM_XMM: return tryCompileMinsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MINSD_XMM_M64: return tryCompileMinsdXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::SQRTSD_XMM_XMM: return tryCompileSqrtsdXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSD2SS_XMM_XMM: return tryCompileCvtsd2ssXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::CVTSD2SS_XMM_M64: return tryCompileCvtsd2ssXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+            case Insn::CVTSI2SD_XMM_RM32: return tryCompileCvtsi2sdXmmRM32(ins.op0<XMM>(), ins.op1<RM32>());
+            case Insn::CVTSI2SD_XMM_RM64: return tryCompileCvtsi2sdXmmRM64(ins.op0<XMM>(), ins.op1<RM64>());
+            case Insn::CVTTSD2SI_R32_XMM: return tryCompileCvttsd2siR32Xmm(ins.op0<R32>(), ins.op1<XMM>());
+            case Insn::CVTTSD2SI_R64_XMM: return tryCompileCvttsd2siR64Xmm(ins.op0<R64>(), ins.op1<XMM>());
+
+            case Insn::ADDPS_XMM_XMMM128: return tryCompileAddpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::SUBPS_XMM_XMMM128: return tryCompileSubpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MULPS_XMM_XMMM128: return tryCompileMulpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::DIVPS_XMM_XMMM128: return tryCompileDivpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MAXPS_XMM_XMMM128: return tryCompileMaxpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MINPS_XMM_XMMM128: return tryCompileMinpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MAXPD_XMM_XMMM128: return tryCompileMaxpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MINPD_XMM_XMMM128: return tryCompileMinpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::CMPPS_XMM_XMMM128: return tryCompileCmppsXmmXmmM128Fcond(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<FCond>());
+            case Insn::CVTPS2DQ_XMM_XMMM128: return tryCompileCvtps2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::CVTTPS2DQ_XMM_XMMM128: return tryCompileCvttps2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::CVTTPD2DQ_XMM_XMMM128: return tryCompileCvttpd2dqXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::CVTDQ2PS_XMM_XMMM128: return tryCompileCvtdq2psXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            
+            case Insn::ADDPD_XMM_XMMM128: return tryCompileAddpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::SUBPD_XMM_XMMM128: return tryCompileSubpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::MULPD_XMM_XMMM128: return tryCompileMulpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::DIVPD_XMM_XMMM128: return tryCompileDivpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ANDPD_XMM_XMMM128: return tryCompileAndpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ANDNPD_XMM_XMMM128: return tryCompileAndnpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::ORPD_XMM_XMMM128: return tryCompileOrpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::XORPD_XMM_XMMM128: return tryCompileXorpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::SHUFPS_XMM_XMMM128_IMM: return tryCompileShufpsXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::SHUFPD_XMM_XMMM128_IMM: return tryCompileShufpdXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+
+            case Insn::UNPCKHPS_XMM_XMMM128: return tryCompileUnpckhpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::UNPCKHPD_XMM_XMMM128: return tryCompileUnpckhpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::UNPCKLPS_XMM_XMMM128: return tryCompileUnpcklpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::UNPCKLPD_XMM_XMMM128: return tryCompileUnpcklpdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::LDDQU_XMM_M128: return tryCompileLddquXmmM128(ins.op0<XMM>(), ins.op1<M128>());
+            case Insn::MOVDDUP_XMM_XMM: return tryCompileMovddupXmmXmm(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::MOVDDUP_XMM_M64: return tryCompileMovddupXmmM64(ins.op0<XMM>(), ins.op1<M64>());
+
+            case Insn::PALIGNR_MMX_MMXM64_IMM: return tryCompilePalignrMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>(), ins.op2<Imm>());
+            case Insn::PHADDW_MMX_MMXM64: return tryCompilePhaddwMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PHADDD_MMX_MMXM64: return tryCompilePhadddMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMADDUBSW_MMX_MMXM64: return tryCompilePmaddubswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+            case Insn::PMULHRSW_MMX_MMXM64: return tryCompilePmulhrswMmxMmxM64(ins.op0<MMX>(), ins.op1<MMXM64>());
+
+            case Insn::PALIGNR_XMM_XMMM128_IMM: return tryCompilePalignrXmmXmmM128Imm(ins.op0<XMM>(), ins.op1<XMMM128>(), ins.op2<Imm>());
+            case Insn::PHADDW_XMM_XMMM128: return tryCompilePhaddwXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PHADDD_XMM_XMMM128: return tryCompilePhadddXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMADDUBSW_XMM_XMMM128: return tryCompilePmaddubswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMULHRSW_XMM_XMMM128: return tryCompilePmulhrswXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::PMAXSD_XMM_XMMM128: return tryCompilePmaxsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMINSD_XMM_XMMM128: return tryCompilePminsdXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PMOVZXBW_XMM_XMM: return tryCompilePmovzxbwXMMXMM(ins.op0<XMM>(), ins.op1<XMM>());
+            case Insn::ROUNDPS_XMM_XMM_IMM: return tryCompileRoundpsXmmXmmImm(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::ROUNDPD_XMM_XMM_IMM: return tryCompileRoundpdXmmXmmImm(ins.op0<XMM>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::PMULLD_XMM_XMMM128: return tryCompilePmulldXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PEXTRD_RM32_XMM_IMM: return tryCompilePextrdRM32XMMImm(ins.op0<RM32>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::PEXTRQ_RM64_XMM_IMM: return tryCompilePextrqRM64XMMImm(ins.op0<RM64>(), ins.op1<XMM>(), ins.op2<Imm>());
+            case Insn::PINSRD_XMM_RM32_IMM: return tryCompilePinsrdRM32XMMImm(ins.op0<XMM>(), ins.op1<RM32>(), ins.op2<Imm>());
+            case Insn::BLENDVPS_XMM_XMMM128: return tryCompileBlendvpsXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+            case Insn::PBLENDVB_XMM_XMMM128: return tryCompilePblendvbXmmXmmM128(ins.op0<XMM>(), ins.op1<XMMM128>());
+
+            case Insn::STMXCSR_M32: return tryCompileStmxcsrM32(ins.op0<M32>());
+            default: break;
+        }
+        return false;
+    }
+
+    bool Compiler::tryCompileLastInstruction(const Instruction& ins) {
+        if(!tryAdvanceInstructionPointer(ins.nextAddress())) return {};
+        switch(ins.insn()) {
+            case Insn::CALLDIRECT: return tryCompileCall(ins.op0<u64>(), ins.nextAddress());
+            case Insn::RET: return tryCompileRet();
+            case Insn::JE: return tryCompileJe(ins.op0<u64>());
+            case Insn::JNE: return tryCompileJne(ins.op0<u64>());
+            case Insn::JCC: return tryCompileJcc(ins.op0<Cond>(), ins.op1<u64>());
+            case Insn::JMP_U32: return tryCompileJmp(ins.op0<u32>());
+            case Insn::CALLINDIRECT_RM64: return tryCompileCall(ins.op0<RM64>(), ins.nextAddress());
+            case Insn::JMP_RM64: return tryCompileJmp(ins.op0<RM64>());
+            default: break;
+        }
+        return {};
+    }
+
+    std::optional<ir::IR> Compiler::jitEntry() {
+        generator_->clear();
+        saveStack();
+        saveRegisters();
+        saveArgument();
+        loadArguments(TmpReg{Reg::GPR1});
+        loadRegistersFromEmulator();
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        callNativeBasicBlock(TmpReg{Reg::GPR1});
+        return generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::basicBlockEntrypoint() {
+        generator_->clear();
+        saveStack();
+        generator_->reportJumpLanding();
+        return generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::basicBlockBody(const BasicBlock& basicBlock, bool diagnose) {
+        generator_->clear();
+        const auto& instructions = basicBlock.instructions();
+        for(size_t i = 0; i+1 < instructions.size(); ++i) {
+            const Instruction& ins = instructions[i].first;
+            if(!tryCompile(ins)) {
+                if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", ins.toString(), i, instructions.size());
+                return {};
+            }
+        }
+        return generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::prepareExit(u32 nbInstructionsInBlock, u64 basicBlockPtr, u64 jitBasicBlockPtr) {
+        generator_->clear();
+        addTime(nbInstructionsInBlock);
+        incrementCalls();
+        writeBasicBlockPtr(basicBlockPtr);
+        writeJitBasicBlockPtr(jitBasicBlockPtr);
+        return generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::basicBlockExit(const BasicBlock& basicBlock, bool diagnose) {
+        generator_->clear();
+        const auto& instructions = basicBlock.instructions();
+        const Instruction& lastInstruction = instructions.back().first;
+        auto jumps = tryCompileLastInstruction(lastInstruction);
+        if(!jumps) {
+            if(diagnose) fmt::print("Compilation of block failed: {} ({}/{})\n", lastInstruction.toString(), instructions.size(), instructions.size());
+            return {};
+        }
+        restoreStack();
+        generator_->ret(); // exit the native code of this basic block
+        return generator_->generateIR();
+    }
+
+    std::optional<ir::IR> Compiler::jitExit() {
+        generator_->clear();
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        storeRegistersToEmulator();
+        restoreArgument();
+        restoreRegisters();
+        restoreStack();
+        generator_->ret();
+        return generator_->generateIR();
+    }
+
+    bool Compiler::tryAdvanceInstructionPointer(u64 nextAddress) {
+        writeReg64(R64::RIP, nextAddress, TmpReg{Reg::GPR0});
+        return true;
+    }
+
+#ifndef NDEBUG
+    namespace {
+        template<typename What, typename ... Args>
+        struct is_present {
+            static constexpr bool value {(std::is_same_v<What, Args> || ...)};
+        };
+
+        template<typename What, typename ... Args>
+        inline constexpr bool is_present_v = is_present<What, Args...>::value;
+    }
+
+    template<typename T>
+    static bool isSameArg(const T& a, const T& b) {
+        if constexpr(std::is_same_v<T, u8>) {
+            return a == b;
+        } else if constexpr(std::is_same_v<T, Imm>) {
+            return a.immediate == b.immediate;
+        } else if constexpr(is_present_v<T, R8, R16, R32, R64, MMX, XMM>) {
+            return a == b;
+        } else if constexpr(is_present_v<T, M8, M16, M32, M64, M128>) {
+            return a == b;
+        } else if constexpr(is_present_v<T, RM8, RM16, RM32, RM64, XMMM128>) {
+            if(a.isReg != b.isReg) return false;
+            if(a.isReg) return a.reg == b.reg;
+            return a.mem == b.mem;
+        } else {
+            assert(false && "generic isSameArg called");
+            return false;
+        }
+    }
+
+    template<typename T>
+    static bool doCheckWithArg(const T& a) {
+        if constexpr(is_present_v<T, M8, M16, M32, M64, M128>) {
+            if(a.encoding.base == R64::RIP) return false;
+            if(a.encoding.base == R64::RSP) return false;
+            if(a.encoding.base == R64::RBP) return false;
+            if(a.encoding.base == R64::R13) return false;
+            if(a.encoding.base == R64::R14) return false;
+        }
+        if constexpr(is_present_v<T, RM8, RM16, RM32, RM64, XMMM128>) {
+            if(!a.isReg && a.mem.encoding.base == R64::RIP) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::RSP) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::RBP) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::R13) return false;
+            if(!a.isReg && a.mem.encoding.base == R64::R14) return false;
+        }
+        return true;
+    }
+#endif
+
+    template<typename Func, typename OpArg0, typename OpArg1, typename AsArg0, typename AsArg1>
+    static void checkCompilation([[maybe_unused]] Insn insn, [[maybe_unused]] Func&& func,
+            [[maybe_unused]] OpArg0 oparg0, [[maybe_unused]] OpArg1 oparg1,
+            [[maybe_unused]] AsArg0 asarg0, [[maybe_unused]] AsArg1 asarg1) {
+#ifndef NDEBUG
+        if(!doCheckWithArg(oparg0)) return;
+        if(!doCheckWithArg(oparg1)) return;
+        Assembler assembler;
+        (assembler.*func)(asarg0, asarg1);
+        std::vector<u8> code = assembler.code();
+        ZydisWrapper disassembler;
+        auto disassembly = disassembler.disassembleRange(code.data(), code.size(), 0x0);
+        assert(disassembly.instructions.size() == 1);
+        const auto& ins = disassembly.instructions[0];
+        assert(ins.insn() == insn);
+        const OpArg0& op0 = ins.op0<OpArg0>();
+        const OpArg1& op1 = ins.op1<OpArg1>();
+        assert(isSameArg<OpArg0>(oparg0, op0));
+        assert(isSameArg<OpArg1>(oparg1, op1));
+#endif
+    }
+
+    bool Compiler::tryCompileMovR8Imm(R8 dst, Imm imm) {
+        checkCompilation(Insn::MOV_R8_IMM, static_cast<void(Assembler::*)(R8, u8)>(&Assembler::mov), dst, imm, dst, imm.as<u8>());
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // load the immediate
+        loadImm8(regalloc.reg0, imm.as<u8>());
+        // write to the destination register
+        writeReg8(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM8Imm(const M8& dst, Imm imm) {
+        if(dst.segment == Segment::FS) return false;
+        // load the immediate
+        loadImm8(Reg::GPR0, imm.as<u8>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // write to the destination address
+        writeMem8(addr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR8R8(R8 dst, R8 src) {
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
+        // read from the source register
+        readReg8(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get8(regalloc.reg0), get8(regalloc.reg1));
+        // write to the destination register
+        writeReg8(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR8M8(R8 dst, const M8& src) {
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // read memory at that address
+        readMem8(regalloc.reg0, addr);
+        // write to the destination register
+        writeReg8(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM8R8(const M8& dst, R8 src) {
+        if(dst.segment == Segment::FS) return false;
+        // allocate register
+        auto regalloc = allocateReg(src);
+        // read the value of the source register
+        readReg8(regalloc.reg0, src);
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // write to the destination address
+        writeMem8(addr, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR16Imm(R16 dst, Imm imm) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // load the immediate
+        loadImm16(regalloc.reg0, imm.as<u16>());
+        // write to the destination register
+        writeReg16(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM16Imm(const M16& dst, Imm imm) {
+        // load the immediate
+        loadImm64(Reg::GPR0, imm.as<u16>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // write to the destination address
+        writeMem16(addr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR16R16(R16 dst, R16 src) {
+        checkCompilation(Insn::MOV_R16_R16, static_cast<void(Assembler::*)(R16, R16)>(&Assembler::mov), dst, src, dst, src);
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
+        // read from the source register
+        readReg16(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get16(regalloc.reg0), get16(regalloc.reg1));
+        // write to the destination register
+        writeReg16(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR16M16(R16 dst, const M16& src) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // read memory at that address
+        readMem16(regalloc.reg0, addr);
+        // write to the destination register
+        writeReg16(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM16R16(const M16& dst, R16 src) {
+        // allocate register
+        auto regalloc = allocateReg(src);
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // read the value of the register
+        readReg16(regalloc.reg0, src);
+        // write the value the destination address
+        writeMem16(addr, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR32Imm(R32 dst, Imm imm) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // load the immediate
+        loadImm64(regalloc.reg0, imm.as<u32>());
+        // write to the destination register
+        writeReg32(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM32Imm(const M32& dst, Imm imm) {
+        // load the immediate
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // write to the destination address
+        writeMem32(addr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR32R32(R32 dst, R32 src) {
+        checkCompilation(Insn::MOV_R32_R32, static_cast<void(Assembler::*)(R32, R32)>(&Assembler::mov), dst, src, dst, src);
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
+        // read from the source register
+        readReg32(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get32(regalloc.reg0), get32(regalloc.reg1));
+        // write to the destination register
+        writeReg32(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR32M32(R32 dst, const M32& src) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // read memory at that address
+        readMem32(regalloc.reg0, addr);
+        // write to the destination register
+        writeReg32(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR32M32RIP(R32 dst, const M32& src, u64 rip) {
+        verify(src.encoding.base == R64::RIP);
+        verify(src.encoding.index == R64::ZERO);
+        u64 actualAddress = rip+src.encoding.displacement;
+        if((u64)(i32)actualAddress != actualAddress) {
+            // fall back to long path
+            return tryCompileMovR32M32(dst, src);
+        }
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // read memory at that address
+        readMem32(regalloc.reg0, (i32)actualAddress);
+        // write to the destination register
+        writeReg32(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM32R32(const M32& dst, R32 src) {
+        // allocate register
+        auto regalloc = allocateReg(src);
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // read the value of the register
+        readReg32(regalloc.reg0, src);
+        // write the value the destination address
+        writeMem32(addr, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR64Imm(R64 dst, Imm imm) {
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // load the immedate
+        loadImm64(regalloc.reg0, imm.as<u64>());
+        // write to the destination register
+        writeReg64(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM64Imm(const M64& dst, Imm imm) {
+        // load the immediate
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // write to the destination address
+        writeMem64(addr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR64R64(R64 dst, R64 src) {
+        checkCompilation(Insn::MOV_R64_R64, static_cast<void(Assembler::*)(R64, R64)>(&Assembler::mov), dst, src, dst, src);
+        // don't jit "unusual" writes to RSP (longjmp)
+        if(dst == R64::RSP && src != R64::RBP) return false;
+        // allocate register
+        auto regalloc = allocateReg(dst, src);
+        // read from the source register
+        readReg64(regalloc.reg1, src);
+        // do the mov
+        generator_->mov(get(regalloc.reg0), get(regalloc.reg1));
+        // write to the destination register
+        writeReg64(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR64M64(R64 dst, const M64& src) {
+        // get the source address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, src);
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // read memory at that address
+        readMem64(regalloc.reg0, addr);
+        // write to the destination register
+        writeReg64(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovR64M64RIP(R64 dst, const M64& src, u64 rip) {
+        verify(src.encoding.base == R64::RIP);
+        verify(src.encoding.index == R64::ZERO);
+        u64 actualAddress = rip+src.encoding.displacement;
+        if((u64)(i32)actualAddress != actualAddress) {
+            // fall back to long path
+            return tryCompileMovR64M64(dst, src);
+        }
+        // allocate register
+        auto regalloc = allocateReg(dst);
+        // read memory at that address
+        readMem64(regalloc.reg0, (i32)actualAddress);
+        // write to the destination register
+        writeReg64(dst, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovM64R64(const M64& dst, R64 src) {
+        // get the destination address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        // allocate register
+        auto regalloc = allocateReg(src);
+        // read the value of the register
+        readReg64(regalloc.reg0, src);
+        // write the value to memory
+        writeMem64(addr, regalloc.reg0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovzxR16RM8(R16 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movzx(get16(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg16(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movzx(get16(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg16(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR32RM8(R32 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movzx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movzx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR32RM16(R32 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movzx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movzx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR64RM8(R64 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movzx(get(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movzx(get(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovzxR64RM16(R64 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movzx(get(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movzx(get(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR64RM8(R64 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movsx(get(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movsx(get(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR32RM16(R32 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movsx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movsx(get32(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR16RM8(R16 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movsx(get16(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg16(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movsx(get16(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg16(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR32RM8(R32 dst, const RM8& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg8(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movsx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem8(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movsx(get32(Reg::GPR0), get8(Reg::GPR0));
+            // write to the destination register
+            writeReg32(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR64RM16(R64 dst, const RM16& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg16(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movsx(get(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem16(Reg::GPR0, addr);
+            // do the zero-extending mov
+            generator_->movsx(get(Reg::GPR0), get16(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovsxR64RM32(R64 dst, const RM32& src) {
+        if(src.isReg) {
+            // read the src register
+            readReg32(Reg::GPR0, src.reg);
+            // do the zero-extending mov
+            generator_->movsx(get(Reg::GPR0), get32(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M32& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem32(Reg::GPR0, addr);
+            // do the sign-extending mov
+            generator_->movsx(get(Reg::GPR0), get32(Reg::GPR0));
+            // write to the destination register
+            writeReg64(dst, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileAddRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            add8(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAddRM8Imm(const RM8& dst, Imm src) {
+        return forRM8Imm(dst, src, [&](Reg dst, Imm imm) {
+            add8Imm8(dst, imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileAddRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            add16(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAddRM16Imm(const RM16& dst, Imm src) {
+        return forRM16Imm(dst, src, [&](Reg dst, Imm imm) {
+            add16Imm16(dst, imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileAddRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            add32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAddRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            add32Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileAddRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            add64(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAddRM64Imm(const RM64& dst, Imm src) {
+        return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
+            add64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileAdcRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            adc32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileAdcRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            adc32Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSubRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            sub8(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSubRM8Imm(const RM8& dst, Imm src) {
+        return forRM8Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub8Imm8(dst, imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileSubRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            sub16(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSubRM16Imm(const RM16& dst, Imm src) {
+        return forRM16Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub16Imm16(dst, imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileSubRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            sub32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSubRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub32Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSubRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            sub64(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSubRM64Imm(const RM64& dst, Imm src) {
+        return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
+            sub64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            sbb8(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM8Imm(const RM8& dst, Imm src) {
+        return forRM8Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb8Imm8(dst, imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            sbb32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM32Imm(const RM32& dst, Imm src) {
+        return forRM32Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb32Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            sbb64(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileSbbRM64Imm(const RM64& dst, Imm src) {
+        return forRM64Imm(dst, src, [&](Reg dst, Imm imm) {
+            sbb64Imm32(dst, imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileCmpRM8RM8(const RM8& lhs, const RM8& rhs) {
+        return forRM8RM8(lhs, rhs, [&](Reg dst, Reg src) {
+            cmp8(dst, src);
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM8Imm(const RM8& lhs, Imm rhs) {
+        return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp8Imm8(dst, imm.as<i8>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM16RM16(const RM16& lhs, const RM16& rhs) {
+        return forRM16RM16(lhs, rhs, [&](Reg dst, Reg src) {
+            cmp16(dst, src);
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp16Imm16(dst, imm.as<i16>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM32RM32(const RM32& lhs, const RM32& rhs) {
+        return forRM32RM32(lhs, rhs, [&](Reg dst, Reg src) {
+            cmp32(dst, src);
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp32Imm32(dst, imm.as<i32>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM64RM64(const RM64& lhs, const RM64& rhs) {
+        return forRM64RM64(lhs, rhs, [&](Reg dst, Reg src) {
+            cmp64(dst, src);
+        }, false);
+    }
+
+    bool Compiler::tryCompileCmpRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            cmp64Imm32(dst, imm.as<i32>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileShlRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->shl(get32(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShlRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->shl(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShlRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->shl(get(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShlRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->shl(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM8R8(const RM8& lhs, R8 rhs) {
+        return forRM8RM8(lhs, RM8{true, rhs, {}}, [&](Reg dst, Reg src) {
+            generator_->shr(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM8Imm(const RM8& lhs, Imm rhs) {
+        return forRM8Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->shr(get8(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->shr(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->shr(get16(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->shr(get32(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->shr(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShrRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->shr(get(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileShrRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->shr(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileSarRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->sar(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileSarRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->sar(get16(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileSarRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->sar(get32(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileSarRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->sar(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileSarRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->sar(get(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileSarRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->sar(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRolRM16R8(const RM16& lhs, R8 rhs) {
+        return forRM16R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->rol(get16(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileRolRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->rol(get16(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRolRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->rol(get32(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileRolRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->rol(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRorRM32R8(const RM32& lhs, R8 rhs) {
+        return forRM32R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->ror(get32(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileRorRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->ror(get32(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRolRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->rol(get(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileRolRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->rol(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRorRM64R8(const RM64& lhs, R8 rhs) {
+        return forRM64R8(lhs, rhs, [&](Reg dst, Reg src) {
+            generator_->ror(get(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileRorRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm imm) {
+            generator_->ror(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileMulRM32(const RM32& src) {
+        if(!src.isReg) return false;
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R32::EAX, get32(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        generator_->mov(R32::EDX, get32(Reg::GPR0));
+        readReg32(Reg::GPR1, src.reg);
+        generator_->mul(get32(Reg::GPR1));
+        generator_->mov(get32(Reg::GPR0), R32::EAX);
+        writeReg32(R32::EAX, Reg::GPR0);
+        generator_->mov(get32(Reg::GPR0), R32::EDX);
+        writeReg32(R32::EDX, Reg::GPR0);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileMulRM64(const RM64& src) {
+        if(!src.isReg) return false;
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        generator_->mov(R64::RDX, get(Reg::GPR0));
+        readReg64(Reg::GPR1, src.reg);
+        generator_->mul(get(Reg::GPR1));
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->mov(get(Reg::GPR0), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR0);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileImulRM32(const RM32& src) {
+        if(!src.isReg) return false;
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R32::EAX, get32(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        generator_->mov(R32::EDX, get32(Reg::GPR0));
+        readReg32(Reg::GPR1, src.reg);
+        generator_->imul(get32(Reg::GPR1));
+        generator_->mov(get32(Reg::GPR0), R32::EAX);
+        writeReg32(R32::EAX, Reg::GPR0);
+        generator_->mov(get32(Reg::GPR0), R32::EDX);
+        writeReg32(R32::EDX, Reg::GPR0);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileImulRM64(const RM64& src) {
+        if(!src.isReg) return false;
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        readReg64(Reg::GPR0, R64::RDX);
+        generator_->mov(R64::RDX, get(Reg::GPR0));
+        readReg64(Reg::GPR1, src.reg);
+        generator_->imul(get(Reg::GPR1));
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->mov(get(Reg::GPR0), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR0);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileImulR16RM16(R16 dst, const RM16& src) {
+        return forRM16RM16(RM16{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul16(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileImulR32RM32(R32 dst, const RM32& src) {
+        return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul32(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileImulR64RM64(R64 dst, const RM64& src) {
+        return forRM64RM64(RM64{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul64(dst, src);
+        });
+    }
+
+    bool Compiler::tryCompileImulR16RM16Imm(R16 dst, const RM16& src, Imm imm) {
+        return forRM16RM16(RM16{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul16(dst, src, imm.as<u16>());
+        });
+    }
+
+    bool Compiler::tryCompileImulR32RM32Imm(R32 dst, const RM32& src, Imm imm) {
+        return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul32(dst, src, imm.as<u32>());
+        });
+    }
+
+    bool Compiler::tryCompileImulR64RM64Imm(R64 dst, const RM64& src, Imm imm) {
+        return forRM64RM64(RM64{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            imul64(dst, src, imm.as<u32>());
+        });
+    }
+
+    bool Compiler::tryCompileDivRM32(const RM32& src) {
+        if(src.isReg) {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
+
+            // read the src value
+            readReg32(Reg::GPR1, src.reg);
+
+            generator_->div(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        } else {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
+
+            // fetch src address
+            const M32& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem32(Reg::GPR1, addr);
+
+            generator_->div(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileDivRM64(const RM64& src) {
+        if(src.isReg) {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R64::RDX, get(Reg::GPR0));
+
+            // read src value
+            readReg64(Reg::GPR1, src.reg);
+
+            generator_->div(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        } else {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R64::RDX, get(Reg::GPR0));
+
+            // fetch src address
+            const M64& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR1, addr);
+
+            generator_->div(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileIdivRM32(const RM32& src) {
+        if(src.isReg) {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
+
+            // read src value
+            readReg32(Reg::GPR1, src.reg);
+
+            generator_->idiv(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        } else {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R32::EAX, get32(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R32::EDX, get32(Reg::GPR0));
+
+            // fetch src address
+            const M32& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem32(Reg::GPR1, addr);
+
+            generator_->idiv(get32(Reg::GPR1));
+            generator_->mov(get32(Reg::GPR0), R32::EAX);
+            writeReg32(R32::EAX, Reg::GPR0);
+            generator_->mov(get32(Reg::GPR0), R32::EDX);
+            writeReg32(R32::EDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileIdivRM64(const RM64& src) {
+        if(src.isReg) {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R64::RDX, get(Reg::GPR0));
+
+            // read src value
+            readReg64(Reg::GPR1, src.reg);
+
+            generator_->idiv(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        } else {
+            generator_->push64(R64::RAX);
+            generator_->push64(R64::RDX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            readReg64(Reg::GPR0, R64::RDX);
+            generator_->mov(R64::RDX, get(Reg::GPR0));
+
+            // fetch src address
+            const M64& mem = src.mem;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR1, addr);
+
+            generator_->idiv(get(Reg::GPR1));
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->mov(get(Reg::GPR0), R64::RDX);
+            writeReg64(R64::RDX, Reg::GPR0);
+            generator_->pop64(R64::RDX);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RDX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileCall(u64 dst, u64 retAddress) {
+        // Push the instruction pointer on the VM stack
+        readReg64(Reg::GPR0, R64::RIP);
+        push64(Reg::GPR0, TmpReg{Reg::GPR1});
+
+        // Call cpu callbacks
+        // warn("Need to call cpu callbacks in Compiler::tryCompileCall");
+
+        // Set the instruction pointer
+        loadImm64(Reg::GPR0, dst);
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE PUSH TO THE CALLSTACK
+        generator_->reportPushCallstack(retAddress);
+        const auto& dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+        generator_->uds(dummyPushCallstackCode.size());
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
+        size_t jumpCodeSize = jmpCodeSize(0x0, TmpReg{Reg::GPR0});
+        generator_->nops(jumpCodeSize);
+
+        return true;
+    }
+
+    bool Compiler::tryCompileRet() {
+        // Pop the instruction pointer
+        pop64(Reg::GPR0, TmpReg{Reg::GPR1});
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE RET FROM THE CALLSTACK
+        generator_->reportPopCallstack();
+        const auto& dummyPopCallstackCode = popCallstackCode(Reg::GPR0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+        generator_->uds(dummyPopCallstackCode.size());
+        // GPR0 contains the pointer to the return segment or nullptr
+
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        ir::IrGenerator::Label& lookupFail = generator_->label();
+        generator_->jumpCondition(x64::Cond::E, &lookupFail);
+
+        // if we succeed lookup:
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // jump !
+        generator_->jump(get(Reg::GPR0));
+
+        generator_->putLabel(lookupFail);
+        // if we fail lookup
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // keep going and we will exit the JIT
+        
+        return true;
+    }
+
+    bool Compiler::tryCompileJe(u64 dst) {
+        return tryCompileJcc(Cond::E, dst);
+    }
+
+    bool Compiler::tryCompileJne(u64 dst) {
+        return tryCompileJcc(Cond::NE, dst);
+    }
+
+    static Cond getReverseCondition(Cond condition) {
+        switch(condition) {
+            case Cond::A: return Cond::BE;
+            case Cond::AE: return Cond::B;
+            case Cond::B: return Cond::NB;
+            case Cond::BE: return Cond::NBE;
+            case Cond::E: return Cond::NE;
+            case Cond::G: return Cond::LE;
+            case Cond::GE: return Cond::L;
+            case Cond::L: return Cond::GE;
+            case Cond::LE: return Cond::G;
+            case Cond::NB: return Cond::B;
+            case Cond::NBE: return Cond::BE;
+            case Cond::NE: return Cond::E;
+            case Cond::NO: return Cond::O;
+            case Cond::NP: return Cond::P;
+            case Cond::NS: return Cond::S;
+            case Cond::NU: return Cond::U;
+            case Cond::O: return Cond::NO;
+            case Cond::P: return Cond::NP;
+            case Cond::S: return Cond::NS;
+            case Cond::U: return Cond::NU;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    bool Compiler::tryCompileJcc(Cond condition, u64 dst) {
+        // create labels and test the condition
+        auto& noBranchCase = generator_->label();
+        Cond reverseCondition = getReverseCondition(condition);
+        generator_->jumpCondition(reverseCondition, &noBranchCase); // jump if the opposite condition is true
+
+        // change the instruction pointer
+        loadImm64(Reg::GPR0, dst);
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
+        size_t jumpCodeSize = jmpCodeSize(0x0, TmpReg{Reg::GPR0});
+        generator_->nops(jumpCodeSize);
+
+        auto& skipToExit = generator_->label();
+        generator_->jump(&skipToExit);
+
+        // if we don't need to jump
+        generator_->putLabel(noBranchCase);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::NEXT_BLOCK);
+        generator_->nops(jumpCodeSize);
+
+        generator_->putLabel(skipToExit);
+
+        return true;
+    }
+
+    bool Compiler::tryCompileJmp(u64 dst) {
+        // load the immediate
+        loadImm64(Reg::GPR0, dst);
+        // change the instruction pointer
+        writeReg64(R64::RIP, Reg::GPR0);
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE JMP
+        generator_->reportJump(ir::IrGenerator::JumpKind::OTHER_BLOCk);
+        size_t jumpCodeSize = jmpCodeSize(0x0, TmpReg{Reg::GPR0});
+        generator_->nops(jumpCodeSize);
+
+        return true;
+    }
+
+    bool Compiler::tryCompileCall(const RM64& dst, u64 retAddress) {
+        // Push the instruction pointer
+        readReg64(Reg::GPR0, R64::RIP);
+        push64(Reg::GPR0, TmpReg{Reg::GPR1});
+
+        // Call cpu callbacks
+        // warn("Need to call cpu callbacks in Compiler::tryCompileCall");
+
+        if(dst.isReg) {
+            // read the register
+            readReg64(Reg::GPR0, dst.reg);
+            // change the instruction pointer
+            writeReg64(R64::RIP, Reg::GPR0);
+        } else {
+            // fetch address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return {};
+            if(mem.encoding.base == R64::RSP) return {};
+            if(mem.encoding.index == R64::RIP) return {};
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // change the instruction pointer
+            writeReg64(R64::RIP, Reg::GPR0);
+        }
+
+        generator_->push64(get(Reg::GPR0));
+
+        // INSERT NOPs HERE TO BE REPLACED WITH THE PUSH TO THE CALLSTACK
+        generator_->reportPushCallstack(retAddress);
+        const auto& dummyPushCallstackCode = pushCallstackCode(0x0, TmpReg{Reg::GPR0}, TmpReg{Reg::GPR1});
+        generator_->uds(dummyPushCallstackCode.size());
+
+        generator_->pop64(get(Reg::GPR0));
+
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        tryCompileBlockLookup();
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        ir::IrGenerator::Label& lookupFail = generator_->label();
+        generator_->jumpCondition(x64::Cond::E, &lookupFail);
+
+        // if we succeed lookup:
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // jump !
+        generator_->jump(get(Reg::GPR0));
+
+        generator_->putLabel(lookupFail);
+        // if we fail lookup
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // keep going and we will exit the JIT
+
+        return true;
+    }
+
+    bool Compiler::tryCompileJmp(const RM64& dst) {
+        // Write RIP
+        if(dst.isReg) {
+            // read the register
+            readReg64(Reg::GPR0, dst.reg);
+            // change the instruction pointer
+            writeReg64(R64::RIP, Reg::GPR0);
+        } else {
+            // fetch address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return {};
+            if(mem.encoding.index == R64::RIP) return {};
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // change the instruction pointer
+            writeReg64(R64::RIP, Reg::GPR0);
+        }
+
+        storeFlagsToEmulator(TmpReg{Reg::GPR1});
+        tryCompileBlockLookup();
+
+        generator_->test(get(Reg::GPR0), get(Reg::GPR0));
+        ir::IrGenerator::Label& lookupFail = generator_->label();
+        generator_->jumpCondition(x64::Cond::E, &lookupFail);
+
+        // if we succeed lookup:
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // jump !
+        generator_->jump(get(Reg::GPR0));
+
+        generator_->putLabel(lookupFail);
+        // if we fail lookup
+        // restore flags
+        loadFlagsFromEmulator(TmpReg{Reg::GPR1});
+        // keep going and we will exit the JIT
+
+        return true;
+    }
+
+    bool Compiler::tryCompileTestRM8R8(const RM8& lhs, R8 rhs) {
+        RM8 r { true, rhs, {}};
+        return forRM8RM8(lhs, r, [&](Reg dst, Reg src) {
+            generator_->test(get8(dst), get8(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM8Imm(const RM8& lhs, Imm rhs) {
+        return forRM8Imm(lhs, rhs, [&](Reg dst, Imm src) {
+            generator_->test(get8(dst), src.as<u8>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM16R16(const RM16& lhs, R16 rhs) {
+        RM16 r { true, rhs, {}};
+        return forRM16RM16(lhs, r, [&](Reg dst, Reg src) {
+            generator_->test(get16(dst), get16(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM16Imm(const RM16& lhs, Imm rhs) {
+        return forRM16Imm(lhs, rhs, [&](Reg dst, Imm src) {
+            generator_->test(get16(dst), src.as<u16>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM32R32(const RM32& lhs, R32 rhs) {
+        RM32 r { true, rhs, {}};
+        return forRM32RM32(lhs, r, [&](Reg dst, Reg src) {
+            generator_->test(get32(dst), get32(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM32Imm(const RM32& lhs, Imm rhs) {
+        return forRM32Imm(lhs, rhs, [&](Reg dst, Imm src) {
+            generator_->test(get32(dst), (u32)src.as<i32>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM64R64(const RM64& lhs, R64 rhs) {
+        RM64 r { true, rhs, {}};
+        return forRM64RM64(lhs, r, [&](Reg dst, Reg src) {
+            generator_->test(get(dst), get(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileTestRM64Imm(const RM64& lhs, Imm rhs) {
+        return forRM64Imm(lhs, rhs, [&](Reg dst, Imm src) {
+            generator_->test(get(dst), src.as<u32>());
+        }, false);
+    }
+
+    bool Compiler::tryCompileAndRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            generator_->and_(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndRM8Imm(const RM8& dst, Imm imm) {
+        return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->and_(get8(dst), imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileAndRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            generator_->and_(get16(dst), get16(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndRM16Imm(const RM16& dst, Imm imm) {
+        return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->and_(get16(dst), imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileAndRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            generator_->and_(get32(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndRM32Imm(const RM32& dst, Imm imm) {
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->and_(get32(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileAndRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            generator_->and_(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->and_(get(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM8Imm(const RM8& dst, Imm imm) {
+        return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->or_(get8(dst), imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            generator_->or_(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrRM16Imm(const RM16& dst, Imm imm) {
+        return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->or_(get16(dst), imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            generator_->or_(get16(dst), get16(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrRM32Imm(const RM32& dst, Imm imm) {
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->or_(get32(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            generator_->or_(get32(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->or_(get(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileOrRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            generator_->or_(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePushImm(Imm imm) {
+        // load the value
+        loadImm64(Reg::GPR0, (u64)imm.as<i32>());
+        // load rsp
+        readReg64(Reg::GPR1, R64::RSP);
+        // decrement rsp
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+        // write rsp back
+        writeReg64(R64::RSP, Reg::GPR1);
+        // write to the stack
+        writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePushRM64(const RM64& src) {
+        if(src.isReg) {
+            // load the value
+            readReg64(Reg::GPR0, src.reg);
+            // load rsp
+            readReg64(Reg::GPR1, R64::RSP);
+            // decrement rsp
+            generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+            // write rsp back
+            writeReg64(R64::RSP, Reg::GPR1);
+            // write to the stack
+            writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+            return true;
+        } else {
+            // fetch src address
+            const M64& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR0, addr);
+            // load rsp
+            readReg64(Reg::GPR1, R64::RSP);
+            // decrement rsp
+            generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), -8));
+            // write rsp back
+            writeReg64(R64::RSP, Reg::GPR1);
+            // write to the stack
+            writeMem64(Mem{Reg::GPR1, 0}, Reg::GPR0);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileLeave() {
+        readReg64(Reg::GPR0, R64::RBP);
+        writeReg64(R64::RSP, Reg::GPR0);
+        return tryCompilePopR64(R64::RBP);
+    }
+
+    bool Compiler::tryCompilePopR64(const R64& dst) {
+        // load rsp
+        readReg64(Reg::GPR1, R64::RSP);
+        // read from the stack
+        readMem64(Reg::GPR0, Mem{Reg::GPR1, 0});
+        // increment rsp
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), +8));
+        // write rsp back
+        writeReg64(R64::RSP, Reg::GPR1);
+        // write to the register
+        writeReg64(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileXorRM8RM8(const RM8& dst, const RM8& src) {
+        return forRM8RM8(dst, src, [&](Reg dst, Reg src) {
+            generator_->xor_(get8(dst), get8(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorRM8Imm(const RM8& dst, Imm imm) {
+        return forRM8Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->xor_(get8(dst), imm.as<i8>());
+        });
+    }
+
+    bool Compiler::tryCompileXorRM16RM16(const RM16& dst, const RM16& src) {
+        return forRM16RM16(dst, src, [&](Reg dst, Reg src) {
+            generator_->xor_(get16(dst), get16(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorRM16Imm(const RM16& dst, Imm imm) {
+        return forRM16Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->xor_(get16(dst), imm.as<i16>());
+        });
+    }
+
+    bool Compiler::tryCompileXorRM32RM32(const RM32& dst, const RM32& src) {
+        return forRM32RM32(dst, src, [&](Reg dst, Reg src) {
+            generator_->xor_(get32(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorRM32Imm(const RM32& dst, Imm imm) {
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->xor_(get32(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileXorRM64RM64(const RM64& dst, const RM64& src) {
+        return forRM64RM64(dst, src, [&](Reg dst, Reg src) {
+            generator_->xor_(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->xor_(get(dst), imm.as<i32>());
+        });
+    }
+
+    bool Compiler::tryCompileNotRM32(const RM32& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg32(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->not_(get32(Reg::GPR0));
+            // write back to destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // perform the op
+            generator_->not_(get32(Reg::GPR0));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileNotRM64(const RM64& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg64(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->not_(get(Reg::GPR0));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // perform the op
+            generator_->not_(get(Reg::GPR0));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileNegRM8(const RM8& dst) {
+        return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            generator_->neg(get8(dst));
+        });
+    }
+
+    bool Compiler::tryCompileNegRM16(const RM16& dst) {
+        return forRM16Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            generator_->neg(get16(dst));
+        });
+    }
+
+    bool Compiler::tryCompileNegRM32(const RM32& dst) {
+        return forRM32Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            generator_->neg(get32(dst));
+        });
+    }
+
+    bool Compiler::tryCompileNegRM64(const RM64& dst) {
+        return forRM64Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            generator_->neg(get(dst));
+        });
+    }
+
+    bool Compiler::tryCompileIncRM32(const RM32& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg32(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->inc(get32(Reg::GPR0));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // perform the op
+            generator_->inc(get32(Reg::GPR0));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileIncRM64(const RM64& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg64(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->inc(get(Reg::GPR0));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // perform the op
+            generator_->inc(get(Reg::GPR0));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM8(const RM8& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg8(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->dec(get8(Reg::GPR0));
+            // write back to the destination register
+            writeReg8(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M8& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR0, addr);
+            // perform the op
+            generator_->dec(get8(Reg::GPR0));
+            // write back to the register
+            writeMem8(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM16(const RM16& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg16(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->dec(get16(Reg::GPR0));
+            // write back to the destination register
+            writeReg16(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M16& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR0, addr);
+            // perform the op
+            generator_->dec(get16(Reg::GPR0));
+            // write back to the register
+            writeMem16(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM32(const RM32& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg32(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->dec(get32(Reg::GPR0));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // perform the op
+            generator_->dec(get32(Reg::GPR0));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileDecRM64(const RM64& dst) {
+        if(dst.isReg) {
+            // read the destination register
+            readReg64(Reg::GPR0, dst.reg);
+            // perform the op
+            generator_->dec(get(Reg::GPR0));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // perform the op
+            generator_->dec(get(Reg::GPR0));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            return true;
+        } 
+    }
+
+    bool Compiler::tryCompileXchgRM8R8(const RM8& dst, R8 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg8(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get8(Reg::GPR0), get8(Reg::GPR1));
+            // write back to the destination register
+            writeReg8(dst.reg, Reg::GPR0);
+            writeReg8(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M8& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get8(Reg::GPR0), get8(Reg::GPR1));
+            // write back to the register
+            writeMem8(addr, Reg::GPR0);
+            writeReg8(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileXchgRM16R16(const RM16& dst, R16 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg16(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg16(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get16(Reg::GPR0), get16(Reg::GPR1));
+            // write back to the destination register
+            writeReg16(dst.reg, Reg::GPR0);
+            writeReg16(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M16& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR0, addr);
+            // read the src register
+            readReg16(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get16(Reg::GPR0), get16(Reg::GPR1));
+            // write back to the register
+            writeMem16(addr, Reg::GPR0);
+            writeReg16(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileXchgRM32R32(const RM32& dst, R32 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg32(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileXchgRM64R64(const RM64& dst, R64 src) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg64(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            generator_->xchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileCmpxchgRM32R32(const RM32& dst, R32 src) {
+        if(dst.isReg) {
+            // save rax and set it
+            generator_->push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            // read the dst register
+            readReg32(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            generator_->cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the destination register
+            writeReg32(dst.reg, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            // set rax and restore rax
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        } else {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // save rax and set it
+            generator_->push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src register
+            readReg32(Reg::GPR1, src);
+            // perform the op
+            generator_->cmpxchg(get32(Reg::GPR0), get32(Reg::GPR1));
+            // write back to the register
+            writeMem32(addr, Reg::GPR0);
+            writeReg32(src, Reg::GPR1);
+            // set rax and restore rax
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileCmpxchgRM64R64(const RM64& dst, R64 src) {
+        if(dst.isReg) {
+            // save rax and set it
+            generator_->push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            // read the dst register
+            readReg64(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            generator_->cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            // set rax and restore rax
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // save rax and set it
+            generator_->push64(R64::RAX);
+            readReg64(Reg::GPR0, R64::RAX);
+            generator_->mov(R64::RAX, get(Reg::GPR0));
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src register
+            readReg64(Reg::GPR1, src);
+            // perform the op
+            generator_->cmpxchg(get(Reg::GPR0), get(Reg::GPR1));
+            // write back to the register
+            writeMem64(addr, Reg::GPR0);
+            writeReg64(src, Reg::GPR1);
+            // set rax and restore rax
+            generator_->mov(get(Reg::GPR0), R64::RAX);
+            writeReg64(R64::RAX, Reg::GPR0);
+            generator_->pop64(R64::RAX);
+            forceJitRegisterSync(R64::RAX);
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileLockCmpxchgM32R32(const M32& dst, R32 src) {
+        // fetch dst address
+        if(dst.encoding.index == R64::RIP) return false;
+        // save rax and set it
+        generator_->push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+        // read the src register
+        readReg32(Reg::GPR1, src);
+        // perform the op
+        generator_->lockcmpxchg(d, get32(Reg::GPR1));
+        // write back to the register
+        writeReg32(src, Reg::GPR1);
+        // set rax and restore rax
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileLockCmpxchgM64R64(const M64& dst, R64 src) {
+        // fetch dst address
+        if(dst.encoding.index == R64::RIP) return false;
+        // save rax and set it
+        generator_->push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        M64 d = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+        // read the src register
+        readReg64(Reg::GPR1, src);
+        // perform the lock cmpxchg
+        generator_->lockcmpxchg(d, get(Reg::GPR1));
+        // write back to the register
+        writeReg64(src, Reg::GPR1);
+        // set rax and restore rax
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileLockXaddM32R32(const M32& dst, R32 src) {
+        // fetch dst address
+        if(dst.encoding.index == R64::RIP) return false;
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+        // read the src register
+        readReg32(Reg::GPR1, src);
+        // perform the lock xadd
+        generator_->lockxadd(d, get32(Reg::GPR1));
+        // write back to the register
+        writeReg32(src, Reg::GPR1);
+        return true;
+    }
+
+    bool Compiler::tryCompileCwde() {
+        generator_->push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cwde();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileCdqe() {
+        generator_->push64(R64::RAX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cdqe();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileCdq() {
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cdq();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->mov(get(Reg::GPR1), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR1);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileCqo() {
+        generator_->push64(R64::RAX);
+        generator_->push64(R64::RDX);
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+        generator_->cqo();
+        generator_->mov(get(Reg::GPR0), R64::RAX);
+        writeReg64(R64::RAX, Reg::GPR0);
+        generator_->mov(get(Reg::GPR1), R64::RDX);
+        writeReg64(R64::RDX, Reg::GPR1);
+        generator_->pop64(R64::RDX);
+        generator_->pop64(R64::RAX);
+        forceJitRegisterSync(R64::RDX);
+        forceJitRegisterSync(R64::RAX);
+        return true;
+    }
+
+    bool Compiler::tryCompileLeaR32Enc32(R32 dst, const Encoding32& address) {
+        if(address.index == R32::EIZ) {
+            readReg32(Reg::GPR0, address.base);
+            generator_->lea(get32(Reg::GPR0), make32(get(Reg::GPR0), address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        } else {
+            readReg32(Reg::GPR0, address.base);
+            readReg32(Reg::GPR1, address.index);
+            generator_->lea(get32(Reg::GPR0), make32(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        }
+        return true;
+    }
+
+    bool Compiler::tryCompileLeaR32Enc64(R32 dst, const Encoding64& address) {
+        if(address.index == R64::ZERO) {
+            readReg64(Reg::GPR0, address.base);
+            generator_->lea(get32(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        } else {
+            readReg64(Reg::GPR0, address.base);
+            readReg64(Reg::GPR1, address.index);
+            generator_->lea(get32(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            writeReg32(dst, Reg::GPR0);
+        }
+        return true;
+    }
+
+    bool Compiler::tryCompileLeaR64Enc64(R64 dst, const Encoding64& address) {
+        if(address.index == R64::ZERO) {
+            readReg64(Reg::GPR0, address.base);
+            generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), address.displacement));
+            writeReg64(dst, Reg::GPR0);
+        } else {
+            readReg64(Reg::GPR0, address.base);
+            readReg64(Reg::GPR1, address.index);
+            generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), address.scale, address.displacement));
+            writeReg64(dst, Reg::GPR0);
+        }
+        return true;
+    }
+
+    bool Compiler::tryCompileNop() {
+        return true;
+    }
+
+    bool Compiler::tryCompileBsfR32R32(R32 dst, R32 src) {
+        readReg32(Reg::GPR0, dst);
+        readReg32(Reg::GPR1, src);
+        generator_->bsf(get32(Reg::GPR0), get32(Reg::GPR1));
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileBsfR64R64(R64 dst, R64 src) {
+        readReg64(Reg::GPR0, dst);
+        readReg64(Reg::GPR1, src);
+        generator_->bsf(get(Reg::GPR0), get(Reg::GPR1));
+        writeReg64(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileBsrR32R32(R32 dst, R32 src) {
+        readReg32(Reg::GPR0, dst);
+        readReg32(Reg::GPR1, src);
+        generator_->bsr(get32(Reg::GPR0), get32(Reg::GPR1));
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileTzcntR32RM32(R32 dst, const RM32& src) {
+        return forRM32RM32(RM32{true, dst, {}}, src, [&](Reg dst, Reg src) {
+            generator_->tzcnt(get32(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileSetRM8(Cond cond, const RM8& dst) {
+        return forRM8Imm(dst, Imm{}, [&](Reg dst, Imm) {
+            generator_->set(cond, get8(dst));
+        });
+    }
+
+    bool Compiler::tryCompileCmovR32RM32(Cond cond, R32 dst, const RM32& src) {
+        RM32 d {true, dst, {}};
+        return forRM32RM32(d, src, [&](Reg dst, Reg src) {
+            generator_->cmov(cond, get32(dst), get32(src));
+        }, true);
+    }
+
+    bool Compiler::tryCompileCmovR64RM64(Cond cond, R64 dst, const RM64& src) {
+        RM64 d {true, dst, {}};
+        return forRM64RM64(d, src, [&](Reg dst, Reg src) {
+            generator_->cmov(cond, get(dst), get(src));
+        }, true);
+    }
+
+    bool Compiler::tryCompileBswapR32(R32 dst) {
+        readReg32(Reg::GPR0, dst);
+        generator_->bswap(get32(Reg::GPR0));
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileBswapR64(R64 dst) {
+        readReg64(Reg::GPR0, dst);
+        generator_->bswap(get(Reg::GPR0));
+        writeReg64(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileBtRM32R32(const RM32& dst, R32 src) {
+        RM32 s {true, src, {}};
+        return forRM32RM32(dst, s, [&](Reg dst, Reg src) {
+            generator_->bt(get32(dst), get32(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileBtRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            generator_->bt(get(dst), get(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileBtrRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            generator_->btr(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileBtrRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->btr(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileBtsRM64R64(const RM64& dst, R64 src) {
+        RM64 s {true, src, {}};
+        return forRM64RM64(dst, s, [&](Reg dst, Reg src) {
+            generator_->bts(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileBtsRM64Imm(const RM64& dst, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            generator_->bts(get(dst), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRepStosM8R8(const M8& dst, R8 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R8::AL) return false;
+        // save rdi, rcx and rax
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RCX);
+        generator_->push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg8(Reg::GPR0, R8::AL);
+        generator_->mov(R8::AL, get8(Reg::GPR0));
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repstos8();
+
+        // write back the dst address (address+1*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 1, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        generator_->pop64(R64::RAX);
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RDI);
+        forceJitRegisterSync(R64::RAX);
+        forceJitRegisterSync(R64::RCX);
+        forceJitRegisterSync(R64::RDI);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepStosM32R32(const M32& dst, R32 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R32::EAX) return false;
+        // save rdi, rcx and rax
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RCX);
+        generator_->push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg32(Reg::GPR0, R32::EAX);
+        generator_->mov(R32::EAX, get32(Reg::GPR0));
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repstos32();
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        generator_->pop64(R64::RAX);
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RDI);
+        forceJitRegisterSync(R64::RAX);
+        forceJitRegisterSync(R64::RCX);
+        forceJitRegisterSync(R64::RDI);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepStosM64R64(const M64& dst, R64 src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src != R64::RAX) return false;
+        // save rdi, rcx and rax
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RCX);
+        generator_->push64(R64::RAX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src value
+        readReg64(Reg::GPR0, R64::RAX);
+        generator_->mov(R64::RAX, get(Reg::GPR0));
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+        generator_->mov(R64::RCX, get(Reg::GPR1));
+
+        generator_->repstos64();
+
+        // write back the dst address (address+8*counter)
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), get(Reg::GPR1), 1, 0));
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+
+        // restore rax, rcx and rdi
+        generator_->pop64(R64::RAX);
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RDI);
+        forceJitRegisterSync(R64::RAX);
+        forceJitRegisterSync(R64::RCX);
+        forceJitRegisterSync(R64::RDI);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM8M8(const M8& dst, const M8& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI); // CANT USE RSI ??
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs8();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // write back the dst address (address+counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 1, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 1, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM16M16(const M16& dst, const M16& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI);
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs16();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // write back the dst address (address+2*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 2, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+2*counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 2, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM32M32(const M32& dst, const M32& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI);
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs32();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+4*counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileRepMovsM64M64(const M64& dst, const M64& src) {
+        if(dst.encoding.base != R64::RDI) return false;
+        if(src.encoding.base != R64::RSI) return false;
+        // save rdi, rsi and rcx
+        generator_->push64(R64::RDI);
+        generator_->push64(R64::RSI);
+        generator_->push64(R64::RCX);
+
+        // get the dst address
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(R64::RDI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+
+        // get the src address
+        readReg64(Reg::GPR0, R64::RSI);
+
+        // set the counter
+        readReg64(Reg::GPR1, R64::RCX);
+
+        // These operations have to be delayed because RSI and RCX are used in the jit
+        generator_->lea(R64::RSI, make64(get(Reg::MEM_BASE), get(Reg::GPR0), 1, 0));
+        generator_->mov(R32::ECX, get32(Reg::GPR1));
+
+        generator_->repmovs64();
+
+        // restore rcx, rsi and rdi immediately
+        generator_->pop64(R64::RCX);
+        generator_->pop64(R64::RSI);
+        generator_->pop64(R64::RDI);
+
+        // double the counter
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), get(Reg::GPR1), 1, 0));
+
+        // write back the dst address (address+2*4*counter)
+        readReg64(Reg::GPR0, R64::RDI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RDI, Reg::GPR0);
+
+        // write back the dst address (address+2*4*counter)
+        readReg64(Reg::GPR0, R64::RSI);
+        generator_->lea(get(Reg::GPR0), make64(get(Reg::GPR0), get(Reg::GPR1), 4, 0));
+        writeReg64(R64::RSI, Reg::GPR0);
+
+        // write back the counter (is 0)
+        generator_->mov(get(Reg::GPR0), (u64)0); // cannot use xor: we must not change the flags
+        writeReg64(R64::RCX, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovMmxMmx(MMX dst, MMX src) {
+        checkCompilation(Insn::MOV_MMX_MMX, static_cast<void(Assembler::*)(MMX, MMX)>(&Assembler::mov), dst, src, dst, src);
+        readRegMM(toGpr(src), src);
+        generator_->mov(get(toGpr(dst)), get(toGpr(src)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    i32 registerOffset(R32 reg);
+
+    bool Compiler::tryCompileMovdMmxRM32(MMX dst, const RM32& src) {
+        if(src.isReg) {
+            readReg32(Reg::GPR0, src.reg);
+            generator_->movd(get(toGpr(dst)), get32(Reg::GPR0));
+            writeRegMM(dst, toGpr(dst));
+            return true;
+        } else {
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
+            M32 s = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+            generator_->movd(get(toGpr(dst)), s);
+            writeRegMM(dst, toGpr(dst));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovdRM32Mmx(const RM32& dst, MMX src) {
+        if(dst.isReg) {
+            readRegMM(toGpr(src), src);
+            generator_->movd(get32(Reg::GPR0), get(toGpr(src)));
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            readRegMM(toGpr(src), src);
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
+            M32 d = make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+            generator_->movd(d, get(toGpr(src)));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovqMmxRM64(MMX dst, const RM64& src) {
+        if(src.isReg) {
+            return false;
+            // M64 s = make64(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
+            // generator_->mov(get(toGpr(dst)), s);
+            // writeRegMM(dst, toGpr(dst));
+            // return true;
+        } else {
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
+            M64 s = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+            generator_->movq(get(toGpr(dst)), s);
+            writeRegMM(dst, toGpr(dst));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovqRM64Mmx(const RM64& dst, MMX src) {
+        if(dst.isReg) {
+            return false;
+            // M64 s = make64(get(Reg::REG_BASE), R64::ZERO, 1, registerOffset(src.reg));
+            // generator_->mov(get(toGpr(dst)), s);
+            // writeRegMM(dst, toGpr(dst));
+            // return true;
+        } else {
+            readRegMM(toGpr(src), src);
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
+            M64 d = make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset);
+            generator_->movq(d, get(toGpr(src)));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompilePmovmskbR32Mmx(R32 dst, MMX src) {
+        readRegMM(toGpr(src), src);
+        generator_->pmovmskb(get32(Reg::GPR0), get(toGpr(src)));
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePandMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pand(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePorMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->por(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePxorMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pxor(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePadddMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddqMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddsbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddsb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddusbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePadduswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->paddusw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubdMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubsbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubsb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubusbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubuswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psubusw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaddwdMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmaddwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsadbwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psadbw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmulhw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmullwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmullw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePavgbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pavgb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePavgwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pavgw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaxubMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmaxub(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePminubMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pminub(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpeqbMmxMmxM64(MMX dst, const MMXM64& src) {
+        if(!src.isReg) return false;
+        readRegMM(toGpr(dst), dst);
+        readRegMM(toGpr(src.reg), src.reg);
+        generator_->pcmpeqb(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePcmpeqwMmxMmxM64(MMX dst, const MMXM64& src) {
+        if(!src.isReg) return false;
+        readRegMM(toGpr(dst), dst);
+        readRegMM(toGpr(src.reg), src.reg);
+        generator_->pcmpeqw(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePcmpeqdMmxMmxM64(MMX dst, const MMXM64& src) {
+        if(!src.isReg) return false;
+        readRegMM(toGpr(dst), dst);
+        readRegMM(toGpr(src.reg), src.reg);
+        generator_->pcmpeqd(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsllwMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psllw(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePslldMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->pslld(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsllqMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psllq(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrlwMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psrlw(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrldMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psrld(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrlqMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psrlq(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrawMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psraw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsrawMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psraw(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsradMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->psrad(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsradMmxImm(MMX dst, Imm imm) {
+        readRegMM(toGpr(dst), dst);
+        generator_->psrad(get(toGpr(dst)), imm.as<u8>());
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePshufbMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pshufb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePshufwMmxMmxM64(MMX dst, const MMXM64& src, Imm imm) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pshufw(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePunpcklbwMmxMmxM32(MMX dst, const MMXM32& src) {
+        return forMmxMmxM32(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->punpcklbw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpcklwdMmxMmxM32(MMX dst, const MMXM32& src) {
+        return forMmxMmxM32(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->punpcklwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckldqMmxMmxM32(MMX dst, const MMXM32& src) {
+        return forMmxMmxM32(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->punpckldq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhbwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->punpckhbw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhwdMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->punpckhwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhdqMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->punpckhdq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePacksswbMmxMmxM64(MMX dst, const MMXM64& src) {
+        if(!src.isReg) return false;
+        readRegMM(toGpr(dst), dst);
+        readRegMM(toGpr(src.reg), src.reg);
+        generator_->packsswb(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePackssdwMmxMmxM64(MMX dst, const MMXM64& src) {
+        if(!src.isReg) return false;
+        readRegMM(toGpr(dst), dst);
+        readRegMM(toGpr(src.reg), src.reg);
+        generator_->packssdw(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePackuswbMmxMmxM64(MMX dst, const MMXM64& src) {
+        if(!src.isReg) return false;
+        readRegMM(toGpr(dst), dst);
+        readRegMM(toGpr(src.reg), src.reg);
+        generator_->packuswb(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeRegMM(dst, toGpr(dst));
+        return true;
+    }
+
+
+    bool Compiler::tryCompileMovXmmXmm(XMM dst, XMM src) {
+        checkCompilation(Insn::MOV_XMM_XMM, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::mov), dst, src, dst, src);
+        readReg128(toGpr(src), src);
+        generator_->mov(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovqXmmRM64(XMM dst, const RM64& src) {
+        if(src.isReg) {
+            checkCompilation(Insn::MOVQ_XMM_RM64, static_cast<void(Assembler::*)(XMM, R64)>(&Assembler::movq), dst, src, dst, src.reg);
+            // read the src register
+            readReg64(Reg::GPR0, src.reg);
+            // mov into 128-bit reg
+            generator_->movq(get(toGpr(dst)), get(Reg::GPR0));
+            // write to the destination register
+            writeReg128(dst, toGpr(dst));
+            return true;
+        } else {
+            // fetch src address
+            const M64& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value at the address
+            readMem64(Reg::GPR0, addr);
+            // mov into 128-bit reg
+            generator_->movq(get(toGpr(dst)), get(Reg::GPR0));
+            // write to the destination register
+            writeReg128(dst, toGpr(dst));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovqRM64Xmm(const RM64& dst, XMM src) {
+        if(dst.isReg) {
+            checkCompilation(Insn::MOVQ_RM64_XMM, static_cast<void(Assembler::*)(R64, XMM)>(&Assembler::movq), dst, src, dst.reg, src);
+            // read the src register
+            readReg128(toGpr(src), src);
+            // mov into 128-bit reg
+            generator_->movq(get(Reg::GPR0), get(toGpr(src)));
+            // write to the destination register
+            writeReg64(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the src value
+            readReg128(toGpr(src), src);
+            // mov into 64-bit reg
+            generator_->movq(get(Reg::GPR0), get(toGpr(src)));
+            // write to the destination address
+            writeMem64(addr, Reg::GPR0);
+            return true;
+        }
+    }
+
+    M128 make128(R64 base, R64 index, u8 scale, i32 disp);
+
+    bool Compiler::tryCompileMovuM128Xmm(const M128& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOV_UNALIGNED_M128_XMM, static_cast<void(Assembler::*)(const M128&, XMM)>(&Assembler::movu), dst, src, dst, src);
+        // read the value to the register
+        readReg128(toGpr(src), src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the write
+        generator_->movu(make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovuXmmM128(XMM dst, const M128& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOV_UNALIGNED_XMM_M128, static_cast<void(Assembler::*)(XMM, const M128&)>(&Assembler::movu), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the read
+        generator_->movu(get(toGpr(dst)), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value to the register
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovaM128Xmm(const M128& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOV_ALIGNED_M128_XMM, static_cast<void(Assembler::*)(const M128&, XMM)>(&Assembler::mova), dst, src, dst, src);
+        // read the value to the register
+        readReg128(toGpr(src), src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the write
+        generator_->mova(make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovaXmmM128(XMM dst, const M128& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOV_ALIGNED_XMM_M128, static_cast<void(Assembler::*)(XMM, const M128&)>(&Assembler::mova), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the read
+        generator_->mova(get(toGpr(dst)), make128(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value to the register
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovdXmmRM32(XMM dst, const RM32& src) {
+        if(src.isReg) {
+            checkCompilation(Insn::MOVD_XMM_RM32, static_cast<void(Assembler::*)(XMM, R32)>(&Assembler::movd), dst, src, dst, src.reg);
+            // read src register
+            readReg32(Reg::GPR0, src.reg);
+            // do the read
+            generator_->movd(get(toGpr(dst)), get32(Reg::GPR0));
+            // write the value to the register
+            writeReg128(dst, toGpr(dst));
+            return true;
+        } else {
+            // fetch src address
+            if(src.mem.segment == Segment::FS) return false;
+            if(src.mem.encoding.index == R64::RIP) return false;
+            checkCompilation(Insn::MOVD_XMM_RM32, static_cast<void(Assembler::*)(XMM, const M32&)>(&Assembler::movd), dst, src, dst, src.mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src.mem);
+            // do the read
+            generator_->movd(get(toGpr(dst)), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            // write the value to the register
+            writeReg128(dst, toGpr(dst));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovdRM32Xmm(const RM32& dst, XMM src) {
+        if(dst.isReg) {
+            checkCompilation(Insn::MOVD_RM32_XMM, static_cast<void(Assembler::*)(R32, XMM)>(&Assembler::movd), dst, src, dst.reg, src);
+            // read src register
+            readReg128(toGpr(src), src);
+            // do the write
+            generator_->movd(get32(Reg::GPR0), get(toGpr(src)));
+            // write the value to the register
+            writeReg32(dst.reg, Reg::GPR0);
+            return true;
+        } else {
+            // fetch dst address
+            if(dst.mem.segment == Segment::FS) return false;
+            if(dst.mem.encoding.index == R64::RIP) return false;
+            checkCompilation(Insn::MOVD_RM32_XMM, static_cast<void(Assembler::*)(const M32&, XMM)>(&Assembler::movd), dst, src, dst.mem, src);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst.mem);
+            // read the value from the src register
+            readReg128(toGpr(src), src);
+            // do the read
+            generator_->movd(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+            return true;
+        }
+    }
+
+    bool Compiler::tryCompileMovssXmmM32(XMM dst, const M32& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVSS_XMM_M32, static_cast<void(Assembler::*)(XMM, const M32&)>(&Assembler::movss), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the read
+        generator_->movss(get(toGpr(dst)), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value to the register
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovssM32Xmm(const M32& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVSS_M32_XMM, static_cast<void(Assembler::*)(const M32&, XMM)>(&Assembler::movss), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the read
+        readReg128(toGpr(src), src);
+        // write the value to the register
+        generator_->movss(make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovssXmmXmm(XMM dst, XMM src) {
+        checkCompilation(Insn::MOVSS_XMM_XMM, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::movss), dst, src, dst, src);
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->movss(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovsdXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVSD_XMM_M64, static_cast<void(Assembler::*)(XMM, const M64&)>(&Assembler::movsd), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the read
+        generator_->movsd(get(toGpr(dst)), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value to the register
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovsdM64Xmm(const M64& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVSD_M64_XMM, static_cast<void(Assembler::*)(const M64&, XMM)>(&Assembler::movsd), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the read
+        readReg128(toGpr(src), src);
+        // write the value to the register
+        generator_->movsd(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovlpsXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVLPS_XMM_M64, static_cast<void(Assembler::*)(XMM, M64)>(&Assembler::movlps), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // do the mov into the low part
+        generator_->movlps(get(toGpr(dst)), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value back to the register
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovlpsM64Xmm(const M64& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVLPS_M64_XMM, static_cast<void(Assembler::*)(M64, XMM)>(&Assembler::movlps), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // do the read
+        readReg128(toGpr(src), src);
+        // write the value to the register
+        generator_->movlps(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovhpsXmmM64(XMM dst, const M64& src) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVHPS_XMM_M64, static_cast<void(Assembler::*)(XMM, M64)>(&Assembler::movhps), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // do the mov into the high part
+        generator_->movhps(get(toGpr(dst)), make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+        // write the value back to the register
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovhpsM64Xmm(const M64& dst, XMM src) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        checkCompilation(Insn::MOVHPS_M64_XMM, static_cast<void(Assembler::*)(M64, XMM)>(&Assembler::movhps), dst, src, dst, src);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        // read the src register
+        readReg128(toGpr(src), src);
+        // do the mov from the high part
+        generator_->movhps(make64(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovhlpsXmmXmm(XMM dst, XMM src) {
+        checkCompilation(Insn::MOVHLPS_XMM_XMM, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::movhlps), dst, src, dst, src);
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->movhlps(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovlhpsXmmXmm(XMM dst, XMM src) {
+        checkCompilation(Insn::MOVLHPS_XMM_XMM, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::movlhps), dst, src, dst, src);
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->movlhps(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePmovmskbR32Xmm(R32 dst, XMM src) {
+        checkCompilation(Insn::PMOVMSKB_R32_XMM, static_cast<void(Assembler::*)(R32, XMM)>(&Assembler::pmovmskb), dst, src, dst, src);
+        readReg128(toGpr(src), src);
+        readReg32(Reg::GPR0, dst);
+        generator_->pmovmskb(get32(Reg::GPR0), get(toGpr(src)));
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompileMovq2qdXMMMMX(XMM dst, MMX src) {
+        checkCompilation(Insn::MOVQ2DQ_XMM_MM, static_cast<void(Assembler::*)(XMM, MMX)>(&Assembler::movq2dq), dst, src, dst, src);
+        readRegMM(toGpr(src), src);
+        generator_->movq2dq(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePandXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(src.isReg) {
+            checkCompilation(Insn::PAND_XMM_XMMM128, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::pand), dst, src, dst, src.reg);
+        }
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pand(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePandnXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(src.isReg) {
+            checkCompilation(Insn::PANDN_XMM_XMMM128, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::pandn), dst, src, dst, src.reg);
+        }
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pandn(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePorXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(src.isReg) {
+            checkCompilation(Insn::POR_XMM_XMMM128, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::por), dst, src, dst, src.reg);
+        }
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->por(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePxorXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(src.isReg) {
+            checkCompilation(Insn::PXOR_XMM_XMMM128, static_cast<void(Assembler::*)(XMM, XMM)>(&Assembler::pxor), dst, src, dst, src.reg);
+        }
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pxor(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePadddXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddsbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddsb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePaddusbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePadduswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->paddusw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubsbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubsb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubusbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubusb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsubuswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psubusw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaddwdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmaddwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmulhw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmullwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmullw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhuwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmulhuw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmuludqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmuludq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePavgbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pavgb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePavgwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pavgw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaxubXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmaxub(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePminubXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pminub(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePtestXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->ptest(get(dst), get(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompilePcmpeqbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pcmpeqb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpeqwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pcmpeqw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpeqdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pcmpeqd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpgtbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pcmpgtb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpgtwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pcmpgtw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePcmpgtdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pcmpgtd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsllwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psllw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsllwXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSLLW_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psllw), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psllw(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePslldXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pslld(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePslldXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSLLD_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::pslld), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->pslld(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsllqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psllq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsllqXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSLLQ_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psllq), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psllq(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePslldqXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSLLDQ_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::pslldq), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->pslldq(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrlwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psrlw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsrlwXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSRLW_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psrlw), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psrlw(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrldXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psrld(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsrldXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSRLD_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psrld), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psrld(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrlqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psrlq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsrlqXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSRLQ_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psrlq), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psrlq(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrldqXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSRLDQ_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psrldq), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psrldq(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsrawXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psraw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsrawXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSRAW_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psraw), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psraw(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePsradXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->psrad(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePsradXmmImm(XMM dst, Imm imm) {
+        checkCompilation(Insn::PSRAD_XMM_IMM, static_cast<void(Assembler::*)(XMM, u8)>(&Assembler::psrad), dst, imm, dst, imm.as<u8>());
+        readReg128(toGpr(dst), dst);
+        generator_->psrad(get(toGpr(dst)), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePshufbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pshufb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePshufdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pshufd(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePshuflwXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pshuflw(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePshufhwXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pshufhw(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePinsrwXmmR32Imm(XMM dst, const R32& src, Imm imm) {
+        readReg128(toGpr(dst), dst);
+        readReg32(Reg::GPR0, src);
+        generator_->pinsrw(get(toGpr(dst)), get32(Reg::GPR0), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePinsrwXmmM16Imm(XMM dst, const M16& src, Imm imm) {
+        // fetch src address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // read the src value at the address
+        readMem16(Reg::GPR0, addr);
+        readReg128(toGpr(dst), dst);
+        generator_->pinsrw(get(toGpr(dst)), get32(Reg::GPR0), imm.as<u8>());
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePextrwM16XmmImm(M16 dst, XMM src, Imm imm) {
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        Mem dstAddr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, dst);
+        readReg128(toGpr(src), src);
+        generator_->pextrw(get32(Reg::GPR0), get(toGpr(src)), imm.as<u8>());
+        writeMem16(dstAddr, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePextrwR32XmmImm(R32 dst, XMM src, Imm imm) {
+        readReg128(toGpr(src), src);
+        generator_->pextrw(get32(Reg::GPR0), get(toGpr(src)), imm.as<u8>());
+        writeReg32(dst, Reg::GPR0);
+        return true;
+    }
+
+    bool Compiler::tryCompilePunpcklbwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpcklbw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpcklwdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpcklwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckldqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpckldq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpcklqdqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpcklqdq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhbwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpckhbw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhwdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpckhwd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhdqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpckhdq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePunpckhqdqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->punpckhqdq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePacksswbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->packsswb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePackssdwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->packssdw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePackuswbXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->packuswb(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePackusdwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->packusdw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAddssXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->addss(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileAddssXmmM32(XMM dst, const M32& src) {
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->addss(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileSubssXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->subss(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileSubssXmmM32(XMM dst, const M32& src) {
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->subss(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMulssXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->mulss(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMulssXmmM32(XMM dst, const M32& src) {
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->mulss(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileDivssXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->divss(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileDivssXmmM32(XMM dst, const M32& src) {
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& addr, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            generator_->divss(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileComissXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->comiss(get(toGpr(dst)), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtss2sdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->cvtss2sd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtss2sdXmmM32(XMM dst, const M32& src) {
+        return forXmmM32(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movss(get(src), make32(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->cvtss2sd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvtsi2ssXmmRM32(XMM dst, const RM32& src) {
+        return forXmmRM32(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2ss(get(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvtsi2ssXmmRM64(XMM dst, const RM64& src) {
+        return forXmmRM64(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2ss(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAddsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->addsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileAddsdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->addsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileSubsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->subsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileSubsdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->subsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMulsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->mulsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMulsdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->mulsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileDivsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->divsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileDivsdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->divsd(get(dst), get(src));
+        });
+    }
+
+    static_assert((u8)FCond::EQ == 0);
+    static_assert((u8)FCond::LT == 1);
+    static_assert((u8)FCond::LE == 2);
+    static_assert((u8)FCond::UNORD == 3);
+    static_assert((u8)FCond::NEQ == 4);
+    static_assert((u8)FCond::NLT == 5);
+    static_assert((u8)FCond::NLE == 6);
+    static_assert((u8)FCond::ORD == 7);
+
+    bool Compiler::tryCompileCmpsdXmmXmmFcond(XMM dst, XMM src, FCond cond) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->cmpsd(get(toGpr(dst)), get(toGpr(src)), cond);
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileCmpsdXmmM64Fcond(XMM dst, const M64& src, FCond cond) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->cmpsd(get(dst), get(src), cond);
+        });
+    }
+
+    bool Compiler::tryCompileComisdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->comisd(get(toGpr(dst)), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileComisdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->comisd(get(dst), get(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileUcomisdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->ucomisd(get(toGpr(dst)), get(toGpr(src)));
+        return true;
+    }
+
+    bool Compiler::tryCompileUcomisdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->ucomisd(get(dst), get(src));
+        }, false);
+    }
+
+    bool Compiler::tryCompileMaxsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->maxsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMinsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->minsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMinsdXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->minsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileSqrtsdXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->sqrtsd(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtsd2ssXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->cvtsd2ss(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileCvtsd2ssXmmM64(XMM dst, const M64& src) {
+        return forXmmM64(dst, src, [&](Reg128 dst, const Mem& mem, Reg128 src) {
+            generator_->movsd(get(src), make64(get(Reg::MEM_BASE), get(mem.base), 1, mem.offset));
+            generator_->cvtsd2ss(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvtsi2sdXmmRM32(XMM dst, const RM32& src) {
+        return forXmmRM32(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2sd32(get(dst), get32(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvtsi2sdXmmRM64(XMM dst, const RM64& src) {
+        return forXmmRM64(dst, src, [&](Reg128 dst, Reg src) {
+            generator_->cvtsi2sd64(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvttsd2siR32Xmm(R32 dst, XMM src) {
+        // get the src value
+        readReg128(toGpr(src), src);
+        generator_->cvttsd2si32(get32(Reg::GPR1), get(toGpr(src)));
+        writeReg32(dst, Reg::GPR1);
+        return true;
+    }
+
+    bool Compiler::tryCompileCvttsd2siR64Xmm(R64 dst, XMM src) {
+        // get the src value
+        readReg128(toGpr(src), src);
+        generator_->cvttsd2si64(get(Reg::GPR1), get(toGpr(src)));
+        writeReg64(dst, Reg::GPR1);
+        return true;
+    }
+
+    bool Compiler::tryCompileAddpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->addps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileSubpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->subps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMulpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->mulps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileDivpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->divps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMaxpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->maxps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMaxpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->maxpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMinpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->minps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMinpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->minpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCmppsXmmXmmM128Fcond(XMM dst, const XMMM128& src, FCond cond) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            static_assert((u8)FCond::EQ == 0);
+            static_assert((u8)FCond::LT == 1);
+            static_assert((u8)FCond::LE == 2);
+            static_assert((u8)FCond::UNORD == 3);
+            static_assert((u8)FCond::NEQ == 4);
+            static_assert((u8)FCond::NLT == 5);
+            static_assert((u8)FCond::NLE == 6);
+            static_assert((u8)FCond::ORD == 7);
+            generator_->cmpps(get(dst), get(src), cond);
+        });
+    }
+
+    bool Compiler::tryCompileCvtps2dqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->cvtps2dq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvttps2dqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->cvttps2dq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvttpd2dqXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->cvttpd2dq(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileCvtdq2psXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->cvtdq2ps(get(dst), get(src));
+        });
+    }
+
+
+    bool Compiler::tryCompileAddpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->addpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileSubpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->subpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileMulpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->mulpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileDivpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->divpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->andpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileAndnpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->andnpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileOrpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->orpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileXorpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->xorpd(get(dst), get(src));
+        });
+    }
+
+
+    bool Compiler::tryCompileShufpsXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->shufps(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileShufpdXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->shufpd(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileUnpckhpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpckhps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileUnpckhpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpckhpd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileUnpcklpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpcklps(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileUnpcklpdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->unpcklpd(get(dst), get(src));
+        });
+    }
+
+
+    bool Compiler::tryCompileLddquXmmM128(XMM dst, const M128& src) {
+        return tryCompileMovuXmmM128(dst, src);
+    }
+
+    bool Compiler::tryCompileMovddupXmmXmm(XMM dst, XMM src) {
+        readReg128(toGpr(dst), dst);
+        readReg128(toGpr(src), src);
+        generator_->movddup(get(toGpr(dst)), get(toGpr(src)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileMovddupXmmM64(XMM dst, const M64& src) {
+        RM64 src2 { false, {}, src };
+        if(!tryCompileMovqXmmRM64(dst, src2)) return false;
+        return tryCompileMovddupXmmXmm(dst, dst);
+    }
+
+    bool Compiler::tryCompilePalignrMmxMmxM64(MMX dst, const MMXM64& src, Imm imm) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->palignr(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePhaddwMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->phaddw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePhadddMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->phaddd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaddubswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmaddubsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhrswMmxMmxM64(MMX dst, const MMXM64& src) {
+        return forMmxMmxM64(dst, src, [&](RegMM dst, RegMM src) {
+            generator_->pmulhrsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePalignrXmmXmmM128Imm(XMM dst, const XMMM128& src, Imm imm) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->palignr(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePhaddwXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->phaddw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePhadddXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->phaddd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaddubswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmaddubsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmulhrswXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmulhrsw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmaxsdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmaxsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePminsdXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pminsd(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePmovzxbwXMMXMM(XMM dst, XMM src) {
+        return forXmmXmmM128(dst, XMMM128{true, src, {}}, [&](Reg128 dst, Reg128 src) {
+            generator_->pmovzxbw(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompileRoundpsXmmXmmImm(XMM dst, XMM src, Imm imm) {
+        return forXmmXmmM128(dst, XMMM128{true, src, {}}, [&](Reg128 dst, Reg128 src) {
+            generator_->roundps(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompileRoundpdXmmXmmImm(XMM dst, XMM src, Imm imm) {
+        return forXmmXmmM128(dst, XMMM128{true, src, {}}, [&](Reg128 dst, Reg128 src) {
+            generator_->roundpd(get(dst), get(src), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePmulldXmmXmmM128(XMM dst, const XMMM128& src) {
+        return forXmmXmmM128(dst, src, [&](Reg128 dst, Reg128 src) {
+            generator_->pmulld(get(dst), get(src));
+        });
+    }
+
+    bool Compiler::tryCompilePextrdRM32XMMImm(const RM32& dst, XMM src, Imm imm) {
+        return forRM32Imm(dst, imm, [&](Reg dst, Imm imm) {
+            readReg128(toGpr(src), src);
+            generator_->pextrd(get32(dst), get(toGpr(src)), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePextrqRM64XMMImm(const RM64& dst, XMM src, Imm imm) {
+        return forRM64Imm(dst, imm, [&](Reg dst, Imm imm) {
+            readReg128(toGpr(src), src);
+            generator_->pextrq(get(dst), get(toGpr(src)), imm.as<u8>());
+        });
+    }
+
+    bool Compiler::tryCompilePinsrdRM32XMMImm(XMM dst, const RM32& src, Imm imm) {
+        return forRM32Imm(src, imm, [&](Reg src, Imm imm) {
+            readReg128(toGpr(dst), dst);
+            generator_->pinsrd(get(toGpr(dst)), get32(src), imm.as<u8>());
+            writeReg128(dst, toGpr(dst));
+        }, false);
+    }
+
+    bool Compiler::tryCompileBlendvpsXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(!src.isReg) return false;
+        if(dst == XMM::XMM0) return false;
+        if(src.reg == XMM::XMM0) return false;
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // read the src register
+        readReg128(toGpr(src.reg), src.reg);
+        // read the xmm0 register
+        readReg128(toGpr(XMM::XMM0), XMM::XMM0);
+        generator_->blendvps(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompilePblendvbXmmXmmM128(XMM dst, const XMMM128& src) {
+        if(!src.isReg) return false;
+        if(dst == XMM::XMM0) return false;
+        if(src.reg == XMM::XMM0) return false;
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // read the src register
+        readReg128(toGpr(src.reg), src.reg);
+        // read the xmm0 register
+        readReg128(toGpr(XMM::XMM0), XMM::XMM0);
+        generator_->pblendvb(get(toGpr(dst)), get(toGpr(src.reg)));
+        writeReg128(dst, toGpr(dst));
+        return true;
+    }
+
+    bool Compiler::tryCompileStmxcsrM32(const M32& dst) {
+        // fetch dst address
+        if(dst.segment == Segment::FS) return false;
+        if(dst.encoding.index == R64::RIP) return false;
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, dst);
+        loadMxcsrFromEmulator(Reg::GPR1);
+        writeMem32(addr, Reg::GPR1);
+        return true;
+    }
+
+
+    R8 Compiler::get8(Compiler::Reg reg) {
+        switch(reg) {
+            case Reg::RAX: return R8::AL;
+            case Reg::RDX: return R8::DL;
+            case Reg::GPR0: return R8::R8B;
+            case Reg::GPR1: return R8::R9B;
+            case Reg::MEM_ADDR: return R8::R10B;
+            case Reg::REG_BASE: return R8::SIL;
+            case Reg::MMX_BASE: return R8::R12B;
+            case Reg::XMM_BASE: return R8::R13B;
+            case Reg::MEM_BASE: return R8::CL;
+            case Reg::JIT_ARGS: return R8::R15B;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    R16 Compiler::get16(Compiler::Reg reg) {
+        switch(reg) {
+            case Reg::RAX: return R16::AX;
+            case Reg::RDX: return R16::DX;
+            case Reg::GPR0: return R16::R8W;
+            case Reg::GPR1: return R16::R9W;
+            case Reg::MEM_ADDR: return R16::R10W;
+            case Reg::REG_BASE: return R16::SI;
+            case Reg::MMX_BASE: return R16::R12W;
+            case Reg::XMM_BASE: return R16::R13W;
+            case Reg::MEM_BASE: return R16::CX;
+            case Reg::JIT_ARGS: return R16::R15W;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    R32 Compiler::get32(Compiler::Reg reg) {
+        switch(reg) {
+            case Reg::RAX: return R32::EAX;
+            case Reg::RDX: return R32::EDX;
+            case Reg::GPR0: return R32::R8D;
+            case Reg::GPR1: return R32::R9D;
+            case Reg::MEM_ADDR: return R32::R10D;
+            case Reg::REG_BASE: return R32::ESI;
+            case Reg::MMX_BASE: return R32::R12D;
+            case Reg::XMM_BASE: return R32::R13D;
+            case Reg::MEM_BASE: return R32::ECX;
+            case Reg::JIT_ARGS: return R32::R15D;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    R64 Compiler::get(Compiler::Reg reg) {
+        switch(reg) {
+            case Reg::RAX: return R64::RAX;
+            case Reg::RDX: return R64::RDX;
+            case Reg::GPR0: return R64::R8;
+            case Reg::GPR1: return R64::R9;
+            case Reg::MEM_ADDR: return R64::R10;
+            case Reg::REG_BASE: return R64::RSI;
+            case Reg::MMX_BASE: return R64::R12;
+            case Reg::XMM_BASE: return R64::R13;
+            case Reg::MEM_BASE: return R64::RCX;
+            case Reg::JIT_ARGS: return R64::R15;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R8 dst) const {
+        if(directR64()) {
+            if(dst == R8::AL) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R8::DL) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
+        }
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R16 dst) const {
+        if(directR64()) {
+            if(dst == R16::AX) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R16::DX) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
+        }
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R32 dst) const {
+        if(directR64()) {
+            if(dst == R32::EAX) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R32::EDX) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
+        }
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation1 Compiler::allocateReg(R64 dst) const {
+        if(directR64()) {
+            if(dst == R64::RAX) {
+                return RegisterAllocation1 { Reg::RAX };
+            }
+            if(dst == R64::RDX) {
+                return RegisterAllocation1 { Reg::RDX };
+            }
+        }
+        return RegisterAllocation1 { Reg::GPR0 };
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R8 dst, R8 src) const {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R16 dst, R16 src) const {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R32 dst, R32 src) const {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+    Compiler::RegisterAllocation2 Compiler::allocateReg(R64 dst, R64 src) const {
+        auto dstalloc = allocateReg(dst);
+        auto srcalloc = allocateReg(src);
+        if(dstalloc.reg0 == Reg::GPR0 && srcalloc.reg0 == Reg::GPR0) {
+            return RegisterAllocation2 { Reg::GPR0, Reg::GPR1 };
+        } else {
+            return RegisterAllocation2 { dstalloc.reg0, srcalloc.reg0 };
+        }
+    }
+
+
+    i32 registerOffset(R8 reg) {
+        if((u8)reg < 16) {
+            return 8*(i32)reg;
+        } else {
+            verify(reg == R8::AH
+                || reg == R8::CH
+                || reg == R8::DH
+                || reg == R8::BH);
+            if(reg == R8::AH) return 8*0+1;
+            if(reg == R8::CH) return 8*1+1;
+            if(reg == R8::DH) return 8*2+1;
+            if(reg == R8::BH) return 8*3+1;
+            assert(false);
+            UNREACHABLE();
+        }
+    }
+
+    i32 registerOffset(R16 reg) {
+        return 8*(i32)reg;
+    }
+
+    i32 registerOffset(R32 reg) {
+        return 8*(i32)reg;
+    }
+
+    i32 registerOffset(R64 reg) {
+        return 8*(i32)reg;
+    }
+
+    M8 make8(R64 base, R64 index, u8 scale, i32 disp) {
+        return M8 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                index,
+                scale,
+                disp,
+            },
+        };
+    }
+
+    M16 make16(R64 base, R64 index, u8 scale, i32 disp) {
+        return M16 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                index,
+                scale,
+                disp,
+            },
+        };
+    }
+
+    M32 make32(R64 base, R64 index, u8 scale, i32 disp) {
+        return M32 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                index,
+                scale,
+                disp,
+            },
+        };
+    }
+
+    M64 make64(R64 base, R64 index, u8 scale, i32 disp) {
+        return M64 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                index,
+                scale,
+                disp,
+            },
+        };
+    }
+
+    M8 make8(R64 base, i32 disp) {
+        return M8 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
+    M16 make16(R64 base, i32 disp) {
+        return M16 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
+    M32 make32(R64 base, i32 disp) {
+        return M32 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
+    M64 make64(R64 base, i32 disp) {
+        return M64 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
+    bool Compiler::isDirectReg(Reg reg) {
+        return reg == Reg::RAX
+            || reg == Reg::RDX;
+    }
+
+    void Compiler::readReg8(Reg dst, R8 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get8(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
+        R8 d = get8(dst);
+        M8 s = make8(get(Reg::REG_BASE), registerOffset(src));
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeReg8(R8 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get8(src) == dst) return;
+            forceEmulatorRegisterSync(dst);
+        }
+        M8 d = make8(get(Reg::REG_BASE), registerOffset(dst));
+        R8 s = get8(src);
+        generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
+    }
+
+    void Compiler::readReg16(Reg dst, R16 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get16(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
+        R16 d = get16(dst);
+        M16 s = make16(get(Reg::REG_BASE), registerOffset(src));
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeReg16(R16 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get16(src) == dst) return;
+        }
+        M16 d = make16(get(Reg::REG_BASE), registerOffset(dst));
+        R16 s = get16(src);
+        generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
+    }
+
+    void Compiler::readReg32(Reg dst, R32 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get32(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
+        R32 d = get32(dst);
+        M32 s = make32(get(Reg::REG_BASE), registerOffset(src));
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeReg32(R32 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get32(src) == dst) return;
+        }
+        // we need to zero extend the value, so we write the full 64 bit register
+        M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
+        R64 s = get(src);
+        generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
+    }
+
+    void Compiler::readReg64(Reg dst, R64 src) {
+        if(directR64()) {
+            if(isDirectReg(dst) && get(dst) == src) return;
+            forceEmulatorRegisterSync(src);
+        }
+        R64 d = get(dst);
+        M64 s = make64(get(Reg::REG_BASE), registerOffset(src));
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeReg64(R64 dst, Reg src) {
+        if(directR64()) {
+            if(isDirectReg(src) && get(src) == dst) return;
+        }
+        M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
+        R64 s = get(src);
+        generator_->mov(d, s);
+        if(directR64()) {
+            forceJitRegisterSync(dst);
+        }
+    }
+
+    void Compiler::writeReg64(R64 dst, u64 imm, TmpReg tmp) {
+        u64 signExtended32bitImm = (u64)(i64)(i32)(u32)imm;
+        if(imm == signExtended32bitImm) {
+            // load the immediate directly
+            M64 d = make64(get(Reg::REG_BASE), registerOffset(dst));
+            generator_->mov(d, (u32)imm);
+        } else {
+            // load the immediate value to an intermediate register
+            loadImm64(tmp.reg, imm);
+            // write to the register
+            writeReg64(dst, tmp.reg);
+        }
+    }
+
+    void Compiler::readMem8(Reg dst, const Mem& address) {
+        R8 d = get8(dst);
+        M8 s = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeMem8(const Mem& address, Reg src) {
+        M8 d = make8(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        R8 s = get8(src);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::readMem16(Reg dst, const Mem& address) {
+        R16 d = get16(dst);
+        M16 s = make16(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeMem16(const Mem& address, Reg src) {
+        M16 d = make16(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        R16 s = get16(src);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::readMem32(Reg dst, i32 offset) {
+        R32 d = get32(dst);
+        M32 s = make32(get(Reg::MEM_BASE), R64::ZERO, 1, offset);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::readMem32(Reg dst, const Mem& address) {
+        R32 d = get32(dst);
+        M32 s = make32(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeMem32(const Mem& address, Reg src) {
+        M32 d = make32(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        R32 s = get32(src);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::readMem64(Reg dst, i32 offset) {
+        R64 d = get(dst);
+        M64 s = make64(get(Reg::MEM_BASE), R64::ZERO, 1, offset);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::readMem64(Reg dst, const Mem& address) {
+        R64 d = get(dst);
+        M64 s = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::writeMem64(const Mem& address, Reg src) {
+        M64 d = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        R64 s = get(src);
+        generator_->mov(d, s);
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R8 reg) {
+        if(!directR64()) return;
+        // regalloc is not yet done properly for AH, DH
+        bool isUpperR8 = (reg == R8::AH || reg == R8::DH);
+        if(isUpperR8) {
+            generator_->mov(make64(get(Reg::REG_BASE), registerOffset(containingRegister(reg))), containingRegister(reg));
+            return;
+        }
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get8(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), containingRegister(reg));
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R16 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get16(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), containingRegister(reg));
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R32 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get32(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), containingRegister(reg));
+    }
+
+    void Compiler::forceEmulatorRegisterSync(R64 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get(regalloc.reg0) != reg) return;
+        generator_->mov(make64(get(Reg::REG_BASE), registerOffset(reg)), reg);
+    }
+
+    void Compiler::forceJitRegisterSync(R8 reg) {
+        if(!directR64()) return;
+        // regalloc is not yet done properly for AH, DH
+        bool isUpperR8 = (reg == R8::AH || reg == R8::DH);
+        if(isUpperR8) {
+            generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(containingRegister(reg))));
+            return;
+        }
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get8(regalloc.reg0) != reg) return;
+        generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    void Compiler::forceJitRegisterSync(R16 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get16(regalloc.reg0) != reg) return;
+        generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    void Compiler::forceJitRegisterSync(R32 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get32(regalloc.reg0) != reg) return;
+        generator_->mov(containingRegister(reg), make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    void Compiler::forceJitRegisterSync(R64 reg) {
+        if(!directR64()) return;
+        auto regalloc = allocateReg(reg);
+        if(!isDirectReg(regalloc.reg0)) return;
+        if(get(regalloc.reg0) != reg) return;
+        generator_->mov(reg, make64(get(Reg::REG_BASE), registerOffset(reg)));
+    }
+
+    template<mem::Size size>
+    void Compiler::forceEncodingSync(const M<size>& mem) {
+        (void)mem;
+    }
+
+    MMX Compiler::get(RegMM reg) {
+        switch(reg) {
+            case RegMM::GPR0: return MMX::MM0;
+            case RegMM::GPR1: return MMX::MM1;
+            case RegMM::GPR2: return MMX::MM2;
+            case RegMM::GPR3: return MMX::MM3;
+            case RegMM::GPR4: return MMX::MM4;
+            case RegMM::GPR5: return MMX::MM5;
+            case RegMM::GPR6: return MMX::MM6;
+            case RegMM::GPR7: return MMX::MM7;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    i32 registerOffset(MMX reg) {
+        return 8*(i32)reg;
+    }
+
+    XMM Compiler::get(Reg128 reg) {
+        switch(reg) {
+            case Reg128::GPR0: return XMM::XMM0;
+            case Reg128::GPR1: return XMM::XMM1;
+            case Reg128::GPR2: return XMM::XMM2;
+            case Reg128::GPR3: return XMM::XMM3;
+            case Reg128::GPR4: return XMM::XMM4;
+            case Reg128::GPR5: return XMM::XMM5;
+            case Reg128::GPR6: return XMM::XMM6;
+            case Reg128::GPR7: return XMM::XMM7;
+            case Reg128::GPR8: return XMM::XMM8;
+            case Reg128::GPR9: return XMM::XMM9;
+            case Reg128::GPR10: return XMM::XMM10;
+            case Reg128::GPR11: return XMM::XMM11;
+            case Reg128::GPR12: return XMM::XMM12;
+            case Reg128::GPR13: return XMM::XMM13;
+            case Reg128::GPR14: return XMM::XMM14;
+            case Reg128::GPR15: return XMM::XMM15;
+            default: break;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    Compiler::RegMM Compiler::toGpr(MMX reg) {
+        switch(reg) {
+            case MMX::MM0: return RegMM::GPR0;
+            case MMX::MM1: return RegMM::GPR1;
+            case MMX::MM2: return RegMM::GPR2;
+            case MMX::MM3: return RegMM::GPR3;
+            case MMX::MM4: return RegMM::GPR4;
+            case MMX::MM5: return RegMM::GPR5;
+            case MMX::MM6: return RegMM::GPR6;
+            case MMX::MM7: return RegMM::GPR7;
+            default: break;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    Compiler::Reg128 Compiler::toGpr(XMM reg) {
+        switch(reg) {
+            case XMM::XMM0: return Reg128::GPR0;
+            case XMM::XMM1: return Reg128::GPR1;
+            case XMM::XMM2: return Reg128::GPR2;
+            case XMM::XMM3: return Reg128::GPR3;
+            case XMM::XMM4: return Reg128::GPR4;
+            case XMM::XMM5: return Reg128::GPR5;
+            case XMM::XMM6: return Reg128::GPR6;
+            case XMM::XMM7: return Reg128::GPR7;
+            case XMM::XMM8: return Reg128::GPR8;
+            case XMM::XMM9: return Reg128::GPR9;
+            case XMM::XMM10: return Reg128::GPR10;
+            case XMM::XMM11: return Reg128::GPR11;
+            case XMM::XMM12: return Reg128::GPR12;
+            case XMM::XMM13: return Reg128::GPR13;
+            case XMM::XMM14: return Reg128::GPR14;
+            case XMM::XMM15: return Reg128::GPR15;
+            default: break;
+        }
+        assert(false);
+        UNREACHABLE();
+    }
+
+    i32 registerOffset(XMM reg) {
+        return 16*(i32)reg;
+    }
+
+    M128 make128(R64 base, R64 index, u8 scale, i32 disp) {
+        return M128 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                index,
+                scale,
+                disp,
+            },
+        };
+    }
+
+    M128 make128(R64 base, i32 disp) {
+        return M128 {
+            Segment::CS,
+            Encoding64 {
+                base,
+                R64::ZERO,
+                1,
+                disp,
+            },
+        };
+    }
+
+    void Compiler::readRegMM(RegMM dst, MMX src) {
+        if(directMmx() && dst == toGpr(src)) return;
+        MMX d = get(dst);
+        M64 s = make64(get(Reg::MMX_BASE), registerOffset(src));
+        generator_->movq(d, s);
+    }
+
+    void Compiler::writeRegMM(MMX dst, RegMM src) {
+        if(directMmx() && src == toGpr(dst)) return;
+        M64 d = make64(get(Reg::MMX_BASE), registerOffset(dst));
+        MMX s = get(src);
+        generator_->movq(d, s);
+    }
+
+    void Compiler::readMemMM(RegMM dst, const Mem& address) {
+        MMX d = get(dst);
+        M64 s = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        generator_->movq(d, s);
+    }
+
+    void Compiler::writeMemMM(const Mem& address, RegMM src) {
+        M64 d = make64(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        MMX s = get(src);
+        generator_->movq(d, s);
+    }
+
+    void Compiler::readReg128([[maybe_unused]] Reg128 dst, [[maybe_unused]] XMM src) {
+        if(directXmm() && dst == toGpr(src)) return;
+        XMM d = get(dst);
+        M128 s = make128(get(Reg::XMM_BASE), registerOffset(src));
+        generator_->mova(d, s);
+    }
+
+    void Compiler::writeReg128([[maybe_unused]] XMM dst, [[maybe_unused]] Reg128 src) {
+        if(directXmm() && src == toGpr(dst)) return;
+        M128 d = make128(get(Reg::XMM_BASE), registerOffset(dst));
+        XMM s = get(src);
+        generator_->mova(d, s);
+    }
+
+    void Compiler::readMem128(Reg128 dst, const Mem& address) {
+        XMM d = get(dst);
+        M128 s = make128(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        generator_->movu(d, s);
+    }
+
+    void Compiler::writeMem128(const Mem& address, Reg128 src) {
+        M128 d = make128(get(Reg::MEM_BASE), get(address.base), 1, address.offset);
+        XMM s = get(src);
+        generator_->movu(d, s);
+    }
+
+    void Compiler::addTime(u32 amount) {
+        constexpr size_t TICKS_OFFSET = offsetof(NativeArguments, ticks);
+        static_assert(TICKS_OFFSET == 0x38);
+        M64 ticksPtr = make64(get(Reg::JIT_ARGS), TICKS_OFFSET);
+        generator_->mov(get(Reg::GPR1), ticksPtr);
+        M64 ticks = make64(get(Reg::GPR1), 0);
+        generator_->mov(get(Reg::GPR0), ticks);
+        M64 a = make64(get(Reg::GPR0), (i32)amount);
+        generator_->lea(get(Reg::GPR0), a);
+        generator_->mov(ticks, get(Reg::GPR0));
+    }
+
+    void Compiler::incrementCalls() {
+        constexpr size_t BBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
+        static_assert(BBPTR_OFFSET == 0x58);
+        M64 bbPtr = make64(get(Reg::JIT_ARGS), BBPTR_OFFSET);
+        generator_->mov(get(Reg::GPR0), bbPtr);
+        M64 callsPtr = make64(get(Reg::GPR0), CALLS_OFFSET);
+        // read the calls
+        generator_->mov(get(Reg::GPR1), callsPtr);
+        // increment
+        generator_->lea(get(Reg::GPR1), make64(get(Reg::GPR1), 1));
+        // write back
+        generator_->mov(callsPtr, get(Reg::GPR1));
+    }
+
+    void Compiler::readFsBase(Reg dst) {
+        constexpr size_t FS_BASE = offsetof(NativeArguments, fsbase);
+        static_assert(FS_BASE == 0x30);
+        M64 fsbasePtr = make64(get(Reg::JIT_ARGS), FS_BASE);
+        generator_->mov(get(dst), fsbasePtr);
+    }
+
+    void Compiler::writeBasicBlockPtr(u64 basicBlockPtr) {
+        constexpr size_t SEGMENTPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingSegmentPtr);
+        static_assert(SEGMENTPTR_OFFSET == 0x50);
+        M64 bbPtrPtr = make64(get(Reg::JIT_ARGS), SEGMENTPTR_OFFSET);
+        generator_->mov(get(Reg::GPR1), bbPtrPtr);
+        M64 bbPtr = make64(get(Reg::GPR1), 0);
+        loadImm64(Reg::GPR0, basicBlockPtr);
+        generator_->mov(bbPtr, get(Reg::GPR0));
+    }
+
+    void Compiler::writeJitBasicBlockPtr(u64 jitBasicBlockPtr) {
+        constexpr size_t JITBBPTR_OFFSET = offsetof(NativeArguments, currentlyExecutingJitBasicBlock);
+        static_assert(JITBBPTR_OFFSET == 0x58);
+        M64 bbPtr = make64(get(Reg::JIT_ARGS), JITBBPTR_OFFSET);
+        loadImm64(Reg::GPR0, jitBasicBlockPtr);
+        generator_->mov(bbPtr, get(Reg::GPR0));
+    }
+
+    const std::vector<u8>& Compiler::jmpCode(const void* dst, TmpReg tmp) {
+        assembler_->clear();
+        assembler_->mov(get(tmp.reg), (u64)dst);
+        assembler_->jump(get(tmp.reg));
+        const auto& code = assembler_->code();
+        return code;
+    }
+
+    void Compiler::writeJumpTo(const void* address, u8* ptr, size_t size) {
+        TmpReg tmp {Reg::GPR0};
+        const auto& code = jmpCode(address, tmp);
+        (void)size;
+        assert(code.size() <= size);
+        memcpy(ptr, code.data(), code.size());
+    }
+
+    size_t Compiler::jmpCodeSize(const void* dst, TmpReg tmp) {
+        return jmpCode(dst, tmp).size();
+    }
+
+    const std::vector<u8>& Compiler::pushCallstackCode(const void* dst, TmpReg tmp1, TmpReg tmp2) {
+        assembler_->clear();
+        // increment the size
+        constexpr size_t JITCALLSTACKIZEPTR_OFFSET = offsetof(NativeArguments, callstackSize);
+        static_assert(JITCALLSTACKIZEPTR_OFFSET == 0x48);
+        M64 callstackSizePtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKIZEPTR_OFFSET); // address of the u64*
+        assembler_->mov(get(tmp2.reg), callstackSizePtr); // tmp2.reg holds the u64*
+        assembler_->mov(get(tmp1.reg), make64(get(tmp2.reg), 0)); // tmp1.reg holds the u64
+        assembler_->lea(get(tmp1.reg), make64(get(tmp1.reg), 1)); // increment the u64
+        assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // write the u64 back
+        // tmp1.reg holds the new size
+        
+        constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
+        static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
+        M64 callstackPtrPtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKPTR_OFFSET); // address of the void**
+        assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
+        assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, -8)); // tmp2.reg holds the new entry
+        assembler_->mov(get(tmp1.reg), (u64)dst); // load the dst
+        assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // write the dst
+
+        return assembler_->code();
+    }
+
+    void Compiler::writePushCallstackTo(const void* address, u8* ptr, size_t size) {
+        TmpReg tmp1 {Reg::GPR0};
+        TmpReg tmp2 {Reg::GPR1};
+        const auto& code = pushCallstackCode(address, tmp1, tmp2);
+        (void)size;
+        assert(code.size() <= size);
+        memcpy(ptr, code.data(), code.size());
+    }
+
+    const std::vector<u8>& Compiler::popCallstackCode(Reg dst, TmpReg tmp1, TmpReg tmp2) {
+        assembler_->clear();
+        // decrement the size
+        constexpr size_t JITCALLSTACKIZEPTR_OFFSET = offsetof(NativeArguments, callstackSize);
+        static_assert(JITCALLSTACKIZEPTR_OFFSET == 0x48);
+        M64 callstackSizePtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKIZEPTR_OFFSET); // RDI = &callstackSizePtr
+        assembler_->mov(get(tmp2.reg), callstackSizePtr); // tmp2.reg = callstackSizePtr
+        assembler_->mov(get(tmp1.reg), make64(get(tmp2.reg), 0)); // tmp1.reg = callstackSize
+        assembler_->lea(get(tmp1.reg), make64(get(tmp1.reg), -1)); // --tmp1.reg
+        assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // *callstackSizePtr = tmp1.reg
+        
+        // TODO read the value and use it after
+        constexpr size_t JITCALLSTACKPTR_OFFSET = offsetof(NativeArguments, callstack);
+        static_assert(JITCALLSTACKPTR_OFFSET == 0x40);
+        M64 callstackPtrPtr = make64(get(Reg::JIT_ARGS), JITCALLSTACKPTR_OFFSET); // address of the void**
+        assembler_->mov(get(tmp2.reg), callstackPtrPtr); // tmp2.reg holds the void**
+        assembler_->lea(get(tmp2.reg), make64(get(tmp2.reg), get(tmp1.reg), 8, 0)); // tmp2.reg holds the entry
+        assembler_->mov(get(dst), make64(get(tmp2.reg), 0)); // load the dst
+        assembler_->push64(get(dst));
+        assembler_->mov(get(tmp1.reg), (u64)0);
+        assembler_->mov(make64(get(tmp2.reg), 0), get(tmp1.reg)); // zero out the entry
+        assembler_->pop64(get(dst));
+
+        return assembler_->code();
+    }
+
+    template<mem::Size size>
+    Compiler::Mem Compiler::getAddress(Reg dst, TmpReg tmp, const M<size>& mem) {
+        assert(dst != tmp.reg);
+        if(mem.segment == Segment::FS) {
+            if(mem.encoding.base == R64::ZERO) {
+                // set dst to fs-base
+                readFsBase(dst);
+                if(mem.encoding.index != R64::ZERO) {
+                    // add the index, if any
+                    readReg64(tmp.reg, mem.encoding.index);
+                    generator_->lea(get(dst), M64 {
+                        Segment::UNK,
+                        Encoding64 {
+                            get(dst),
+                            get(tmp.reg),
+                            mem.encoding.scale,
+                            0,
+                        }
+                    });
+                }
+                return Mem {dst, mem.encoding.displacement};
+            } else {
+                // set dst to fs-base
+                readFsBase(dst);
+                if(mem.encoding.index != R64::ZERO) {
+                    // add the index, if any
+                    readReg64(tmp.reg, mem.encoding.index);
+                    generator_->lea(get(dst), M64 {
+                        Segment::UNK,
+                        Encoding64 {
+                            get(dst),
+                            get(tmp.reg),
+                            mem.encoding.scale,
+                            0,
+                        }
+                    });
+                }
+                // add the base value
+                readReg64(tmp.reg, mem.encoding.base);
+                // get the address
+                MemBISD encodedAddress{dst, tmp.reg, 1, mem.encoding.displacement};
+                generator_->lea(get(dst), M64 {
+                    Segment::UNK,
+                    Encoding64 {
+                        get(encodedAddress.base),
+                        get(encodedAddress.index),
+                        encodedAddress.scale,
+                        encodedAddress.offset,
+                    }
+                });
+                return Mem {dst, 0};
+            }
+        } else if(mem.encoding.index == R64::ZERO) {
+            // read the address base
+            readReg64(dst, mem.encoding.base);
+            // get the address
+            return Mem {dst, mem.encoding.displacement};
+        } else {
+            // read the address base
+            readReg64(dst, mem.encoding.base);
+            // read the address index
+            readReg64(tmp.reg, mem.encoding.index);
+            // get the address
+            MemBISD encodedAddress{dst, tmp.reg, mem.encoding.scale, mem.encoding.displacement};
+            generator_->lea(get(dst), M64 {
+                Segment::UNK,
+                Encoding64 {
+                    get(encodedAddress.base),
+                    get(encodedAddress.index),
+                    encodedAddress.scale,
+                    encodedAddress.offset,
+                }
+            });
+            return Mem {dst, 0};
+        }
+    }
+
+    void Compiler::add8(Reg dst, Reg src) {
+        R8 d = get8(dst);
+        R8 s = get8(src);
+        generator_->add(d, s);
+    }
+
+    void Compiler::add8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        generator_->add(d, (u8)imm);
+    }
+
+    void Compiler::add16(Reg dst, Reg src) {
+        R16 d = get16(dst);
+        R16 s = get16(src);
+        generator_->add(d, s);
+    }
+
+    void Compiler::add16Imm16(Reg dst, i16 imm) {
+        R16 d = get16(dst);
+        generator_->add(d, (u16)imm);
+    }
+
+    void Compiler::add32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        generator_->add(d, s);
+    }
+
+    void Compiler::add32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        generator_->add(d, (u32)imm);
+    }
+
+    void Compiler::add64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        generator_->add(d, s);
+    }
+
+    void Compiler::add64Imm32(Reg dst, i32 imm) {
+        R64 d = get(dst);
+        generator_->add(d, (u32)imm);
+    }
+
+    void Compiler::adc32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        generator_->adc(d, s);
+    }
+
+    void Compiler::adc32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        generator_->adc(d, (u32)imm);
+    }
+
+    void Compiler::sub8(Reg dst, Reg src) {
+        R8 d = get8(dst);
+        R8 s = get8(src);
+        generator_->sub(d, s);
+    }
+
+    void Compiler::sub8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        generator_->sub(d, (u8)imm);
+    }
+
+    void Compiler::sub16(Reg dst, Reg src) {
+        R16 d = get16(dst);
+        R16 s = get16(src);
+        generator_->sub(d, s);
+    }
+
+    void Compiler::sub16Imm16(Reg dst, i16 imm) {
+        R16 d = get16(dst);
+        generator_->sub(d, (u16)imm);
+    }
+
+    void Compiler::sub32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        generator_->sub(d, s);
+    }
+
+    void Compiler::sub32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        generator_->sub(d, (u32)imm);
+    }
+
+    void Compiler::sub64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        generator_->sub(d, s);
+    }
+
+    void Compiler::sub64Imm32(Reg dst, i32 imm) {
+        R64 d = get(dst);
+        generator_->sub(d, (u32)imm);
+    }
+
+    void Compiler::sbb8(Reg dst, Reg src) {
+        R8 d = get8(dst);
+        R8 s = get8(src);
+        generator_->sbb(d, s);
+    }
+
+    void Compiler::sbb8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        generator_->sbb(d, (u8)imm);
+    }
+
+    void Compiler::sbb32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        generator_->sbb(d, s);
+    }
+
+    void Compiler::sbb32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        generator_->sbb(d, (u32)imm);
+    }
+
+    void Compiler::sbb64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        generator_->sbb(d, s);
+    }
+
+    void Compiler::sbb64Imm32(Reg dst, i32 imm) {
+        R64 d = get(dst);
+        generator_->sbb(d, (u32)imm);
+    }
+
+    void Compiler::cmp8(Reg lhs, Reg rhs) {
+        R8 l = get8(lhs);
+        R8 r = get8(rhs);
+        generator_->cmp(l, r);
+    }
+
+    void Compiler::cmp16(Reg lhs, Reg rhs) {
+        R16 l = get16(lhs);
+        R16 r = get16(rhs);
+        generator_->cmp(l, r);
+    }
+
+    void Compiler::cmp32(Reg lhs, Reg rhs) {
+        R32 l = get32(lhs);
+        R32 r = get32(rhs);
+        generator_->cmp(l, r);
+    }
+
+    void Compiler::cmp64(Reg lhs, Reg rhs) {
+        R64 l = get(lhs);
+        R64 r = get(rhs);
+        generator_->cmp(l, r);
+    }
+
+    void Compiler::cmp8Imm8(Reg dst, i8 imm) {
+        R8 d = get8(dst);
+        generator_->cmp(d, (u8)imm);
+    }
+
+    void Compiler::cmp16Imm16(Reg dst, i16 imm) {
+        R16 d = get16(dst);
+        generator_->cmp(d, (u16)imm);
+    }
+
+    void Compiler::cmp32Imm32(Reg dst, i32 imm) {
+        R32 d = get32(dst);
+        generator_->cmp(d, (u32)imm);
+    }
+
+    void Compiler::cmp64Imm32(Reg dst, i32 imm) {
+        R64 d = get(dst);
+        generator_->cmp(d, (u32)imm);
+    }
+
+    void Compiler::imul16(Reg dst, Reg src) {
+        R16 d = get16(dst);
+        R16 s = get16(src);
+        generator_->imul(d, s);
+    }
+
+    void Compiler::imul32(Reg dst, Reg src) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        generator_->imul(d, s);
+    }
+
+    void Compiler::imul64(Reg dst, Reg src) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        generator_->imul(d, s);
+    }
+
+    void Compiler::imul16(Reg dst, Reg src, u16 imm) {
+        R16 d = get16(dst);
+        R16 s = get16(src);
+        generator_->imul(d, s, imm);
+    }
+
+    void Compiler::imul32(Reg dst, Reg src, u32 imm) {
+        R32 d = get32(dst);
+        R32 s = get32(src);
+        generator_->imul(d, s, imm);
+    }
+
+    void Compiler::imul64(Reg dst, Reg src, u32 imm) {
+        R64 d = get(dst);
+        R64 s = get(src);
+        generator_->imul(d, s, imm);
+    }
+
+    void Compiler::loadImm8(Reg dst, u8 imm) {
+        R8 d = get8(dst);
+        generator_->mov(d, imm);
+    }
+
+    void Compiler::loadImm16(Reg dst, u16 imm) {
+        R16 d = get16(dst);
+        generator_->mov(d, imm);
+    }
+
+    void Compiler::loadImm32(Reg dst, u32 imm) {
+        R32 d = get32(dst);
+        generator_->mov(d, imm);
+    }
+
+    void Compiler::loadImm64(Reg dst, u64 imm) {
+        R64 d = get(dst);
+        generator_->mov(d, imm);
+    }
+
+    void Compiler::saveStack() {
+        generator_->push64(R64::RBP);
+        generator_->mov(R64::RBP, R64::RSP);
+    }
+
+    void Compiler::restoreStack() {
+        generator_->pop64(R64::RBP);
+    }
+
+    void Compiler::saveRegisters() {
+        generator_->push64(R64::RDI);
+        generator_->push64(get(Reg::JIT_ARGS));
+        generator_->push64(get(Reg::MMX_BASE));
+        generator_->push64(get(Reg::XMM_BASE));
+        generator_->push64(get(Reg::RAX));
+        generator_->push64(get(Reg::RDX));
+    }
+
+    void Compiler::restoreRegisters() {
+        generator_->pop64(get(Reg::RDX));
+        generator_->pop64(get(Reg::RAX));
+        generator_->pop64(get(Reg::XMM_BASE));
+        generator_->pop64(get(Reg::MMX_BASE));
+        generator_->pop64(get(Reg::JIT_ARGS));
+        generator_->pop64(R64::RDI);
+    }
+
+    void Compiler::saveArgument() {
+        generator_->mov(get(Reg::JIT_ARGS), R64::RDI);
+    }
+
+    void Compiler::restoreArgument() {
+        generator_->mov(R64::RDI, get(Reg::JIT_ARGS));
+    }
+
+    void Compiler::loadArguments(TmpReg) {
+        constexpr size_t GPRS_OFFSET = offsetof(NativeArguments, gprs);
+        static_assert(GPRS_OFFSET   == 0x00);
+        constexpr size_t MMXS_OFFSET = offsetof(NativeArguments, mmxs);
+        static_assert(MMXS_OFFSET   == 0x08);
+        constexpr size_t XMMS_OFFSET = offsetof(NativeArguments, xmms);
+        static_assert(XMMS_OFFSET   == 0x10);
+        constexpr size_t MEMORY_OFFSET = offsetof(NativeArguments, memory);
+        static_assert(MEMORY_OFFSET == 0x18);
+        M64 gprs = make64(get(Reg::JIT_ARGS),   GPRS_OFFSET);
+        M64 mmxs = make64(get(Reg::JIT_ARGS),   MMXS_OFFSET);
+        M64 xmms = make64(get(Reg::JIT_ARGS),   XMMS_OFFSET);
+        M64 memory = make64(get(Reg::JIT_ARGS), MEMORY_OFFSET);
+        generator_->mov(get(Reg::MEM_BASE), memory);
+        generator_->mov(get(Reg::MMX_BASE), mmxs);
+        generator_->mov(get(Reg::XMM_BASE), xmms);
+        generator_->mov(get(Reg::REG_BASE), gprs);
+    }
+
+    void Compiler::storeRegistersToEmulator() {
+        if(directXmm()) {
+            // Store the values of xmm
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM0)), XMM::XMM0);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM1)), XMM::XMM1);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM2)), XMM::XMM2);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM3)), XMM::XMM3);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM4)), XMM::XMM4);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM5)), XMM::XMM5);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM6)), XMM::XMM6);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM7)), XMM::XMM7);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM8)), XMM::XMM8);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM9)), XMM::XMM9);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM10)), XMM::XMM10);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM11)), XMM::XMM11);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM12)), XMM::XMM12);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM13)), XMM::XMM13);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM14)), XMM::XMM14);
+            generator_->mova(make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM15)), XMM::XMM15);
+            // Pop xmm from the stack on exit (not technically needed by sys-V ABI)
+            generator_->movu(XMM::XMM0, make128(R64::RSP, 0 *16));
+            generator_->movu(XMM::XMM1, make128(R64::RSP, 1 *16));
+            generator_->movu(XMM::XMM2, make128(R64::RSP, 2 *16));
+            generator_->movu(XMM::XMM3, make128(R64::RSP, 3 *16));
+            generator_->movu(XMM::XMM4, make128(R64::RSP, 4 *16));
+            generator_->movu(XMM::XMM5, make128(R64::RSP, 5 *16));
+            generator_->movu(XMM::XMM6, make128(R64::RSP, 6 *16));
+            generator_->movu(XMM::XMM7, make128(R64::RSP, 7 *16));
+            generator_->movu(XMM::XMM8, make128(R64::RSP, 8 *16));
+            generator_->movu(XMM::XMM9, make128(R64::RSP, 9 *16));
+            generator_->movu(XMM::XMM10, make128(R64::RSP, 10*16));
+            generator_->movu(XMM::XMM11, make128(R64::RSP, 11*16));
+            generator_->movu(XMM::XMM12, make128(R64::RSP, 12*16));
+            generator_->movu(XMM::XMM13, make128(R64::RSP, 13*16));
+            generator_->movu(XMM::XMM14, make128(R64::RSP, 14*16));
+            generator_->movu(XMM::XMM15, make128(R64::RSP, 15*16));
+            generator_->lea(R64::RSP, make64(R64::RSP, +16*16));
+        }
+        if(directMmx()) {
+            // Store the values of mmx
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM0)), MMX::MM0);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM1)), MMX::MM1);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM2)), MMX::MM2);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM3)), MMX::MM3);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM4)), MMX::MM4);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM5)), MMX::MM5);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM6)), MMX::MM6);
+            generator_->movq(make64(get(Reg::MMX_BASE), registerOffset(MMX::MM7)), MMX::MM7);
+            // Pop mmx from the stack on exit (not technically needed by sys-V ABI)
+            checkCompilation(Insn::MOVQ_MMX_RM64, static_cast<void(Assembler::*)(MMX, const M64&)>(&Assembler::movq),
+                MMX::MM0, RM64 { false, {}, make64(R64::RSP, 0 *8) }, MMX::MM0, make64(R64::RSP, 0 *8));
+            checkCompilation(Insn::MOVQ_MMX_RM64, static_cast<void(Assembler::*)(MMX, const M64&)>(&Assembler::movq),
+                MMX::MM7, RM64 { false, {}, make64(R64::RSP, 7 *8) }, MMX::MM7, make64(R64::RSP, 7 *8));
+            generator_->movq(MMX::MM0, make64(R64::RSP, 0 *8));
+            generator_->movq(MMX::MM1, make64(R64::RSP, 1 *8));
+            generator_->movq(MMX::MM2, make64(R64::RSP, 2 *8));
+            generator_->movq(MMX::MM3, make64(R64::RSP, 3 *8));
+            generator_->movq(MMX::MM4, make64(R64::RSP, 4 *8));
+            generator_->movq(MMX::MM5, make64(R64::RSP, 5 *8));
+            generator_->movq(MMX::MM6, make64(R64::RSP, 6 *8));
+            generator_->movq(MMX::MM7, make64(R64::RSP, 7 *8));
+            generator_->lea(R64::RSP, make64(R64::RSP, +8*8));
+            // This is important !
+            generator_->emms();
+        }
+        if(directR64()) {
+            // Store the values of R64
+            generator_->mov(make64(get(Reg::REG_BASE), registerOffset(R64::RAX)), R64::RAX);
+            generator_->mov(make64(get(Reg::REG_BASE), registerOffset(R64::RDX)), R64::RDX);
+            // Pop R64 from the stack
+            generator_->pop64(R64::RAX);
+            generator_->pop64(R64::RDX);
+        }
+    }
+
+    void Compiler::loadRegistersFromEmulator() {
+        if(directR64()) {
+            // Push R64 to the stack
+            generator_->push64(R64::RDX);
+            generator_->push64(R64::RAX);
+            // Load the values of R64
+            generator_->mov(R64::RAX, make64(get(Reg::REG_BASE), registerOffset(R64::RAX)));
+            generator_->mov(R64::RDX, make64(get(Reg::REG_BASE), registerOffset(R64::RDX)));
+        }
+        if(directMmx()) {
+            // Push mmx to the stack on entry (not technically needed by sys-V ABI)
+            checkCompilation(Insn::MOVQ_RM64_MMX, static_cast<void(Assembler::*)(const M64&, MMX)>(&Assembler::movq),
+                RM64 { false, {}, make64(R64::RSP, 0 *8) }, MMX::MM0, make64(R64::RSP, 0 *8), MMX::MM0);
+            checkCompilation(Insn::MOVQ_RM64_MMX, static_cast<void(Assembler::*)(const M64&, MMX)>(&Assembler::movq),
+                RM64 { false, {}, make64(R64::RSP, 7 *8) }, MMX::MM7, make64(R64::RSP, 7 *8), MMX::MM7);
+            generator_->lea(R64::RSP, make64(R64::RSP, -8*8));
+            generator_->movq(make64(R64::RSP, 0 *8), MMX::MM0);
+            generator_->movq(make64(R64::RSP, 1 *8), MMX::MM1);
+            generator_->movq(make64(R64::RSP, 2 *8), MMX::MM2);
+            generator_->movq(make64(R64::RSP, 3 *8), MMX::MM3);
+            generator_->movq(make64(R64::RSP, 4 *8), MMX::MM4);
+            generator_->movq(make64(R64::RSP, 5 *8), MMX::MM5);
+            generator_->movq(make64(R64::RSP, 6 *8), MMX::MM6);
+            generator_->movq(make64(R64::RSP, 7 *8), MMX::MM7);
+            // Load the values of mmx
+            generator_->movq(MMX::MM0, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM0)));
+            generator_->movq(MMX::MM1, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM1)));
+            generator_->movq(MMX::MM2, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM2)));
+            generator_->movq(MMX::MM3, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM3)));
+            generator_->movq(MMX::MM4, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM4)));
+            generator_->movq(MMX::MM5, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM5)));
+            generator_->movq(MMX::MM6, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM6)));
+            generator_->movq(MMX::MM7, make64(get(Reg::MMX_BASE), registerOffset(MMX::MM7)));
+        }
+        if(directXmm()) {
+            // Push xmm to the stack on entry (not technically needed by sys-V ABI)
+            generator_->lea(R64::RSP, make64(R64::RSP, -16*16));
+            generator_->movu(make128(R64::RSP, 0 *16), XMM::XMM0);
+            generator_->movu(make128(R64::RSP, 1 *16), XMM::XMM1);
+            generator_->movu(make128(R64::RSP, 2 *16), XMM::XMM2);
+            generator_->movu(make128(R64::RSP, 3 *16), XMM::XMM3);
+            generator_->movu(make128(R64::RSP, 4 *16), XMM::XMM4);
+            generator_->movu(make128(R64::RSP, 5 *16), XMM::XMM5);
+            generator_->movu(make128(R64::RSP, 6 *16), XMM::XMM6);
+            generator_->movu(make128(R64::RSP, 7 *16), XMM::XMM7);
+            generator_->movu(make128(R64::RSP, 8 *16), XMM::XMM8);
+            generator_->movu(make128(R64::RSP, 9 *16), XMM::XMM9);
+            generator_->movu(make128(R64::RSP, 10*16), XMM::XMM10);
+            generator_->movu(make128(R64::RSP, 11*16), XMM::XMM11);
+            generator_->movu(make128(R64::RSP, 12*16), XMM::XMM12);
+            generator_->movu(make128(R64::RSP, 13*16), XMM::XMM13);
+            generator_->movu(make128(R64::RSP, 14*16), XMM::XMM14);
+            generator_->movu(make128(R64::RSP, 15*16), XMM::XMM15);
+            // Load the values of xmm
+            generator_->mova(XMM::XMM0, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM0)));
+            generator_->mova(XMM::XMM1, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM1)));
+            generator_->mova(XMM::XMM2, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM2)));
+            generator_->mova(XMM::XMM3, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM3)));
+            generator_->mova(XMM::XMM4, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM4)));
+            generator_->mova(XMM::XMM5, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM5)));
+            generator_->mova(XMM::XMM6, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM6)));
+            generator_->mova(XMM::XMM7, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM7)));
+            generator_->mova(XMM::XMM8, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM8)));
+            generator_->mova(XMM::XMM9, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM9)));
+            generator_->mova(XMM::XMM10, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM10)));
+            generator_->mova(XMM::XMM11, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM11)));
+            generator_->mova(XMM::XMM12, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM12)));
+            generator_->mova(XMM::XMM13, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM13)));
+            generator_->mova(XMM::XMM14, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM14)));
+            generator_->mova(XMM::XMM15, make128(get(Reg::XMM_BASE), registerOffset(XMM::XMM15)));
+        }
+    }
+
+    void Compiler::storeFlagsToEmulator(TmpReg tmp) {
+        constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
+        static_assert(FLAGS_OFFSET == 0x20);
+        M64 rflagsPtr = make64(get(Reg::JIT_ARGS), FLAGS_OFFSET);
+        generator_->mov(get(tmp.reg), rflagsPtr);
+        M64 rflags = make64(get(tmp.reg), 0);
+        generator_->pushf();
+        generator_->pop64(rflags);
+    }
+
+    void Compiler::loadFlagsFromEmulator(TmpReg tmp) {
+        constexpr size_t FLAGS_OFFSET = offsetof(NativeArguments, rflags);
+        static_assert(FLAGS_OFFSET == 0x20);
+        M64 rflagsPtr = make64(get(Reg::JIT_ARGS), FLAGS_OFFSET);
+        generator_->mov(get(tmp.reg), rflagsPtr);
+        M64 rflags = make64(get(tmp.reg), 0);
+        generator_->push64(rflags);
+        generator_->popf();
+    }
+
+    void Compiler::callNativeBasicBlock(TmpReg tmp) {
+        constexpr size_t EXEC_MEM_OFFSET = offsetof(NativeArguments, executableCode);
+        static_assert(EXEC_MEM_OFFSET == 0x60);
+        M64 execMemPtrPtr = make64(get(Reg::JIT_ARGS), EXEC_MEM_OFFSET);
+        generator_->mov(get(tmp.reg), execMemPtrPtr);
+        generator_->call(get(tmp.reg));
+    }
+
+    void Compiler::loadMxcsrFromEmulator(Reg dst) {
+        constexpr size_t MXCSR_OFFSET = offsetof(NativeArguments, mxcsr);
+        static_assert(MXCSR_OFFSET == 0x28);
+        M64 mxcsrPtr = make64(get(Reg::JIT_ARGS), MXCSR_OFFSET);
+        generator_->mov(get(dst), mxcsrPtr);
+        M32 mxcsr = make32(get(dst), 0);
+        generator_->mov(get32(dst), mxcsr);
+    }
+
+    void Compiler::push64(Reg src, TmpReg tmp) {
+        verify(src != tmp.reg);
+        // load rsp
+        readReg64(tmp.reg, R64::RSP);
+        // decrement rsp
+        generator_->lea(get(tmp.reg), make64(get(tmp.reg), -8));
+        // write rsp back
+        writeReg64(R64::RSP, tmp.reg);
+        // write to the stack
+        writeMem64(Mem{tmp.reg, 0}, src);
+    }
+
+    void Compiler::pop64(Reg dst, TmpReg tmp) {
+        verify(dst != tmp.reg);
+        // load rsp
+        readReg64(tmp.reg, R64::RSP);
+        // read from the stack
+        readMem64(dst, Mem{tmp.reg, 0});
+        // increment rsp
+        generator_->lea(get(tmp.reg), make64(get(tmp.reg), +8));
+        // write rsp back
+        writeReg64(R64::RSP, tmp.reg);
+    }
+
+    void Compiler::push(RegMM reg) {
+        generator_->lea(R64::RSP, make64(R64::RSP, -8));
+        generator_->movq(make64(R64::RSP, 0), get(reg));
+    }
+
+    void Compiler::pop(RegMM reg) {
+        generator_->movq(get(reg), make64(R64::RSP, 0));
+        generator_->lea(R64::RSP, make64(R64::RSP, +8));
+    }
+
+    void Compiler::push(Reg128 reg) {
+        generator_->lea(R64::RSP, make64(R64::RSP, -16));
+        generator_->movu(make128(R64::RSP, 0), get(reg));
+    }
+
+    void Compiler::pop(Reg128 reg) {
+        generator_->movu(get(reg), make128(R64::RSP, 0));
+        generator_->lea(R64::RSP, make64(R64::RSP, +16));
+    }
+
+    template<typename Func>
+    bool Compiler::forRM8Imm(const RM8& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg);
+            // read the register
+            readReg8(regalloc.reg0, dst.reg);
+            // perform the binary op
+            func(regalloc.reg0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg8(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M8& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem8(Reg::GPR0, addr);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem8(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM8RM8(const RM8& dst, const RM8& src, Func&& func, bool writeResultBack) {
+        if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
+            // read the dst
+            readReg8(regalloc.reg0, dst.reg);
+            // read the src
+            readReg8(regalloc.reg1, src.reg);
+            // perform the binary op
+            func(regalloc.reg0, regalloc.reg1);
+            if(writeResultBack) {
+                // write back dst
+                writeReg8(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else if(!dst.isReg && src.isReg) {
+            // fetch dst address
+            const M8& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR0, addr);
+            // read the src
+            readReg8(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem8(addr, Reg::GPR0);
+            }
+            return true;
+        } else if(dst.isReg && !src.isReg) {
+            // fetch src address
+            const M8& mem = src.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem8(Reg::GPR1, addr);
+            // read the dst
+            readReg8(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg8(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM16R8(const RM16& dst, R8 src, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg16(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg16(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M16& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem16(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem16(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM16Imm(const RM16& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the register
+            readReg16(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg16(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M16& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem16(Reg::GPR0, addr);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem16(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM16RM16(const RM16& dst, const RM16& src, Func&& func, bool writeResultBack) {
+        if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
+            // read the dst
+            readReg16(regalloc.reg0, dst.reg);
+            // read the src
+            readReg16(regalloc.reg1, src.reg);
+            // perform the binary op
+            func(regalloc.reg0, regalloc.reg1);
+            if(writeResultBack) {
+                // write back dst
+                writeReg16(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else if(!dst.isReg && src.isReg) {
+            // fetch dst address
+            const M16& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR0, addr);
+            // read the src
+            readReg16(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem16(addr, Reg::GPR0);
+            }
+            return true;
+        } else if(dst.isReg && !src.isReg) {
+            // fetch src address
+            const M16& mem = src.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem16(Reg::GPR1, addr);
+            // read the dst
+            readReg16(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg16(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM32R8(const RM32& dst, R8 src, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg32(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg32(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem32(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM32Imm(const RM32& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg);
+            // read the register
+            readReg32(regalloc.reg0, dst.reg);
+            // perform the binary op
+            func(regalloc.reg0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg32(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem32(Reg::GPR0, addr);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem32(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM32RM32(const RM32& dst, const RM32& src, Func&& func, bool writeResultBack) {
+        if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
+            // read the dst
+            readReg32(regalloc.reg0, dst.reg);
+            // read the src
+            readReg32(regalloc.reg1, src.reg);
+            // perform the binary op
+            func(regalloc.reg0, regalloc.reg1);
+            if(writeResultBack) {
+                // write back dst
+                writeReg32(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else if(!dst.isReg && src.isReg) {
+            // fetch dst address
+            const M32& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR0, addr);
+            // read the src
+            readReg32(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem32(addr, Reg::GPR0);
+            }
+            return true;
+        } else if(dst.isReg && !src.isReg) {
+            // fetch src address
+            const M32& mem = src.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem32(Reg::GPR1, addr);
+            // read the dst
+            readReg32(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg32(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM64R8(const RM64& dst, R8 src, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // read the dst register
+            readReg64(Reg::GPR0, dst.reg);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg64(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src register
+            readReg8(Reg::GPR1, src);
+            // do the op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem64(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM64Imm(const RM64& dst, Imm imm, Func&& func, bool writeResultBack) {
+        if(dst.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg);
+            // read the register
+            readReg64(regalloc.reg0, dst.reg);
+            // perform the binary op
+            func(regalloc.reg0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg64(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = dst.mem;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // perform the binary op
+            func(Reg::GPR0, imm);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem64(addr, Reg::GPR0);
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forRM64RM64(const RM64& dst, const RM64& src, Func&& func, bool writeResultBack) {
+        if(dst.isReg && src.isReg) {
+            // allocate register
+            auto regalloc = allocateReg(dst.reg, src.reg);
+            // read the dst
+            readReg64(regalloc.reg0, dst.reg);
+            // read the src
+            readReg64(regalloc.reg1, src.reg);
+            // perform the binary op
+            func(regalloc.reg0, regalloc.reg1);
+            if(writeResultBack) {
+                // write back dst
+                writeReg64(dst.reg, regalloc.reg0);
+            }
+            return true;
+        } else if(!dst.isReg && src.isReg) {
+            // fetch dst address
+            const M64& mem = dst.mem;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR0, addr);
+            // read the src
+            readReg64(Reg::GPR1, src.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeMem64(addr, Reg::GPR0);
+            }
+            return true;
+        } else if(dst.isReg && !src.isReg) {
+            // fetch src address
+            const M64& mem = src.mem;
+            forceEncodingSync(mem);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, mem);
+            // read the dst value at the address
+            readMem64(Reg::GPR1, addr);
+            // read the dst
+            readReg64(Reg::GPR0, dst.reg);
+            // perform the binary op
+            func(Reg::GPR0, Reg::GPR1);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg64(dst.reg, Reg::GPR0);
+            }
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    MMX Compiler::scratchMmxRegister(std::initializer_list<MMX> usedRegisters) {
+        for(MMX mmx : { MMX::MM0, MMX::MM1, MMX::MM2 }) {
+            if(std::find(usedRegisters.begin(), usedRegisters.end(), mmx) == usedRegisters.end()) {
+                return mmx;
+            }
+        }
+        verify(false, "Unable to find scratch register");
+        UNREACHABLE();
+    }
+
+    template<typename Func>
+    bool Compiler::forMmxMmxM32(MMX dst, const MMXM32& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readRegMM(toGpr(dst), dst);
+            // read the src register
+            readRegMM(toGpr(src.reg), src.reg);
+            // do the op
+            func(toGpr(dst), toGpr(src.reg));
+            if(writeResultBack) {
+                // write back to the register
+                writeRegMM(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // save the scratch register
+            RegMM gpr = toGpr(scratchMmxRegister({ dst }));
+            push(gpr);
+            // read the dst register
+            readRegMM(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            generator_->movd(get(gpr), make32(get(Reg::MEM_BASE), get(addr.base), 1, addr.offset));
+            // do the op
+            func(toGpr(dst), gpr);
+            if(writeResultBack) {
+                // write back to the register
+                writeRegMM(dst, toGpr(dst));
+            }
+            // restore gpr
+            pop(gpr);
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forMmxMmxM64(MMX dst, const MMXM64& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readRegMM(toGpr(dst), dst);
+            // read the src register
+            readRegMM(toGpr(src.reg), src.reg);
+            // do the op
+            func(toGpr(dst), toGpr(src.reg));
+            if(writeResultBack) {
+                // write back to the register
+                writeRegMM(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // save the scratch register
+            RegMM gpr = toGpr(scratchMmxRegister({ dst }));
+            push(gpr);
+            // read the dst register
+            readRegMM(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            readMemMM(gpr, addr);
+            // do the op
+            func(toGpr(dst), gpr);
+            if(writeResultBack) {
+                // write back to the register
+                writeRegMM(dst, toGpr(dst));
+            }
+            // restore gpr
+            pop(gpr);
+            return true;
+        }
+    }
+
+    XMM Compiler::scratchXmmRegister(std::initializer_list<XMM> usedRegisters) {
+        for(XMM xmm : { XMM::XMM0, XMM::XMM1, XMM::XMM2 }) {
+            if(std::find(usedRegisters.begin(), usedRegisters.end(), xmm) == usedRegisters.end()) {
+                return xmm;
+            }
+        }
+        verify(false, "Unable to find scratch register");
+        UNREACHABLE();
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmM32(XMM dst, const M32& src, Func&& func, bool writeResultBack) {
+        // fetch address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        forceEncodingSync(src);
+        // save the scratch register
+        Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
+        push(gpr);
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the op
+        // gpr is provided as a scratch register
+        func(toGpr(dst), addr, gpr);
+        if(writeResultBack) {
+            // write back to the register
+            writeReg128(dst, toGpr(dst));
+        }
+        // restore gpr
+        pop(gpr);
+        return true;
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmRM32(XMM dst, const RM32& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // read the src register
+            readReg32(Reg::GPR0, src.reg);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M32& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            readMem32(Reg::GPR0, addr);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmM64(XMM dst, const M64& src, Func&& func, bool writeResultBack) {
+        // fetch address
+        if(src.segment == Segment::FS) return false;
+        if(src.encoding.index == R64::RIP) return false;
+        forceEncodingSync(src);
+        // save the scratch register
+        Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
+        push(gpr);
+        // read the dst register
+        readReg128(toGpr(dst), dst);
+        // get the address
+        Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR0}, src);
+        // do the op
+        // gpr is provided as a scratch register
+        func(toGpr(dst), addr, gpr);
+        if(writeResultBack) {
+            // write back to the register
+            writeReg128(dst, toGpr(dst));
+        }
+        // restore gpr
+        pop(gpr);
+        return true;
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmRM64(XMM dst, const RM64& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // read the src register
+            readReg64(Reg::GPR0, src.reg);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M64& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            readMem64(Reg::GPR0, addr);
+            // do the op
+            func(toGpr(dst), Reg::GPR0);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        }
+    }
+
+    template<typename Func>
+    bool Compiler::forXmmXmmM128(XMM dst, const XMMM128& src, Func&& func, bool writeResultBack) {
+        if(src.isReg) {
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // read the src register
+            readReg128((toGpr(src.reg)), src.reg);
+            // do the op
+            func(toGpr(dst), toGpr(src.reg));
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            return true;
+        } else {
+            // fetch address
+            const M128& mem = src.mem;
+            if(mem.segment == Segment::FS) return false;
+            if(mem.encoding.index == R64::RIP) return false;
+            forceEncodingSync(mem);
+            // save the scratch register
+            Reg128 gpr = toGpr(scratchXmmRegister({ dst }));
+            push(gpr);
+            // read the dst register
+            readReg128(toGpr(dst), dst);
+            // get the address
+            Mem addr = getAddress(Reg::MEM_ADDR, TmpReg{Reg::GPR1}, mem);
+            // read the value at the address
+            readMem128(gpr, addr);
+            // do the op
+            func(toGpr(dst), gpr);
+            if(writeResultBack) {
+                // write back to the register
+                writeReg128(dst, toGpr(dst));
+            }
+            // restore gpr
+            pop(gpr);
+            return true;
+        }
+    }
+
+}

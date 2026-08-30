@@ -1,11 +1,11 @@
 #ifndef VM_H
 #define VM_H
 
+#include "arch/x64/compiler/jit.h"
+#include "arch/x64/codesegment.h"
+#include "arch/x64/cpu.h"
 #include "linux-x64-emulator/vmthread.h"
 #include "mem/mmu.h"
-#include "x64/compiler/jit.h"
-#include "x64/codesegment.h"
-#include "x64/cpu.h"
 #include "intervalvector.h"
 #include "utils.h"
 #include <deque>

@@ -1,4 +1,4 @@
-#include "x64/checkedcpuimpl.h"
+#include "arch/x64/checkedcpuimpl.h"
 #include "utils.h"
 #include "cputestutils.h"
 

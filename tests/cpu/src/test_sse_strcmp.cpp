@@ -9,8 +9,8 @@ int main() {
 #elif defined(__GNUC__) && !defined(__clang__)
 // gcc
 
-#include "x64/cpuimpl.h"
-#include "x64/types.h"
+#include "arch/x64/cpuimpl.h"
+#include "arch/x64/types.h"
 #include "fmt/core.h"
 
 u32 strlen_core_native(u128 a, u128 b) {

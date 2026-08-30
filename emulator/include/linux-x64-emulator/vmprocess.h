@@ -1,11 +1,11 @@
 #ifndef VMPROCESS_H
 #define VMPROCESS_H
 
+#include "arch/x64/compiler/jit.h"
+#include "arch/x64/compiler/jitstats.h"
+#include "arch/x64/disassembler/disassemblycache.h"
+#include "arch/x64/codesegment.h"
 #include "kernel/linux/process.h"
-#include "x64/compiler/jit.h"
-#include "x64/compiler/jitstats.h"
-#include "x64/disassembler/disassemblycache.h"
-#include "x64/codesegment.h"
 
 namespace kernel::gnulinux {
     class ProcessTable;

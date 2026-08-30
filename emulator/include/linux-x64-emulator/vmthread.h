@@ -1,13 +1,13 @@
 #ifndef VMTHREAD_H
 #define VMTHREAD_H
 
+#include "arch/x64/registers.h"
+#include "arch/x64/flags.h"
+#include "arch/x64/simd.h"
+#include "arch/x64/x87.h"
+#include "arch/x64/types.h"
 #include "linux-x64-emulator/vmprocess.h"
 #include "kernel/linux/thread.h"
-#include "x64/registers.h"
-#include "x64/flags.h"
-#include "x64/simd.h"
-#include "x64/x87.h"
-#include "x64/types.h"
 #include "span.h"
 #include "verify.h"
 #include <atomic>

@@ -1,0 +1,78 @@
+#ifndef OPTIMIZER_H
+#define OPTIMIZER_H
+
+#include "arch/x64/compiler/ir.h"
+#include <memory>
+#include <type_traits>
+#include <vector>
+
+namespace x64::ir {
+
+    class OptimizationPass;
+    struct LivenessAnalysis;
+
+    class Optimizer {
+    public:
+        template<typename Pass, typename ...Args>
+        void addPass(Args... args) {
+            static_assert(std::is_base_of_v<OptimizationPass, Pass>);
+            passes_.push_back(std::make_unique<Pass>(args...));
+        }
+
+        struct Stats {
+            u32 removedInstructions { 0 };
+            u32 deadCode { 0 };
+            u32 immediateReadback { 0 };
+            u32 delayedReadback { 0 };
+            u32 duplicateInstruction { 0 };
+        };
+
+        void optimize(IR& ir, Stats* stats = nullptr);
+
+    private:
+        std::vector<std::unique_ptr<OptimizationPass>> passes_;
+    };
+    
+    class OptimizationPass {
+    public:
+        virtual ~OptimizationPass() = default;
+        virtual bool optimize(IR*, Optimizer::Stats*) = 0;
+    };
+    
+    class DeadCodeElimination : public OptimizationPass {
+    public:
+        enum class R64_ALWAYS_LIVE { NO, YES };
+        enum class MMX_ALWAYS_LIVE { NO, YES };
+        enum class XMM_ALWAYS_LIVE { NO, YES };
+        explicit DeadCodeElimination(R64_ALWAYS_LIVE, MMX_ALWAYS_LIVE, XMM_ALWAYS_LIVE);
+        ~DeadCodeElimination();
+        bool optimize(IR*, Optimizer::Stats*) override;
+
+    private:
+        R64_ALWAYS_LIVE r64Liveness_ { R64_ALWAYS_LIVE::NO };
+        MMX_ALWAYS_LIVE mmxLiveness_ { MMX_ALWAYS_LIVE::NO };
+        XMM_ALWAYS_LIVE xmmLiveness_ { XMM_ALWAYS_LIVE::NO };
+        std::unique_ptr<LivenessAnalysis> analysis_;
+        std::vector<size_t> removableInstructions_;
+    };
+
+    class ImmediateReadBackElimination : public OptimizationPass {
+        bool optimize(IR*, Optimizer::Stats*) override;
+    private:
+        std::vector<size_t> removableInstructions_;
+    };
+
+    class DelayedReadBackElimination : public OptimizationPass {
+        bool optimize(IR*, Optimizer::Stats*) override;
+    private:
+        std::vector<size_t> removableInstructions_;
+    };
+
+    class DuplicateInstructionElimination : public OptimizationPass {
+        bool optimize(IR*, Optimizer::Stats*) override;
+    private:
+        std::vector<size_t> removableInstructions_;
+    };
+}
+
+#endif

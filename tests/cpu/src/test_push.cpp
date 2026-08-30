@@ -1,5 +1,5 @@
 #include "mem/mmu.h"
-#include "x64/cpu.h"
+#include "arch/x64/cpu.h"
 #include <cstdio>
 
 int emulated() {

@@ -1,6 +1,6 @@
-#include "x64/compiler/ir.h"
-#include "x64/compiler/irgenerator.h"
-#include "x64/compiler/optimizer.h"
+#include "arch/x64/compiler/ir.h"
+#include "arch/x64/compiler/irgenerator.h"
+#include "arch/x64/compiler/optimizer.h"
 #include <fmt/format.h>
 
 using namespace x64;

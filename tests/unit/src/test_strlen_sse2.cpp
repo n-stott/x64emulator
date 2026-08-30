@@ -1,5 +1,5 @@
+#include "arch/x64/cpu.h"
 #include "mem/mmu.h"
-#include "x64/cpu.h"
 #include "verify.h"
 #include "fmt/core.h"
 #include <vector>

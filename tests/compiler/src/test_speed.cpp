@@ -1,5 +1,5 @@
-#include "x64/compiler/compiler.h"
-#include "x64/cpu.h"
+#include "arch/x64/compiler/compiler.h"
+#include "arch/x64/cpu.h"
 #include <vector>
 
 using namespace x64;

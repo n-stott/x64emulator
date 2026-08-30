@@ -76,16 +76,16 @@ add_library(x64cpu ${LIB_KIND}
     src/host/hostinstructions.cpp
     src/host/hostmemory.cpp
     src/mem/mmu.cpp
-    src/x64/checkedcpuimpl.cpp
-    src/x64/cpu.cpp
-    src/x64/cpuimpl.cpp
-    src/x64/flags.cpp
-    src/x64/nativecpuimpl.cpp
-    src/x64/registers.cpp
-    src/x64/simd.cpp
-    src/x64/instructions/instruction.cpp
-    src/x64/x87.cpp
-    src/x64/types.cpp
+    src/arch/x64/checkedcpuimpl.cpp
+    src/arch/x64/cpu.cpp
+    src/arch/x64/cpuimpl.cpp
+    src/arch/x64/flags.cpp
+    src/arch/x64/nativecpuimpl.cpp
+    src/arch/x64/registers.cpp
+    src/arch/x64/simd.cpp
+    src/arch/x64/instructions/instruction.cpp
+    src/arch/x64/x87.cpp
+    src/arch/x64/types.cpp
 )
 target_compile_options(x64cpu PUBLIC ${COMPILE_OPTIONS})
 target_include_directories(x64cpu PUBLIC
@@ -107,17 +107,17 @@ target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 
 add_library(x64jit ${LIB_KIND}
-    src/x64/compiler/assembler.cpp
-    src/x64/compiler/codegenerator.cpp
-    src/x64/compiler/compiler.cpp
-    src/x64/compiler/executablememoryallocator.cpp
-    src/x64/compiler/ir.cpp
-    src/x64/compiler/irgenerator.cpp
-    src/x64/compiler/jit.cpp
-    src/x64/compiler/optimizer.cpp
-    src/x64/disassembler/zydiswrapper.cpp
-    src/x64/disassembler/disassemblycache.cpp
-    src/x64/codesegment.cpp
+    src/arch/x64/compiler/assembler.cpp
+    src/arch/x64/compiler/codegenerator.cpp
+    src/arch/x64/compiler/compiler.cpp
+    src/arch/x64/compiler/executablememoryallocator.cpp
+    src/arch/x64/compiler/ir.cpp
+    src/arch/x64/compiler/irgenerator.cpp
+    src/arch/x64/compiler/jit.cpp
+    src/arch/x64/compiler/optimizer.cpp
+    src/arch/x64/disassembler/zydiswrapper.cpp
+    src/arch/x64/disassembler/disassemblycache.cpp
+    src/arch/x64/codesegment.cpp
 )
 target_compile_options(x64jit PRIVATE ${COMPILE_OPTIONS})
 target_include_directories(x64jit PUBLIC

@@ -1,0 +1,67 @@
+#ifndef BASICBLOCK_H
+#define BASICBLOCK_H
+
+#include "arch/x64/instructions/instruction.h"
+#include <algorithm>
+#include <optional>
+#include <vector>
+
+namespace x64 {
+
+    class Cpu;
+
+    using CpuExecPtr = void(*)(Cpu&, const Instruction&);
+
+    class BasicBlock {
+    public:
+        BasicBlock(std::vector<std::pair<Instruction, CpuExecPtr>> instructions)
+                : instructions_(std::move(instructions)) {
+            assert(!instructions_.empty());
+            endsWithFixedDestinationJump_ = instructions_.back().first.isFixedDestinationJump();
+            endsWithDirectCall_ = instructions_.back().first.isDirectCall();
+            endsWithIndirectCall_ = instructions_.back().first.isIndirectCall();
+            hasAtomic_ = std::any_of(instructions_.begin(), instructions_.end(), [](const auto& p) {
+                return p.first.lock();
+            });
+        }
+
+        const std::vector<std::pair<Instruction, CpuExecPtr>>& instructions() const {
+            return instructions_;
+        }
+
+        bool endsWithFixedDestinationJump() const {
+            return endsWithFixedDestinationJump_;
+        }
+
+        bool endsWithDirectCall() const {
+            return endsWithDirectCall_;
+        }
+
+        bool endsWithIndirectCall() const {
+            return endsWithIndirectCall_;
+        }
+
+        bool hasAtomicInstruction() const {
+            return hasAtomic_;
+        }
+
+    private:
+        std::vector<std::pair<Instruction, CpuExecPtr>> instructions_;
+        bool endsWithFixedDestinationJump_ { false };
+        bool endsWithDirectCall_ { false };
+        bool endsWithIndirectCall_ { false };
+        bool hasAtomic_ { false };
+    };
+
+    struct NativeBasicBlock {
+        std::vector<u8> nativecode;
+        std::optional<size_t> offsetOfJumpLandingPad;
+        std::optional<size_t> offsetOfReplaceableJumpToContinuingBlock;
+        std::optional<size_t> offsetOfReplaceableJumpToConditionalBlock;
+        std::optional<std::pair<size_t, u64>> offsetOfReplaceableCallstackPush;
+        std::optional<size_t> offsetOfReplaceableCallstackPop;
+    };
+
+}
+
+#endif

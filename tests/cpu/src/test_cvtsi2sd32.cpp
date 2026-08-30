@@ -1,5 +1,5 @@
-#include "x64/checkedcpuimpl.h"
-#include "x64/flags.h"
+#include "arch/x64/checkedcpuimpl.h"
+#include "arch/x64/flags.h"
 #include "utils.h"
 #include "cputestutils.h"
 #include "fmt/core.h"

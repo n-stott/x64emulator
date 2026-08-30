@@ -1,7 +1,7 @@
 #include "mem/mmu.h"
-#include "x64/cpu.h"
-#include "x64/compiler/compiler.h"
-#include "x64/disassembler/zydiswrapper.h"
+#include "arch/x64/cpu.h"
+#include "arch/x64/compiler/compiler.h"
+#include "arch/x64/disassembler/zydiswrapper.h"
 #include <sys/mman.h>
 
 int main(int, char**) {

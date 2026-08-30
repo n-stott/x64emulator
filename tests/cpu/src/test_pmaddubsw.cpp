@@ -1,5 +1,5 @@
-#include "x64/checkedcpuimpl.h"
-#include "x64/cpuimpl.h"
+#include "arch/x64/checkedcpuimpl.h"
+#include "arch/x64/cpuimpl.h"
 #include "cputestutils.h"
 
 void testA() {

@@ -1,4 +1,4 @@
-#include "x64/checkedcpuimpl.h"
+#include "arch/x64/checkedcpuimpl.h"
 
 void testA() {
     for(u16 i = 0; i < 0x100; ++i) {

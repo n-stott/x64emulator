@@ -1,5 +1,5 @@
-#include "x64/compiler/assembler.h"
-#include "x64/disassembler/zydiswrapper.h"
+#include "arch/x64/compiler/assembler.h"
+#include "arch/x64/disassembler/zydiswrapper.h"
 #include "verify.h"
 
 using namespace x64;

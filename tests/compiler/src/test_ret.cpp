@@ -1,8 +1,8 @@
 #include "mem/mmu.h"
-#include "x64/instructions/basicblock.h"
-#include "x64/cpu.h"
-#include "x64/compiler/jit.h"
-#include "x64/codesegment.h"
+#include "arch/x64/instructions/basicblock.h"
+#include "arch/x64/cpu.h"
+#include "arch/x64/compiler/jit.h"
+#include "arch/x64/codesegment.h"
 
 using namespace mem;
 using namespace x64;

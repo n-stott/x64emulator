@@ -1,6 +1,6 @@
 #include "mem/mmu.h"
-#include "x64/cpu.h"
-#include "x64/flags.h"
+#include "arch/x64/cpu.h"
+#include "arch/x64/flags.h"
 #include "utils.h"
 #include <fmt/format.h>
 

@@ -1,5 +1,5 @@
-#include "x64/cpuimpl.h"
-#include "x64/types.h"
+#include "arch/x64/cpuimpl.h"
+#include "arch/x64/types.h"
 #include "fmt/core.h"
 #include <vector>
 
