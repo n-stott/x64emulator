@@ -1,5 +1,5 @@
-#ifndef JIT_H
-#define JIT_H
+#ifndef X64JIT_H
+#define X64JIT_H
 
 #include "arch/x64/compiler/executablememoryallocator.h"
 #include "arch/x64/instructions/basicblock.h"

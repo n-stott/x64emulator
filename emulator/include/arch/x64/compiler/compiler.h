@@ -1,5 +1,5 @@
-#ifndef COMPILER_H
-#define COMPILER_H
+#ifndef X64COMPILER_H
+#define X64COMPILER_H
 
 #include "arch/x64/instructions/basicblock.h"
 #include "arch/x64/compiler/ir.h"

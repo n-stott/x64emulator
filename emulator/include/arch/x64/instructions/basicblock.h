@@ -1,5 +1,5 @@
-#ifndef BASICBLOCK_H
-#define BASICBLOCK_H
+#ifndef X64BASICBLOCK_H
+#define X64BASICBLOCK_H
 
 #include "arch/x64/instructions/instruction.h"
 #include <algorithm>

@@ -1,3 +1,6 @@
+#ifndef X64TOSTRING_H
+#define X64TOSTRING_H
+
 #include "arch/x64/types.h"
 #include <fmt/core.h>
 #include <array>
@@ -335,3 +338,5 @@ namespace x64::utils {
         return toString(rm.mem);
     }
 }
+
+#endif

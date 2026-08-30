@@ -1,5 +1,5 @@
-#ifndef IR_H
-#define IR_H
+#ifndef X64IR_H
+#define X64IR_H
 
 #include "arch/x64/types.h"
 #include "bitmask.h"

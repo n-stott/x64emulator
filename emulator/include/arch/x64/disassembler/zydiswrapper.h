@@ -1,5 +1,5 @@
-#ifndef ZYDISWRAPPER_H
-#define ZYDISWRAPPER_H
+#ifndef X64ZYDISWRAPPER_H
+#define X64ZYDISWRAPPER_H
 
 #include "arch/x64/disassembler/disassembler.h"
 #include "arch/x64/instructions/instruction.h"

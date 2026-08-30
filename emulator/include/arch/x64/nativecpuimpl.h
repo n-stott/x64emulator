@@ -1,5 +1,5 @@
-#ifndef NATIVECPUIMPL_H
-#define NATIVECPUIMPL_H
+#ifndef X64NATIVECPUIMPL_H
+#define X64NATIVECPUIMPL_H
 
 #include "utils.h"
 

@@ -1,5 +1,5 @@
-#ifndef ASSEMBLER_H
-#define ASSEMBLER_H
+#ifndef X64ASSEMBLER_H
+#define X64ASSEMBLER_H
 
 #include "arch/x64/types.h"
 #include "smallvector.h"

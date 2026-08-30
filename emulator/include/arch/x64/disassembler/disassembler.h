@@ -1,5 +1,5 @@
-#ifndef DISASSEMBLER_H
-#define DISASSEMBLER_H
+#ifndef X64DISASSEMBLER_H
+#define X64DISASSEMBLER_H
 
 #include "arch/x64/instructions/instruction.h"
 #include "arch/x64/types.h"

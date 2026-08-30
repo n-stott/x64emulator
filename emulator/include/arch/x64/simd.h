@@ -1,5 +1,5 @@
-#ifndef SIMD_H
-#define SIMD_H
+#ifndef X64SIMD_H
+#define X64SIMD_H
 
 #include "utils.h"
 

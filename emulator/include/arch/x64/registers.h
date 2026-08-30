@@ -1,5 +1,5 @@
-#ifndef REGISTERS_H
-#define REGISTERS_H
+#ifndef X64REGISTERS_H
+#define X64REGISTERS_H
 
 #include "arch/x64/types.h"
 #include <array>

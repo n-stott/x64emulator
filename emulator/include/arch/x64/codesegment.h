@@ -1,5 +1,5 @@
-#ifndef CODESEGMENT_H
-#define CODESEGMENT_H
+#ifndef X64CODESEGMENT_H
+#define X64CODESEGMENT_H
 
 #include "arch/x64/compiler/jit.h"
 #include "arch/x64/instructions/basicblock.h"

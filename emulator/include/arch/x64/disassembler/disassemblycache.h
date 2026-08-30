@@ -1,5 +1,5 @@
-#ifndef DISASSEMBLYCACHE_H
-#define DISASSEMBLYCACHE_H
+#ifndef X64DISASSEMBLYCACHE_H
+#define X64DISASSEMBLYCACHE_H
 
 #include "arch/x64/disassembler/disassembler.h"
 #include "arch/x64/instructions/basicblock.h"

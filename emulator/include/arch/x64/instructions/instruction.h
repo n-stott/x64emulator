@@ -1,5 +1,5 @@
-#ifndef INSTRUCTION_H
-#define INSTRUCTION_H
+#ifndef X64INSTRUCTION_H
+#define X64INSTRUCTION_H
 
 #include "arch/x64/types.h"
 #include <array>

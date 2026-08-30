@@ -1,5 +1,5 @@
-#ifndef X87_H
-#define X87_H
+#ifndef X64X87_H
+#define X64X87_H
 
 #include "arch/x64/types.h"
 #include "utils.h"

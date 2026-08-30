@@ -1,5 +1,5 @@
-#ifndef FLAGS_H
-#define FLAGS_H
+#ifndef X64FLAGS_H
+#define X64FLAGS_H
 
 #include "arch/x64/types.h"
 #include <optional>

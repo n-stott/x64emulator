@@ -1,5 +1,5 @@
-#ifndef OPTIMIZER_H
-#define OPTIMIZER_H
+#ifndef X64OPTIMIZER_H
+#define X64OPTIMIZER_H
 
 #include "arch/x64/compiler/ir.h"
 #include <memory>

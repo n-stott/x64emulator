@@ -1,5 +1,5 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef X64TYPES_H
+#define X64TYPES_H
 
 #include "mem/mmutypes.h"
 #include "utils.h"

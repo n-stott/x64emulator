@@ -1,5 +1,5 @@
-#ifndef CPU_H
-#define CPU_H
+#ifndef X64CPU_H
+#define X64CPU_H
 
 #include "arch/x64/registers.h"
 #include "arch/x64/flags.h"

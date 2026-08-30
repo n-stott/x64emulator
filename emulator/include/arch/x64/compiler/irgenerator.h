@@ -1,5 +1,5 @@
-#ifndef IRGENERATOR_H
-#define IRGENERATOR_H
+#ifndef X64IRGENERATOR_H
+#define X64IRGENERATOR_H
 
 #include "arch/x64/instructions/instruction.h"
 #include "arch/x64/instructions/basicblock.h"

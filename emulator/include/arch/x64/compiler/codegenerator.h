@@ -1,5 +1,5 @@
-#ifndef CODEGENERATOR_H
-#define CODEGENERATOR_H
+#ifndef X64CODEGENERATOR_H
+#define X64CODEGENERATOR_H
 
 #include "arch/x64/instructions/instruction.h"
 #include "arch/x64/instructions/basicblock.h"

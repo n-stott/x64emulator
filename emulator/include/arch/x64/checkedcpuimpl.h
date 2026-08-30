@@ -1,5 +1,5 @@
-#ifndef CHECKED_CPU_IMPL_H
-#define CHECKED_CPU_IMPL_H
+#ifndef X64CHECKED_CPU_IMPL_H
+#define X64CHECKED_CPU_IMPL_H
 
 #include "arch/x64/flags.h"
 #include "arch/x64/simd.h"

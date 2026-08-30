@@ -1,5 +1,5 @@
-#ifndef JITSTATS_H
-#define JITSTATS_H
+#ifndef X64JITSTATS_H
+#define X64JITSTATS_H
 
 #include "utils.h"
 #include <fmt/format.h>
