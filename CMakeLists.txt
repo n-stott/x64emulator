@@ -35,6 +35,13 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(zydis)
 
 FetchContent_Declare(
+    capstone
+    GIT_REPOSITORY https://github.com/capstone-engine/capstone.git
+    GIT_TAG        4.0
+)
+FetchContent_MakeAvailable(capstone)
+
+FetchContent_Declare(
     boost_int128
     GIT_REPOSITORY https://github.com/cppalliance/int128.git
     GIT_TAG        v1.2.0
