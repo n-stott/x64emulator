@@ -1,10 +1,10 @@
-#ifndef EMULATOR_H
-#define EMULATOR_H
+#ifndef X64EMULATOR_H
+#define X64EMULATOR_H
 
 #include <string>
 #include <vector>
 
-namespace emulator {
+namespace x64emulator {
 
     class Emulator {
     public:

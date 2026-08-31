@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
     auto cpu = x64::Cpu(mmu);
 
 #if 0
-    emulator::VM vm(cpu, *mmu);
+    x64emulator::VM vm(cpu, *mmu);
     vm.setDisassembler(1);
 
     class WinThread : public emulator::VMThread {

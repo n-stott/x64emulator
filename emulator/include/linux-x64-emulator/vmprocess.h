@@ -1,9 +1,10 @@
-#ifndef VMPROCESS_H
-#define VMPROCESS_H
+#ifndef X64VMPROCESS_H
+#define X64VMPROCESS_H
 
+#include "arch/disassemblycache.h"
+#include "arch/x64/disassembler/zydiswrapper.h"
 #include "arch/x64/compiler/jit.h"
 #include "arch/x64/compiler/jitstats.h"
-#include "arch/x64/disassembler/disassemblycache.h"
 #include "arch/x64/codesegment.h"
 #include "kernel/linux/process.h"
 
@@ -21,7 +22,7 @@ namespace x64 {
         static std::unique_ptr<VMProcess> tryCreate(kernel::gnulinux::ProcessTable&, u32 addressSpaceSizeInMB, kernel::gnulinux::FS& fs);
         ~VMProcess();
 
-        x64::DisassemblyCache* disassemblyCache() { return &disassemblyCache_; }
+        detail::DisassemblyCache<x64::Instruction, x64::ZydisWrapper>* disassemblyCache() { return &disassemblyCache_; }
         x64::CodeSegment* fetchSegment(mem::Mmu& mmu, u64 address);
 
         x64::Jit* jit() { return jit_.get(); }
@@ -45,7 +46,7 @@ namespace x64 {
         int jitStatsLevel() const { return jitStatsLevel_; }
         x64::JitStats* jitStats() { return &jitStats_; }
 
-        class SymbolRetriever : public x64::DisassemblyCacheCallback {
+        class SymbolRetriever : public detail::DisassemblyCacheCallback {
         public:
             explicit SymbolRetriever(VMProcess*);
             ~SymbolRetriever();
@@ -53,7 +54,7 @@ namespace x64 {
             
         private:
             SymbolRetriever(const SymbolRetriever&) = delete;
-            x64::DisassemblyCache* disassemblyCache_ { nullptr };
+            detail::DisassemblyCache<x64::Instruction, x64::ZydisWrapper>* disassemblyCache_ { nullptr };
             kernel::gnulinux::SymbolProvider* symbolProvider_ { nullptr };
             bool jitEnabled_ { false };
         };
@@ -84,7 +85,7 @@ namespace x64 {
         int jitStatsLevel_ { 0 };
 
         // Cpu
-        x64::DisassemblyCache disassemblyCache_;
+        detail::DisassemblyCache<x64::Instruction, x64::ZydisWrapper> disassemblyCache_;
 
         std::mutex segmentGuard_;
         std::vector<x64::Instruction> blockInstructions_;

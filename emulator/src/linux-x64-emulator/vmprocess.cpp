@@ -1,5 +1,6 @@
 #include "arch/x64/cpu.h"
 #include "arch/x64/compiler/compiler.h"
+#include "arch/x64/disassembler/disassembler.h"
 #include "linux-x64-emulator/vmprocess.h"
 #include <numeric>
 
@@ -111,7 +112,7 @@ namespace x64 {
         if(it != codeSegmentsByAddress_.end()) {
             return it->second;
         } else {
-            x64::MmuBytecodeRetriever bytecodeRetriever(mmu, disassemblyCache_);
+            detail::MmuBytecodeRetriever bytecodeRetriever(mmu);
             disassemblyCache_.getBasicBlock(address, &bytecodeRetriever, &blockInstructions_);
             verify(!blockInstructions_.empty() && blockInstructions_.back().isBranch(), [&]() {
                 fmt::print("did not find bb exit branch for bb starting at {:#x}\n", address);

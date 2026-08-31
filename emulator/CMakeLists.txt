@@ -116,7 +116,6 @@ add_library(x64jit ${LIB_KIND}
     src/arch/x64/compiler/jit.cpp
     src/arch/x64/compiler/optimizer.cpp
     src/arch/x64/disassembler/zydiswrapper.cpp
-    src/arch/x64/disassembler/disassemblycache.cpp
     src/arch/x64/codesegment.cpp
 )
 target_compile_options(x64jit PRIVATE ${COMPILE_OPTIONS})
@@ -146,7 +145,7 @@ target_compile_definitions(x64jit PRIVATE ${COMPILE_DEFINITIONS})
 
 
 if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
-    add_library(x64linuxkernel ${LIB_KIND}
+    add_library(linuxkernel ${LIB_KIND}
         src/host/host.cpp
         src/kernel/linux/dev/hostdevice.cpp
         src/kernel/linux/dev/nulldevice.cpp
@@ -184,23 +183,23 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
         src/kernel/linux/threadblocker.cpp
         src/kernel/timers.cpp
     )
-    target_compile_options(x64linuxkernel PRIVATE ${COMPILE_OPTIONS})
-    target_include_directories(x64linuxkernel PUBLIC
+    target_compile_options(linuxkernel PRIVATE ${COMPILE_OPTIONS})
+    target_include_directories(linuxkernel PUBLIC
         include
         ${CMAKE_SOURCE_DIR}/profiling/include
     )
-    target_link_directories(x64linuxkernel PRIVATE ${capstone_BINARY_DIR})
-    target_link_libraries(x64linuxkernel PUBLIC
+    target_link_directories(linuxkernel PRIVATE ${capstone_BINARY_DIR})
+    target_link_libraries(linuxkernel PUBLIC
         profiling
         fmt::fmt-header-only
     )
-    target_compile_definitions(x64linuxkernel PRIVATE ${COMPILE_DEFINITIONS})
+    target_compile_definitions(linuxkernel PRIVATE ${COMPILE_DEFINITIONS})
 
-    # target_compile_options(x64linuxkernel PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
-    # target_link_libraries(x64linuxkernel PRIVATE asan ubsan)
+    # target_compile_options(linuxkernel PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
+    # target_link_libraries(linuxkernel PRIVATE asan ubsan)
 
     # IF(CMAKE_BUILD_TYPE MATCHES Debug)
-    #     set_target_properties(x64linuxkernel PROPERTIES CXX_CLANG_TIDY
+    #     set_target_properties(linuxkernel PROPERTIES CXX_CLANG_TIDY
     #         clang-tidy-18;
     #         --use-color;
     #         -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -219,7 +218,7 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     target_link_libraries(emulator PUBLIC
         x64cpu
         x64jit
-        x64linuxkernel
+        linuxkernel
         fmt::fmt-header-only
         argparse
     )

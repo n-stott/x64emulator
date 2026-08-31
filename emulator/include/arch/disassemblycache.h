@@ -1,22 +1,114 @@
-#include "arch/x64/disassembler/disassemblycache.h"
-#include "arch/x64/disassembler/zydiswrapper.h"
+#ifndef DISASSEMBLYCACHE_H
+#define DISASSEMBLYCACHE_H
+
 #include "mem/mmu.h"
+#include "utils.h"
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
-namespace x64 {
+#ifdef MULTIPROCESSING
+#include <mutex>
+#define LOCK_CACHE() std::unique_lock lock(guard_)
+#else
+#define LOCK_CACHE() 
+#endif
 
-    DisassemblyCache::DisassemblyCache() {
-        disassembler_ = std::make_unique<x64::ZydisWrapper>();
+namespace detail {
+
+    template<typename INSTRUCTION_T>
+    struct ExecutableSection {
+        u64 begin;
+        u64 end;
+        std::vector<INSTRUCTION_T> instructions;
+        std::string filename;
+
+        void trim();
+    };
+
+    class BytecodeRetriever {
+    public:
+        virtual ~BytecodeRetriever() = default;
+        virtual bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) = 0;
+    };
+
+    class DisassemblyCacheCallback {
+    public:
+        virtual ~DisassemblyCacheCallback() = default;
+        virtual void onNewDisassembly(const std::string& filename, u64 base) = 0;
+    };
+
+    template<typename INSTRUCTION_T, typename DISASSEMBLER_T>
+    class DisassemblyCache : public mem::Mmu::Callback {
+    public:
+        DisassemblyCache();
+        void getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<INSTRUCTION_T>* instructions);
+
+        void onRegionCreation(u64, u64, BitFlags<mem::PROT>) override { }
+        void onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) override;
+        void onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) override;
+
+        std::optional<std::string> tryFindContainingFile(u64 address);
+
+        void addCallback(DisassemblyCacheCallback* callback) {
+            callbacks_.push_back(callback);
+        }
+
+        void removeCallback(DisassemblyCacheCallback* callback) {
+            callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
+        }
+
+    private:
+        struct InstructionPosition {
+            const ExecutableSection<INSTRUCTION_T>* section { nullptr };
+            size_t index { (size_t)(-1) };
+        };
+
+        InstructionPosition findSectionWithAddress(u64 address, BytecodeRetriever* retriever);
+
+#ifdef MULTIPROCESSING
+        std::mutex guard_;
+#endif
+        std::vector<std::unique_ptr<ExecutableSection<INSTRUCTION_T>>> executableSections_;
+        std::map<u64, ExecutableSection<INSTRUCTION_T>*> executableSectionsByBegin_;
+        std::map<u64, ExecutableSection<INSTRUCTION_T>*> executableSectionsByEnd_;
+
+        std::unique_ptr<DISASSEMBLER_T> disassembler_;
+        std::vector<u8> disassemblyData_;
+        std::string name_;
+
+        std::vector<DisassemblyCacheCallback*> callbacks_;
+    };
+
+
+    class MmuBytecodeRetriever : public BytecodeRetriever {
+    public:
+        explicit MmuBytecodeRetriever(mem::Mmu& mmu) : mmu_(mmu) { }
+
+        bool retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) override;
+    
+    private:
+        mem::Mmu& mmu_;
+    };
+
+
+    template<typename INS_T, typename DIS_T>
+    inline DisassemblyCache<INS_T, DIS_T>::DisassemblyCache() {
+        disassembler_ = std::make_unique<DIS_T>();
     }
 
-    void DisassemblyCache::getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<x64::Instruction>* instructions) {
+    template<typename INS_T, typename DIS_T>
+    inline void DisassemblyCache<INS_T, DIS_T>::getBasicBlock(u64 address, BytecodeRetriever* retriever, std::vector<INS_T>* instructions) {
         LOCK_CACHE();
         assert(!!instructions);
         instructions->clear();
         while(true) {
             auto pos = findSectionWithAddress(address, retriever);
             verify(!!pos.section, "Unable to disassemble block");
-            const x64::Instruction* it = pos.section->instructions.data() + pos.index;
-            const x64::Instruction* end = pos.section->instructions.data() + pos.section->instructions.size();
+            const INS_T* it = pos.section->instructions.data() + pos.index;
+            const INS_T* end = pos.section->instructions.data() + pos.section->instructions.size();
             bool foundBranch = false;
             while(it != end) {
                 instructions->push_back(*it);
@@ -32,8 +124,9 @@ namespace x64 {
         }
     }
 
-    DisassemblyCache::InstructionPosition DisassemblyCache::findSectionWithAddress(u64 address, BytecodeRetriever* retriever) {
-        auto findInstructionPosition = [](const ExecutableSection& section, u64 address) -> std::optional<InstructionPosition> {
+    template<typename INS_T, typename DIS_T>
+    inline typename DisassemblyCache<INS_T, DIS_T>::InstructionPosition DisassemblyCache<INS_T, DIS_T>::findSectionWithAddress(u64 address, BytecodeRetriever* retriever) {
+        auto findInstructionPosition = [](const ExecutableSection<INS_T>& section, u64 address) -> std::optional<InstructionPosition> {
             // find instruction following address
             auto it = std::lower_bound(section.instructions.begin(), section.instructions.end(), address, [&](const auto& a, u64 b) {
                 return a.address() < b;
@@ -71,10 +164,10 @@ namespace x64 {
         bool successfulRetrieval = retriever->retrieveBytecode(&disassemblyData_, &name_, &regionBase, address, size);
         if(!successfulRetrieval) return InstructionPosition { nullptr, (size_t)(-1) };
 
-        x64::Disassembler::DisassemblyResult result = disassembler_->disassembleRange(disassemblyData_.data(), disassemblyData_.size(), address);
+        auto result = disassembler_->disassembleRange(disassemblyData_.data(), disassemblyData_.size(), address);
 
         // Finally, create the new executable region
-        ExecutableSection section;
+        ExecutableSection<INS_T> section;
         section.begin = address;
         section.end = result.nextAddress;
         section.filename = name_;
@@ -85,7 +178,7 @@ namespace x64 {
         verify(section.end == section.instructions.back().nextAddress());
         section.trim();
 
-        auto newSection = std::make_unique<ExecutableSection>(std::move(section));
+        auto newSection = std::make_unique<ExecutableSection<INS_T>>(std::move(section));
         auto* sectionPtr = newSection.get();
         executableSections_.push_back(std::move(newSection));
         executableSectionsByBegin_.emplace(sectionPtr->begin, sectionPtr);
@@ -98,7 +191,8 @@ namespace x64 {
         return InstructionPosition { sectionPtr, 0 };
     }
 
-    std::optional<std::string> DisassemblyCache::tryFindContainingFile(u64 address) {
+    template<typename INS_T, typename DIS_T>
+    std::optional<std::string> DisassemblyCache<INS_T, DIS_T>::tryFindContainingFile(u64 address) {
         LOCK_CACHE();
         InstructionPosition pos = findSectionWithAddress(address, nullptr);
         if(pos.section) {
@@ -108,7 +202,8 @@ namespace x64 {
         }
     }
 
-    void DisassemblyCache::onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) {
+    template<typename INS_T, typename DIS_T>
+    inline void DisassemblyCache<INS_T, DIS_T>::onRegionProtectionChange(u64 base, u64 length, BitFlags<mem::PROT> protBefore, BitFlags<mem::PROT> protAfter) {
         // if executable flag didn't change, we don't need to to anything
         if(protBefore.test(mem::PROT::EXEC) == protAfter.test(mem::PROT::EXEC)) return;
 
@@ -129,7 +224,8 @@ namespace x64 {
         }
     }
 
-    void DisassemblyCache::onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) {
+    template<typename INS_T, typename DIS_T>
+    inline void DisassemblyCache<INS_T, DIS_T>::onRegionDestruction(u64 base, u64 length, BitFlags<mem::PROT> prot) {
         if(!prot.test(mem::PROT::EXEC)) return;
 
         {
@@ -147,11 +243,12 @@ namespace x64 {
         }), executableSections_.end());
     }
 
-    void ExecutableSection::trim() {
+    template<typename INS_T>
+    inline void ExecutableSection<INS_T>::trim() {
         // Assume that the first instruction is a basic block entry instruction
         // This is probably wrong, because we may not have disassembled the last bit of the previous section.
         struct BasicBlock {
-            const x64::Instruction* instructions;
+            const INS_T* instructions;
             u32 size;
         };
 
@@ -176,13 +273,13 @@ namespace x64 {
         // We will probably disassemble them again, but they will be put in the
         // correct basic block then.
         if(!!lastBasicBlock) {
-            auto packedInstructions = std::distance((const x64::Instruction*)instructions.data(), begin);
+            auto packedInstructions = std::distance((const INS_T*)instructions.data(), begin);
             instructions.erase(instructions.begin() + packedInstructions, instructions.end());
             this->end = lastBasicBlock->instructions[lastBasicBlock->size-1].nextAddress();
         }
     }
 
-    bool MmuBytecodeRetriever::retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) {
+    inline bool MmuBytecodeRetriever::retrieveBytecode(std::vector<u8>* data, std::string* name, u64* regionBase, u64 address, u64 size) {
         if(!data) return false;
         const mem::MmuRegion* mmuRegion = ((const mem::Mmu&)mmu_).findAddress(address);
         if(!mmuRegion) return false;
@@ -211,3 +308,5 @@ namespace x64 {
     }
 
 }
+
+#endif

@@ -13,10 +13,11 @@
 #include <signal.h>
 
 namespace emulator {
-
     bool signal_interrupt = false;
     bool force_graceful_exit = false;
+}
 
+namespace x64emulator {
     Emulator::Emulator() = default;
 
     Emulator::~Emulator() = default; // NOLINT(performance-trivially-destructible)
@@ -122,7 +123,7 @@ namespace emulator {
 
         int ret = kernel.run(programFilePath, arguments, environmentVariables);
 
-        if(force_graceful_exit) return true;
+        if(emulator::force_graceful_exit) return true;
 
         if(isProfiling_) {
             using namespace profiling;

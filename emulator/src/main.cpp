@@ -140,7 +140,7 @@ int main(int argc, char* argv[], char* envp[]) {
     SignalHandler<SIGINT> sigintHandler(&crashHandler);
 
     try {
-        emulator::Emulator emulator;
+        x64emulator::Emulator emulator;
         emulator.setLogSyscalls(parser["--syscalls"] == true);
         if(parser["--profile"] == true) {
             if(parser["--nojit"] == false) {

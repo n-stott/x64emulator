@@ -1,6 +1,5 @@
 #include "arch/x64/compiler/compiler.h"
 #include "arch/x64/compiler/jitstats.h"
-#include "arch/x64/disassembler/disassemblycache.h"
 #include "arch/x64/registers.h"
 #include "linux-x64-emulator/vm.h"
 #include "linux-x64-emulator/vmthread.h"

@@ -1,5 +1,5 @@
-#ifndef VMTHREAD_H
-#define VMTHREAD_H
+#ifndef X64VMTHREAD_H
+#define X64VMTHREAD_H
 
 #include "arch/x64/registers.h"
 #include "arch/x64/flags.h"

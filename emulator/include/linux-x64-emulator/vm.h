@@ -1,5 +1,5 @@
-#ifndef VM_H
-#define VM_H
+#ifndef X64VM_H
+#define X64VM_H
 
 #include "arch/x64/compiler/jit.h"
 #include "arch/x64/codesegment.h"
