@@ -105,6 +105,25 @@ target_compile_definitions(x64cpu PRIVATE ${COMPILE_DEFINITIONS})
 #     -header-filter=${CMAKE_CURRENT_SOURCE_DIR}/include
 # )
 
+add_library(arm64cpu ${LIB_KIND}
+    src/host/hostmemory.cpp
+    src/mem/mmu.cpp
+    src/arch/arm64/cpu.cpp
+    src/arch/arm64/flags.cpp
+    src/arch/arm64/registers.cpp
+    src/arch/arm64/instructions/instruction.cpp
+)
+target_compile_options(arm64cpu PUBLIC ${COMPILE_OPTIONS})
+target_include_directories(arm64cpu PUBLIC
+    include
+)
+if(${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+    target_include_directories(arm64cpu PUBLIC
+        ${boost_int128_SOURCE_DIR}/include
+    )
+endif()
+target_link_libraries(arm64cpu PUBLIC fmt::fmt-header-only)
+target_compile_definitions(arm64cpu PRIVATE ${COMPILE_DEFINITIONS})
 
 add_library(x64jit ${LIB_KIND}
     src/arch/x64/compiler/assembler.cpp
@@ -219,6 +238,32 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
         x64cpu
         x64jit
         linuxkernel
+        fmt::fmt-header-only
+        argparse
+    )
+
+    add_executable(arm-emulator
+        src/main-arm.cpp
+        src/arch/arm64/codesegment.cpp
+        src/arch/arm64/disassembler/capstonewrapper.cpp
+        src/arch/arm64/instructions/instruction.cpp
+        src/linux-arm64-emulator/emulator.cpp
+        src/linux-arm64-emulator/vm.cpp
+        src/linux-arm64-emulator/vmprocess.cpp
+        src/linux-arm64-emulator/vmthread.cpp
+    )
+    target_compile_options(arm-emulator PRIVATE ${COMPILE_OPTIONS})
+    target_include_directories(arm-emulator PRIVATE
+        include
+        ${capstone_SOURCE_DIR}/include
+    )
+    target_link_directories(arm-emulator PRIVATE
+        ${capstone_BINARY_DIR}/
+    )
+    target_link_libraries(arm-emulator PUBLIC
+        arm64cpu
+        linuxkernel
+        capstone
         fmt::fmt-header-only
         argparse
     )
