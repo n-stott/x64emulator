@@ -74,8 +74,7 @@ namespace arm64 {
         void loadSyscallInput(kernel::gnulinux::SYSCALL* number, Span<u64> arguments) override;
 
         void setSyscallOutput(u64 value) override {
-            warn("set syscall output ?");
-            savedCpuState_.regs.set(R64::X8, value);
+            savedCpuState_.regs.set(R64::X0, value);
         }
 
         void setInstructionPtr(u64 value) override {

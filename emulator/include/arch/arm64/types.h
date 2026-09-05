@@ -10,7 +10,7 @@
 namespace arm64 {
 
     struct Imm {
-        u32 immediate;
+        u64 immediate;
 
         template<typename T>
         T as() const {
@@ -98,6 +98,16 @@ namespace arm64 {
         ZERO,
         SP,
         PC,
+        LR = X30,
+    };
+
+    enum class Sysreg : u8 {
+        DCZID_EL0, // not writable
+        TPIDR_EL0, // writable
+    };
+
+    enum class SysOp : u8 {
+        ZVA,
     };
 
     inline R64 containingRegister(R32 reg) {
@@ -351,6 +361,10 @@ namespace arm64 {
         V31,
     };
 
+    struct V16B {
+        V128 reg;
+    };
+
     enum class Cond : u8 {
         EQ,
         NE,
@@ -373,8 +387,10 @@ namespace arm64 {
     struct Encoding {
         R64 base;
         R64 index;
+        u8 scale;
         i16 offset;
-        u8 increment; // 1 is post, 2 is pre
+        bool indexAsZeroExtendedR32;
+        bool indexAsSignExtendedR32;
     };
 
 
@@ -408,12 +424,45 @@ namespace arm64 {
     using M16 = M<mem::Size::WORD>;
     using M32 = M<mem::Size::DWORD>;
     using M64 = M<mem::Size::QWORD>;
+    using M128 = M<mem::Size::XWORD>;
+    using M256 = M<mem::Size::YWORD>;
 
     template<mem::Size size>
     inline bool operator==(const M<size>& a, const M<size>& b) {
         return a.encoding.base == b.encoding.base
             && a.encoding.offset == b.encoding.offset;
     }
+
+    struct ZeroExtendedR32 {
+        R32 reg;
+    };
+
+    struct LSLSignExtendedR32 {
+        R32 reg;
+        u8 shift;
+    };
+
+    struct LSLZeroExtendedR32 {
+        R32 reg;
+        u8 shift;
+    };
+
+    struct LSLImm {
+        u64 imm;
+        u8 shift;
+    };
+
+    struct ShiftedR32 {
+        R32 reg;
+        u8 lshift;
+        u8 rshift;
+    };
+
+    struct ShiftedR64 {
+        R64 reg;
+        u8 lshift;
+        u8 rshift;
+    };
 }
 
 #endif

@@ -15,6 +15,9 @@ namespace arm64 {
 
         bool matches(Cond condition) const;
 
+        u8 asU8() const;
+        static Flags fromU8(u8);
+
         std::string toString() const;
 
     private:

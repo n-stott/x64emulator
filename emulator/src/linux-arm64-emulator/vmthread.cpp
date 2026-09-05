@@ -7,6 +7,8 @@
 namespace arm64 {
 
     void VMThread::dumpRegisters() const {
+        fmt::println("Registers");
+        fmt::println(savedCpuState_.regs.toString());
         warn("dump registers");
     }
 
@@ -64,31 +66,44 @@ namespace arm64 {
         vm.execute(this);
     }
 
+    static std::optional<kernel::gnulinux::SYSCALL> syscallName(u64 value);
+
     void VMThread::loadSyscallInput(kernel::gnulinux::SYSCALL* number, Span<u64> arguments) {
-        warn("load syscall input");
-        (void)number;
-        (void)arguments;
-        // u64 sysNumber = savedCpuState_.regs.get(R64::RAX);
-        // auto sysname = syscallName(sysNumber);
-        // verify(arguments.size() == 6);
-        // arguments[0] = savedCpuState_.regs.get(x64::R64::RDI);
-        // arguments[1] = savedCpuState_.regs.get(x64::R64::RSI);
-        // arguments[2] = savedCpuState_.regs.get(x64::R64::RDX);
-        // arguments[3] = savedCpuState_.regs.get(x64::R64::R10);
-        // arguments[4] = savedCpuState_.regs.get(x64::R64::R8);
-        // arguments[5] = savedCpuState_.regs.get(x64::R64::R9);
-        // verify(!!sysname, [&]() {
-        //     fmt::println("Syscall {:#x} not handled", sysNumber);
-        //     fmt::println("Arguments:");
-        //     fmt::println("  {:#x}", arguments[0]);
-        //     fmt::println("  {:#x}", arguments[1]);
-        //     fmt::println("  {:#x}", arguments[2]);
-        //     fmt::println("  {:#x}", arguments[3]);
-        //     fmt::println("  {:#x}", arguments[4]);
-        //     fmt::println("  {:#x}", arguments[5]);
-        // });
-        // if(!!number) {
-        //     *number = sysname.value();
-        // }
+        u64 sysNumber = savedCpuState_.regs.get(R64::X8);
+        auto sysname = syscallName(sysNumber);
+        verify(arguments.size() == 6);
+        arguments[0] = savedCpuState_.regs.get(R64::X0);
+        arguments[1] = savedCpuState_.regs.get(R64::X1);
+        arguments[2] = savedCpuState_.regs.get(R64::X2);
+        arguments[3] = savedCpuState_.regs.get(R64::X3);
+        arguments[4] = savedCpuState_.regs.get(R64::X4);
+        arguments[5] = savedCpuState_.regs.get(R64::X5);
+        verify(!!sysname, [&]() {
+            fmt::println("Syscall {:#x} not handled", sysNumber);
+            fmt::println("Arguments:");
+            fmt::println("  {:#x}", arguments[0]);
+            fmt::println("  {:#x}", arguments[1]);
+            fmt::println("  {:#x}", arguments[2]);
+            fmt::println("  {:#x}", arguments[3]);
+            fmt::println("  {:#x}", arguments[4]);
+            fmt::println("  {:#x}", arguments[5]);
+        });
+        if(!!number) {
+            *number = sysname.value();
+        }
+    }
+
+    std::optional<kernel::gnulinux::SYSCALL> syscallName(u64 value) {
+        using namespace kernel::gnulinux;
+        switch(value) {
+            case 0x4e: return SYSCALL::READLINKAT;
+            case 0x60: return SYSCALL::SET_TID_ADDRESS;
+            case 0x63: return SYSCALL::SET_ROBUST_LIST;
+            case 0xd6: return SYSCALL::BRK;
+            case 0x105: return SYSCALL::PRLIMIT64;
+            case 0x116: return SYSCALL::GETRANDOM;
+            case 0x125: return SYSCALL::RSEQ;
+        }
+        return {};
     }
 }

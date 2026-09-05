@@ -109,6 +109,7 @@ add_library(arm64cpu ${LIB_KIND}
     src/host/hostmemory.cpp
     src/mem/mmu.cpp
     src/arch/arm64/cpu.cpp
+    src/arch/arm64/cpuimpl.cpp
     src/arch/arm64/flags.cpp
     src/arch/arm64/registers.cpp
     src/arch/arm64/instructions/instruction.cpp

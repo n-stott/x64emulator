@@ -12,6 +12,7 @@ namespace mem {
         QWORD,
         TWORD,
         XWORD,
+        YWORD,
         FPUENV,
         FPUSTATE,
     };
@@ -24,6 +25,7 @@ namespace mem {
             case Size::QWORD: return 8;
             case Size::TWORD: return 10;
             case Size::XWORD: return 16;
+            case Size::YWORD: return 32;
             case Size::FPUENV: return 28;
             case Size::FPUSTATE: return 512;
         }
@@ -79,6 +81,7 @@ namespace mem {
     using Ptr80 = SPtr<Size::TWORD>;
     using Ptr128 = SPtr<Size::XWORD>;
     using Ptr224 = SPtr<Size::FPUENV>;
+    using Ptr256 = SPtr<Size::YWORD>;
     using Ptr4096 = SPtr<Size::FPUSTATE>;
 
 }

@@ -12,6 +12,7 @@ namespace arm64 {
     private:
         std::array<u64, 34> gpr_;
         std::array<u128, 32> simd_;
+        std::array<u64, 2> sys_;
 
     public:
         Registers();
@@ -34,6 +35,18 @@ namespace arm64 {
         u64 get(R64 reg) const {
             return gpr_[(u8)reg];
         }
+
+        u64 get(D64 reg) const {
+            return simd_[(u8)reg].lo;
+        }
+
+        u128 get(Q128 reg) const {
+            return simd_[(u8)reg];
+        }
+
+        u128 get(V128 reg) const {
+            return simd_[(u8)reg];
+        }
         
         void set(R32 reg, u32 value) {
             assert(reg != R32::ZERO);
@@ -45,12 +58,29 @@ namespace arm64 {
             gpr_[(u8)reg] = value;
         }
 
+        void set(D64 reg, u64 value) {
+            simd_[(u8)reg] = u128{value, (u64)0};
+        }
+
+        void set(Q128 reg, u128 value) {
+            simd_[(u8)reg] = value;
+        }
+
+        void set(V128 reg, u128 value) {
+            simd_[(u8)reg] = value;
+        }
+
+        u64 get(Sysreg reg) const {
+            return sys_[(u8)reg];
+        }
+
+        void set(Sysreg reg, u64 value) {
+            assert(reg != Sysreg::DCZID_EL0);
+            sys_[(u8)reg] = value;
+        }
+
         u64 resolve(Encoding enc) {
-            if(enc.increment) {
-                assert(!"increment in address not supported yet");
-            } else {
-                return get(enc.base) + get(enc.index) + enc.offset;
-            }
+            return get(enc.base) + get(enc.index) + enc.offset;
         }
 
         std::string toString() const;

@@ -119,6 +119,7 @@ namespace kernel::gnulinux {
         auto loadSymbol = [&](const elf::StringTable* stringTable, const elf::SymbolTableEntry64& entry) {
             if(entry.isUndefined()) return;
             if(!entry.st_name) return;
+            if(entry.type() == elf::SymbolType::NOTYPE) return;
             std::string symbol { entry.symbol(stringTable, *elf64) };
             u64 address = entry.st_value;
             if(entry.type() != elf::SymbolType::TLS) address += elfOffset;
