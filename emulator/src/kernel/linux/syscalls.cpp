@@ -213,6 +213,7 @@ namespace kernel::gnulinux {
             case SYSCALL::GETRANDOM: return currentThread_->setSyscallOutput(invoke_syscall_3(&Sys::getrandom, regs));
             case SYSCALL::MEMFD_CREATE: return currentThread_->setSyscallOutput(invoke_syscall_2(&Sys::memfd_create, regs));
             case SYSCALL::STATX: return currentThread_->setSyscallOutput(invoke_syscall_5(&Sys::statx, regs));
+            case SYSCALL::RSEQ: return currentThread_->setSyscallOutput(invoke_syscall_4(&Sys::rseq, regs));
             case SYSCALL::CLONE3: return currentThread_->setSyscallOutput(invoke_syscall_2(&Sys::clone3, regs));
         }
     }
@@ -2468,6 +2469,15 @@ namespace kernel::gnulinux {
             mmu_->copyToMmu(statxbuf, buffer.data(), buffer.size());
             return 0;
         });
+    }
+
+    int Sys::rseq(mem::Ptr rseq, uint32_t rseq_len, int flags, uint32_t sig) {
+        warn("rseq not implemented");
+        if(kernel_.logSyscalls()) {
+            print("Sys::rseq(rseq={:#x}, rseq_len={}, flags={}, sig={}) = {}",
+                        rseq.address(), rseq_len, flags, sig, 0);
+        }
+        return 0;
     }
 
     int Sys::clone3(mem::Ptr uargs, size_t size) {

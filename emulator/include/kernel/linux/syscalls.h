@@ -423,6 +423,8 @@ namespace kernel::gnulinux {
         int memfd_create(mem::Ptr name, unsigned int flags);
         // 0x14c
         int statx(int dirfd, mem::Ptr pathname, int flags, unsigned int mask, mem::Ptr statxbuf);
+        // 0x14e
+        int rseq(mem::Ptr rseq, uint32_t rseq_len, int flags, uint32_t sig);
         // 0x1b3
         int clone3(mem::Ptr uargs, size_t size);
 

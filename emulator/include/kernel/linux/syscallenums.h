@@ -158,6 +158,7 @@ namespace kernel::gnulinux {
         GETRANDOM = 0x13e,
         MEMFD_CREATE = 0x13f,
         STATX = 0x14c,
+        RSEQ = 0x14e,
         CLONE3 = 0x1b3,
     };
 
