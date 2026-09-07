@@ -37,7 +37,7 @@ FetchContent_MakeAvailable(zydis)
 FetchContent_Declare(
     capstone
     GIT_REPOSITORY https://github.com/capstone-engine/capstone.git
-    GIT_TAG        4.0
+    GIT_TAG        5.0
 )
 FetchContent_MakeAvailable(capstone)
 
