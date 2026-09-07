@@ -2226,10 +2226,21 @@ namespace kernel::gnulinux {
     ssize_t Sys::readlinkat(int dirfd, mem::Ptr pathname, mem::Ptr buf, size_t bufsiz) {
         verify(dirfd == Host::cwdfd().fd, "dirfd is not cwd");
         std::string path = mmu_->readString(pathname);
-        auto errnoOrBuffer = Host::readlink(path, bufsiz);
+
+        auto linkpath = kernel_.fs().resolvePath(currentProcess_->cwd(), path);
+        auto errnoOrBuffer = [&]() {
+            if(!linkpath) return ErrnoOrBuffer(-ENOENT);
+            return kernel_.fs().readlink(*linkpath, bufsiz);
+        }();
+
+        // auto errnoOrBuffer = Host::readlink(path, bufsiz);
         if(kernel_.logSyscalls()) {
             print("Sys::readlinkat(dirfd={}, path={}, buf={:#x}, size={}) = {:#x}",
                         dirfd, path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
+            errnoOrBuffer.with([](const Buffer& buf) {
+                std::string bufstr((const char*)buf.data());
+                fmt::println("  buf={}", bufstr);
+            });
         }
         return errnoOrBuffer.errorOrWith<ssize_t>([&](const auto& buffer) {
             mmu_->copyToMmu(buf, buffer.data(), buffer.size());
