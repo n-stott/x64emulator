@@ -96,10 +96,15 @@ namespace arm64 {
     std::optional<kernel::gnulinux::SYSCALL> syscallName(u64 value) {
         using namespace kernel::gnulinux;
         switch(value) {
+            case 0x40: return SYSCALL::WRITE;
             case 0x4e: return SYSCALL::READLINKAT;
+            case 0x4f: return SYSCALL::FSTATAT64;
+            case 0x5e: return SYSCALL::EXIT_GROUP;
             case 0x60: return SYSCALL::SET_TID_ADDRESS;
             case 0x63: return SYSCALL::SET_ROBUST_LIST;
+            case 0xa0: return SYSCALL::UNAME;
             case 0xd6: return SYSCALL::BRK;
+            case 0xe2: return SYSCALL::MPROTECT;
             case 0x105: return SYSCALL::PRLIMIT64;
             case 0x116: return SYSCALL::GETRANDOM;
             case 0x125: return SYSCALL::RSEQ;

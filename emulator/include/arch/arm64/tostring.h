@@ -204,6 +204,18 @@ namespace arm64::utils {
         return "";
     }
 
+    inline std::string toString(const V4S& reg) {
+        return fmt::format("{}.4s", toString(reg.reg));
+    }
+
+    inline std::string toString(const V8B& reg) {
+        return fmt::format("{}.8b", toString(reg.reg));
+    }
+
+    inline std::string toString(const V8H& reg) {
+        return fmt::format("{}.8h", toString(reg.reg));
+    }
+
     inline std::string toString(const V16B& reg) {
         return fmt::format("{}.16b", toString(reg.reg));
     }
@@ -286,21 +298,27 @@ namespace arm64::utils {
     }
 
     inline std::string toString(const ShiftedR32& se) {
-        if(se.lshift) {
-            return fmt::format("{} LSL {:#x}", toString(se.reg), (u16)se.lshift);
+        if(se.lsl) {
+            return fmt::format("{} LSL {:#x}", toString(se.reg), (u16)se.lsl);
         }
-        if(se.rshift) {
-            return fmt::format("{} LSR {:#x}", toString(se.reg), (u16)se.rshift);
+        if(se.lsr) {
+            return fmt::format("{} LSR {:#x}", toString(se.reg), (u16)se.lsr);
+        }
+        if(se.asr) {
+            return fmt::format("{} ASR {:#x}", toString(se.reg), (u16)se.asr);
         }
         return fmt::format("{}", toString(se.reg));
     }
 
     inline std::string toString(const ShiftedR64& se) {
-        if(se.lshift) {
-            return fmt::format("{} LSL {:#x}", toString(se.reg), (u16)se.lshift);
+        if(se.lsl) {
+            return fmt::format("{} LSL {:#x}", toString(se.reg), (u16)se.lsl);
         }
-        if(se.rshift) {
-            return fmt::format("{} LSR {:#x}", toString(se.reg), (u16)se.rshift);
+        if(se.lsr) {
+            return fmt::format("{} LSR {:#x}", toString(se.reg), (u16)se.lsr);
+        }
+        if(se.asr) {
+            return fmt::format("{} ASR {:#x}", toString(se.reg), (u16)se.asr);
         }
         return fmt::format("{}", toString(se.reg));
     }

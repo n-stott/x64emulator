@@ -50,15 +50,23 @@ namespace arm64 {
 
         u32 get(const ShiftedR32& reg) const {
             u32 val = regs_.get(reg.reg);
-            if(reg.lshift) val <<= reg.lshift;
-            if(reg.rshift) val >>= reg.rshift;
+            if(reg.lsl) val <<= reg.lsl;
+            if(reg.lsr) val >>= reg.lsr;
+            if(reg.asr) {
+                warn("asr not handled");
+                val >>= reg.asr;
+            }
             return val;
         }
 
         u64 get(const ShiftedR64& reg) const {
             u64 val = regs_.get(reg.reg);
-            if(reg.lshift) val <<= reg.lshift;
-            if(reg.rshift) val >>= reg.rshift;
+            if(reg.lsl) val <<= reg.lsl;
+            if(reg.lsr) val >>= reg.lsr;
+            if(reg.asr) {
+                warn("asr not handled");
+                val >>= reg.asr;
+            }
             return val;
         }
 
@@ -108,12 +116,15 @@ namespace arm64 {
         void execStrR64M64Imm(const Instruction& ins);
         void execStrD64M64(const Instruction& ins);
         void execStrQ128M128(const Instruction& ins);
+        void execStlrR32M32(const Instruction& ins);
+        void execStlrR64M64(const Instruction& ins);
         void execStxrR32R32M32(const Instruction& ins);
         void execStxrR32R64M64(const Instruction& ins);
         void execStlxrR32R32M32(const Instruction& ins);
         void execStlxrR32R64M64(const Instruction& ins);
         void execStpR32R32M64(const Instruction& ins);
         void execStpR64R64M128(const Instruction& ins);
+        void execStpD64D64M128(const Instruction& ins);
         void execStpQ128Q128M256(const Instruction& ins);
         void execAddR32R32R32(const Instruction& ins);
         void execAddR32R32Imm(const Instruction& ins);
@@ -130,7 +141,7 @@ namespace arm64 {
         void execAddsR64R64Imm(const Instruction& ins);
         void execSubR32R32R32(const Instruction& ins);
         void execSubR32R32Imm(const Instruction& ins);
-        void execSubR64R64R64(const Instruction& ins);
+        void execSubR64R64SR64(const Instruction& ins);
         void execSubR64R64Imm(const Instruction& ins);
         void execSubR64R64R32uxtw(const Instruction& ins);
         void execSubsR32R32R32(const Instruction& ins);
@@ -143,6 +154,9 @@ namespace arm64 {
         void execUdivR64R64R64(const Instruction& ins);
         void execMaddR32R32R32R32(const Instruction& ins);
         void execMaddR64R64R64R64(const Instruction& ins);
+        void execMsubR32R32R32R32(const Instruction& ins);
+        void execMsubR64R64R64R64(const Instruction& ins);
+        void execUmaddlR64R32R32R64(const Instruction& ins);
         void execNegR32R32(const Instruction& ins);
         void execNegR64R64(const Instruction& ins);
         void execAndR32R32R32(const Instruction& ins);
@@ -165,6 +179,14 @@ namespace arm64 {
         void execOrrR32R32ImmImm(const Instruction& ins);
         void execOrrR64R64SR64(const Instruction& ins);
         void execOrrR64R64ImmImm(const Instruction& ins);
+        void execEorR32R32R32(const Instruction& ins);
+        void execEorR32R32Imm(const Instruction& ins);
+        void execEorR64R64R64(const Instruction& ins);
+        void execEorR64R64Imm(const Instruction& ins);
+        void execEorR32R32SR32(const Instruction& ins);
+        void execEorR32R32ImmImm(const Instruction& ins);
+        void execEorR64R64SR64(const Instruction& ins);
+        void execEorR64R64ImmImm(const Instruction& ins);
         void execLslR32R32R32(const Instruction& ins);
         void execLslR32R32Imm(const Instruction& ins);
         void execLslR64R64R64(const Instruction& ins);
@@ -173,10 +195,17 @@ namespace arm64 {
         void execLsrR32R32Imm(const Instruction& ins);
         void execLsrR64R64R64(const Instruction& ins);
         void execLsrR64R64Imm(const Instruction& ins);
+        void execAsrR32R32R32(const Instruction& ins);
+        void execAsrR32R32Imm(const Instruction& ins);
+        void execAsrR64R64R64(const Instruction& ins);
+        void execAsrR64R64Imm(const Instruction& ins);
         void execClzR32R32(const Instruction& ins);
         void execClzR64R64(const Instruction& ins);
         void execRevR32R32(const Instruction& ins);
         void execRevR64R64(const Instruction& ins);
+        void execRbitR32R32(const Instruction& ins);
+        void execRbitR64R64(const Instruction& ins);
+        void execSbfizR64R64ImmImm(const Instruction& ins);
         void execUbfizR64R64ImmImm(const Instruction& ins);
         void execUbfxR32R32ImmImm(const Instruction& ins);
         void execUbfxR64R64ImmImm(const Instruction& ins);
@@ -190,6 +219,7 @@ namespace arm64 {
         void execCmpR64R64(const Instruction& ins);
         void execCmpR32Imm(const Instruction& ins);
         void execCmpR64Imm(const Instruction& ins);
+        void execCmpR32ImmImm(const Instruction& ins);
         void execCmpR64ImmImm(const Instruction& ins);
         void execCcmpR32R32ImmCond(const Instruction& ins);
         void execCcmpR32ImmImmCond(const Instruction& ins);
@@ -203,10 +233,18 @@ namespace arm64 {
         void execCmnR64ImmImm(const Instruction& ins);
         void execCsetR32Cond(const Instruction& ins);
         void execCsetR64Cond(const Instruction& ins);
+        void execCsetmR32Cond(const Instruction& ins);
+        void execCsetmR64Cond(const Instruction& ins);
         void execCselR32R32R32Cond(const Instruction& ins);
         void execCselR64R64R64Cond(const Instruction& ins);
         void execCsincR32R32R32Cond(const Instruction& ins);
         void execCsincR64R64R64Cond(const Instruction& ins);
+        void execCsinvR32R32R32Cond(const Instruction& ins);
+        void execCsinvR64R64R64Cond(const Instruction& ins);
+        void execCasaR32R32M32(const Instruction& ins);
+        void execCasaR64R64M64(const Instruction& ins);
+        void execSwplR32R32M32(const Instruction& ins);
+        void execSwplR64R64M64(const Instruction& ins);
         void execBImm(const Instruction& ins);
         void execBrR64(const Instruction& ins);
         void execBlImm(const Instruction& ins);
@@ -223,7 +261,20 @@ namespace arm64 {
         void execRet(const Instruction& ins);
         void execSvcImm(const Instruction& ins);
         void execDcSysopR64(const Instruction& ins);
+    // simd
+        void execMoviV4sImm(const Instruction& ins);
+        void execMoviV16bImm(const Instruction& ins);
+        void execMvniV4SImm(const Instruction& ins);
+        void execLd1V16bM128(const Instruction& ins);
         void execDupV16bR32(const Instruction& ins);
+        void execShrnB8bV8hImm(const Instruction& ins);
+        void execExtV16bV16bV16bImm(const Instruction& ins);
+        void execBitV16bV16bV16b(const Instruction& ins);
+        void execUmaxpV16bV16bV16b(const Instruction& ins);
+        void execCmCondV16bV16bZero(const Instruction& ins);
+        void execCmCondV16bV16bV16b(const Instruction& ins);
+    // float
+        void execFmovR64D64(const Instruction& ins);
         void execUnknown(const Instruction& ins);
 
     private:

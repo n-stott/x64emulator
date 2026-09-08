@@ -30,27 +30,27 @@ namespace arm64 {
 
     std::string Instruction::toString(const char* mnemonic) const {
         assert(nbOperands() == 0);
-        return fmt::format("{:5}", mnemonic);
+        return fmt::format("{:8}", mnemonic);
     }
 
     template<typename T0>
     std::string Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:5}{}{}", mnemonic, utils::toString(op0<T0>()), writeBack() ? "!" : "");
+        return fmt::format("{:8}{}{}", mnemonic, utils::toString(op0<T0>()), writeBack() ? "!" : "");
     }
 
     template<typename T0, typename T1>
     std::string Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:5}{},{}{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), writeBack() ? "!" : "");
+        return fmt::format("{:8}{},{}{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), writeBack() ? "!" : "");
     }
 
     template<typename T0, typename T1, typename T2>
     std::string Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:5}{},{},{}{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()), writeBack() ? "!" : "");
+        return fmt::format("{:8}{},{},{}{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()), writeBack() ? "!" : "");
     }
 
     template<typename T0, typename T1, typename T2, typename T3>
     std::string Instruction::toString(const char* mnemonic) const {
-        return fmt::format("{:5}{},{},{},{}{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()), utils::toString(op3<T3>()), writeBack() ? "!" : "");
+        return fmt::format("{:8}{},{},{},{}{}", mnemonic, utils::toString(op0<T0>()), utils::toString(op1<T1>()), utils::toString(op2<T2>()), utils::toString(op3<T3>()), writeBack() ? "!" : "");
     }
 
     std::string Instruction::toString() const {
@@ -61,7 +61,6 @@ namespace arm64 {
             case Insn::MOV_R64_IMM: return toString<R64, Imm>("mov");
             case Insn::MOV_R64_R64: return toString<R64, R64>("mov");
             case Insn::MOV_R64_IMM_IMM: return toString<R64, LSLImm>("mov");
-            case Insn::MOVI_D64_IMM: return toString<D64, Imm>("mov");
             case Insn::MOVK_R32_IMM: return toString<R32, Imm>("movk");
             case Insn::MOVK_R32_IMM_IMM: return toString<R32, LSLImm>("movk");
             case Insn::MOVK_R64_IMM: return toString<R64, Imm>("movk");
@@ -97,12 +96,15 @@ namespace arm64 {
             case Insn::STR_R64_M64_IMM: return toString<R64, M64, Imm>("str");
             case Insn::STR_D64_M64: return toString<D64, M64>("str");
             case Insn::STR_Q128_M128: return toString<Q128, M128>("str");
+            case Insn::STLR_R32_M32: return toString<R32, M32>("stlr");
+            case Insn::STLR_R64_M64: return toString<R64, M64>("stlr");
             case Insn::STXR_R32_R32_M32: return toString<R32, R32, M32>("stxr");
             case Insn::STXR_R32_R64_M64: return toString<R32, R64, M64>("stxr");
             case Insn::STLXR_R32_R32_M32: return toString<R32, R32, M32>("stlxr");
             case Insn::STLXR_R32_R64_M64: return toString<R32, R64, M64>("stlxr");
             case Insn::STP_R32_R32_M64: return toString<R32, R32, M64>("stp");
             case Insn::STP_R64_R64_M128: return toString<R64, R64, M128>("stp");
+            case Insn::STP_D64_D64_M128: return toString<D64, D64, M128>("stp");
             case Insn::STP_Q128_Q128_M256: return toString<Q128, Q128, M256>("stp");
             case Insn::ADD_R32_R32_R32: return toString<R32, R32, R32>("add");
             case Insn::ADD_R32_R32_IMM: return toString<R32, R32, Imm>("add");
@@ -119,7 +121,7 @@ namespace arm64 {
             case Insn::ADDS_R64_R64_IMM: return toString<R64, R64, Imm>("adds");
             case Insn::SUB_R32_R32_R32: return toString<R32, R32, R32>("sub");
             case Insn::SUB_R32_R32_IMM: return toString<R32, R32, Imm>("sub");
-            case Insn::SUB_R64_R64_R64: return toString<R64, R64, R64>("sub");
+            case Insn::SUB_R64_R64_SR64: return toString<R64, R64, ShiftedR64>("sub");
             case Insn::SUB_R64_R64_IMM: return toString<R64, R64, Imm>("sub");
             case Insn::SUB_R64_R64_R32_UXTW: return toString<R64, R64, ZeroExtendedR32>("sub");
             case Insn::SUBS_R32_R32_R32: return toString<R32, R32, R32>("subs");
@@ -134,6 +136,9 @@ namespace arm64 {
             case Insn::UDIV_R64_R64_R64: return toString<R64, R64, R64>("udiv");
             case Insn::MADD_R32_R32_R32_R32: return toString<R32, R32, R32, R32>("madd");
             case Insn::MADD_R64_R64_R64_R64: return toString<R64, R64, R64, R64>("madd");
+            case Insn::MSUB_R32_R32_R32_R32: return toString<R32, R32, R32, R32>("msub");
+            case Insn::MSUB_R64_R64_R64_R64: return toString<R64, R64, R64, R64>("msub");
+            case Insn::UMADDL_R64_R32_R32_R64: return toString<R64, R32, R32, R64>("umaddl");
             case Insn::AND_R32_R32_R32: return toString<R32, R32, R32>("and");
             case Insn::AND_R32_R32_IMM: return toString<R32, R32, Imm>("and");
             case Insn::AND_R64_R64_R64: return toString<R64, R64, R64>("and");
@@ -154,6 +159,14 @@ namespace arm64 {
             case Insn::ORR_R32_R32_IMM_IMM: return toString<R32, R32, LSLImm>("orr");
             case Insn::ORR_R64_R64_SR64: return toString<R64, R64, ShiftedR64>("orr");
             case Insn::ORR_R64_R64_IMM_IMM: return toString<R64, R64, LSLImm>("orr");
+            case Insn::EOR_R32_R32_R32: return toString<R32, R32, R32>("eor");
+            case Insn::EOR_R32_R32_IMM: return toString<R32, R32, Imm>("eor");
+            case Insn::EOR_R64_R64_R64: return toString<R64, R64, R64>("eor");
+            case Insn::EOR_R64_R64_IMM: return toString<R64, R64, Imm>("eor");
+            case Insn::EOR_R32_R32_SR32: return toString<R32, R32, ShiftedR32>("eor");
+            case Insn::EOR_R32_R32_IMM_IMM: return toString<R32, R32, LSLImm>("eor");
+            case Insn::EOR_R64_R64_SR64: return toString<R64, R64, ShiftedR64>("eor");
+            case Insn::EOR_R64_R64_IMM_IMM: return toString<R64, R64, LSLImm>("eor");
             case Insn::LSL_R32_R32_R32: return toString<R32, R32, R32>("lsl");
             case Insn::LSL_R32_R32_IMM: return toString<R32, R32, Imm>("lsl");
             case Insn::LSL_R64_R64_R64: return toString<R64, R64, R64>("lsl");
@@ -162,10 +175,17 @@ namespace arm64 {
             case Insn::LSR_R32_R32_IMM: return toString<R32, R32, Imm>("lsr");
             case Insn::LSR_R64_R64_R64: return toString<R64, R64, R64>("lsr");
             case Insn::LSR_R64_R64_IMM: return toString<R64, R64, Imm>("lsr");
+            case Insn::ASR_R32_R32_R32: return toString<R32, R32, R32>("asr");
+            case Insn::ASR_R32_R32_IMM: return toString<R32, R32, Imm>("asr");
+            case Insn::ASR_R64_R64_R64: return toString<R64, R64, R64>("asr");
+            case Insn::ASR_R64_R64_IMM: return toString<R64, R64, Imm>("asr");
             case Insn::CLZ_R32_R32: return toString<R32, R32>("clz");
             case Insn::CLZ_R64_R64: return toString<R64, R64>("clz");
             case Insn::REV_R32_R32: return toString<R32, R32>("rev");
             case Insn::REV_R64_R64: return toString<R64, R64>("rev");
+            case Insn::RBIT_R32_R32: return toString<R32, R32>("rbit");
+            case Insn::RBIT_R64_R64: return toString<R64, R64>("rbit");
+            case Insn::SBFIZ_R64_R64_IMM_IMM: return toString<R64, R64, Imm, Imm>("sbfiz");
             case Insn::UBFIZ_R64_R64_IMM_IMM: return toString<R64, R64, Imm, Imm>("ubfiz");
             case Insn::UBFX_R32_R32_IMM_IMM: return toString<R32, R32, Imm, Imm>("ubfx");
             case Insn::UBFX_R64_R64_IMM_IMM: return toString<R64, R64, Imm, Imm>("ubfx");
@@ -179,6 +199,7 @@ namespace arm64 {
             case Insn::CMP_R32_IMM: return toString<R32, Imm>("cmp");
             case Insn::CMP_R64_R64: return toString<R64, R64>("cmp");
             case Insn::CMP_R64_IMM: return toString<R64, Imm>("cmp");
+            case Insn::CMP_R32_IMM_IMM: return toString<R32, LSLImm>("cmp");
             case Insn::CMP_R64_IMM_IMM: return toString<R64, LSLImm>("cmp");
             case Insn::CCMP_R32_R32_IMM_CC: return toString<R32, R32, Imm, Cond>("ccmp");
             case Insn::CCMP_R32_IMM_IMM_CC: return toString<R32, Imm, Imm, Cond>("ccmp");
@@ -186,10 +207,18 @@ namespace arm64 {
             case Insn::CCMP_R64_IMM_IMM_CC: return toString<R64, Imm, Imm, Cond>("ccmp");
             case Insn::CSET_R32_CC: return toString<R32, Cond>("cset");
             case Insn::CSET_R64_CC: return toString<R64, Cond>("cset");
+            case Insn::CSETM_R32_CC: return toString<R32, Cond>("csetm");
+            case Insn::CSETM_R64_CC: return toString<R64, Cond>("csetm");
             case Insn::CSEL_R32_R32_R32_CC: return toString<R32, R32, R32, Cond>("csel");
             case Insn::CSEL_R64_R64_R64_CC: return toString<R64, R64, R64, Cond>("csel");
             case Insn::CSINC_R32_R32_R32_CC: return toString<R32, R32, R32, Cond>("csinc");
             case Insn::CSINC_R64_R64_R64_CC: return toString<R64, R64, R64, Cond>("csinc");
+            case Insn::CSINV_R32_R32_R32_CC: return toString<R32, R32, R32, Cond>("csinv");
+            case Insn::CSINV_R64_R64_R64_CC: return toString<R64, R64, R64, Cond>("csinv");
+            case Insn::CASA_R32_R32_M32: return toString<R32, R32, M32>("casa");
+            case Insn::CASA_R64_R64_M64: return toString<R64, R64, M64>("casa");
+            case Insn::SWPL_R32_R32_M32: return toString<R32, R32, M32>("swpl");
+            case Insn::SWPL_R64_R64_M64: return toString<R64, R64, M64>("swpl");
             case Insn::CMN_R32_R32: return toString<R32, R32>("cmn");
             case Insn::CMN_R64_R64: return toString<R64, R64>("cmn");
             case Insn::CMN_R32_IMM: return toString<R32, Imm>("cmn");
@@ -212,7 +241,21 @@ namespace arm64 {
             case Insn::RET: return "ret";
             case Insn::SVC_IMM: return toString<Imm>("svc");
             case Insn::DC_SYSOP_R64: return toString<SysOp, R64>("dc");
+            // simd
+            case Insn::MOVI_D64_IMM: return toString<D64, Imm>("mov");
+            case Insn::MOVI_V4S_IMM: return toString<V4S, Imm>("movi");
+            case Insn::MOVI_V16B_IMM: return toString<V16B, Imm>("movi");
+            case Insn::MVNI_V4S_IMM: return toString<V4S, Imm>("mvni");
+            case Insn::LD1_V16B_M128: return toString<V16B, M128>("ld1");
             case Insn::DUP_V16B_R32: return toString<V16B, R32>("dup");
+            case Insn::SHRN_V8B_V8H_IMM: return toString<V8B, V8H, Imm>("shrn");
+            case Insn::EXT_V16B_V16B_V16B_IMM: return toString<V16B, V16B, V16B, Imm>("ext");
+            case Insn::BIT_V16B_V16B_V16B: return toString<V16B, V16B, V16B>("bit");
+            case Insn::UMAXP_V16B_V16B_V16B: return toString<V16B, V16B, V16B>("umaxp");
+            case Insn::CM_CC_V16B_V16B_0: return toString<Cond, V16B, V16B>("cm0");
+            case Insn::CM_CC_V16B_V16B_V16B: return toString<Cond, V16B, V16B, V16B>("cm");
+            // float
+            case Insn::FMOV_R64_D64: return toString<R64, D64>("fmov");
             case Insn::UNKNOWN: return "unknown";
 
         }

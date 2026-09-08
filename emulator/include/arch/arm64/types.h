@@ -361,6 +361,18 @@ namespace arm64 {
         V31,
     };
 
+    struct V4S {
+        V128 reg;
+    };
+
+    struct V8B {
+        V128 reg;
+    };
+
+    struct V8H {
+        V128 reg;
+    };
+
     struct V16B {
         V128 reg;
     };
@@ -454,14 +466,16 @@ namespace arm64 {
 
     struct ShiftedR32 {
         R32 reg;
-        u8 lshift;
-        u8 rshift;
+        u8 lsl;
+        u8 lsr;
+        u8 asr;
     };
 
     struct ShiftedR64 {
         R64 reg;
-        u8 lshift;
-        u8 rshift;
+        u8 lsl;
+        u8 lsr;
+        u8 asr;
     };
 }
 
