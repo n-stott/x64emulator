@@ -178,8 +178,6 @@ namespace kernel::gnulinux {
 
     void Process::releaseMemory() {
         addressSpace_.reset();
-        threads_.clear();
-        deletedThreads_.clear();
         fds_.reset();
         releaseMemoryDerived();
         releaseMemoryFrom(symbolProvider_);
