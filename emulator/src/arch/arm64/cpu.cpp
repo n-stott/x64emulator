@@ -39,17 +39,17 @@ namespace arm64 {
     DEFINE_STANDALONE(MOV_R32_R32, execMovR32R32)
     DEFINE_STANDALONE(MOV_R64_IMM, execMovR64Imm)
     DEFINE_STANDALONE(MOV_R64_R64, execMovR64R64)
-    DEFINE_STANDALONE(MOV_R64_IMM_IMM, execMovR64ImmImm)
+    DEFINE_STANDALONE(MOV_R64_SIMM, execMovR64SImm)
     DEFINE_STANDALONE(MOVK_R32_IMM, execMovkR32Imm)
-    DEFINE_STANDALONE(MOVK_R32_IMM_IMM, execMovkR32ImmImm)
+    DEFINE_STANDALONE(MOVK_R32_SIMM, execMovkR32SImm)
     DEFINE_STANDALONE(MOVK_R64_IMM, execMovkR64Imm)
-    DEFINE_STANDALONE(MOVK_R64_IMM_IMM, execMovkR64ImmImm)
+    DEFINE_STANDALONE(MOVK_R64_SIMM, execMovkR64SImm)
     DEFINE_STANDALONE(MOVN_R32_IMM, execMovnR32Imm)
     DEFINE_STANDALONE(MOVN_R64_IMM, execMovnR64Imm)
     DEFINE_STANDALONE(MOVZ_R32_IMM, execMovzR32Imm)
     DEFINE_STANDALONE(MOVZ_R64_IMM, execMovzR64Imm)
-    DEFINE_STANDALONE(MOVZ_R32_IMM_IMM, execMovzR32ImmImm)
-    DEFINE_STANDALONE(MOVZ_R64_IMM_IMM, execMovzR64ImmImm)
+    DEFINE_STANDALONE(MOVZ_R32_SIMM, execMovzR32SImm)
+    DEFINE_STANDALONE(MOVZ_R64_SIMM, execMovzR64SImm)
     DEFINE_STANDALONE(MRS_R64_SYSREG, execMrsR64Sysreg)
     DEFINE_STANDALONE(MSR_SYSREG_R64, execMsrSysregR64)
     DEFINE_STANDALONE(LDR_R32_M32, execLdrR32M32)
@@ -94,21 +94,21 @@ namespace arm64 {
     DEFINE_STANDALONE(ADD_R64_R64_IMM, execAddR64R64Imm)
     DEFINE_STANDALONE(ADD_R64_R64_R32_SXTW_IMM, execAddR64R64R32sxtwImm)
     DEFINE_STANDALONE(ADD_R64_R64_R32_UXTW_IMM, execAddR64R64R32uxtwImm)
-    DEFINE_STANDALONE(ADD_R64_R64_IMM_IMM, execAddR64R64ImmImm)
+    DEFINE_STANDALONE(ADD_R64_R64_SIMM, execAddR64R64SImm)
     DEFINE_STANDALONE(ADD_R64_R64_SR64, execAddR64R64SR64)
     DEFINE_STANDALONE(ADDS_R32_R32_R32, execAddsR32R32R32)
     DEFINE_STANDALONE(ADDS_R32_R32_IMM, execAddsR32R32Imm)
     DEFINE_STANDALONE(ADDS_R64_R64_R64, execAddsR64R64R64)
     DEFINE_STANDALONE(ADDS_R64_R64_IMM, execAddsR64R64Imm)
     DEFINE_STANDALONE(SUB_R32_R32_R32, execSubR32R32R32)
-    DEFINE_STANDALONE(SUB_R32_R32_IMM, execSubR32R32Imm)
+    DEFINE_STANDALONE(SUB_R32_R32_SIMM, execSubR32R32SImm)
     DEFINE_STANDALONE(SUB_R64_R64_SR64, execSubR64R64SR64)
-    DEFINE_STANDALONE(SUB_R64_R64_IMM, execSubR64R64Imm)
+    DEFINE_STANDALONE(SUB_R64_R64_SIMM, execSubR64R64SImm)
     DEFINE_STANDALONE(SUB_R64_R64_R32_UXTW, execSubR64R64R32uxtw)
     DEFINE_STANDALONE(SUBS_R32_R32_R32, execSubsR32R32R32)
-    DEFINE_STANDALONE(SUBS_R32_R32_IMM, execSubsR32R32Imm)
+    DEFINE_STANDALONE(SUBS_R32_R32_SIMM, execSubsR32R32SImm)
     DEFINE_STANDALONE(SUBS_R64_R64_R64, execSubsR64R64R64)
-    DEFINE_STANDALONE(SUBS_R64_R64_IMM, execSubsR64R64Imm)
+    DEFINE_STANDALONE(SUBS_R64_R64_SIMM, execSubsR64R64SImm)
     DEFINE_STANDALONE(NEG_R32_R32, execNegR32R32)
     DEFINE_STANDALONE(NEG_R64_R64, execNegR64R64)
     DEFINE_STANDALONE(MUL_R32_R32_R32, execMulR32R32R32)
@@ -137,17 +137,17 @@ namespace arm64 {
     DEFINE_STANDALONE(ORR_R64_R64_R64, execOrrR64R64R64)
     DEFINE_STANDALONE(ORR_R64_R64_IMM, execOrrR64R64Imm)
     DEFINE_STANDALONE(ORR_R32_R32_SR32, execOrrR32R32SR32)
-    DEFINE_STANDALONE(ORR_R32_R32_IMM_IMM, execOrrR32R32ImmImm)
+    DEFINE_STANDALONE(ORR_R32_R32_SIMM, execOrrR32R32SImm)
     DEFINE_STANDALONE(ORR_R64_R64_SR64, execOrrR64R64SR64)
-    DEFINE_STANDALONE(ORR_R64_R64_IMM_IMM, execOrrR64R64ImmImm)
+    DEFINE_STANDALONE(ORR_R64_R64_SIMM, execOrrR64R64SImm)
     DEFINE_STANDALONE(EOR_R32_R32_R32, execEorR32R32R32)
     DEFINE_STANDALONE(EOR_R32_R32_IMM, execEorR32R32Imm)
     DEFINE_STANDALONE(EOR_R64_R64_R64, execEorR64R64R64)
     DEFINE_STANDALONE(EOR_R64_R64_IMM, execEorR64R64Imm)
     DEFINE_STANDALONE(EOR_R32_R32_SR32, execEorR32R32SR32)
-    DEFINE_STANDALONE(EOR_R32_R32_IMM_IMM, execEorR32R32ImmImm)
+    DEFINE_STANDALONE(EOR_R32_R32_SIMM, execEorR32R32SImm)
     DEFINE_STANDALONE(EOR_R64_R64_SR64, execEorR64R64SR64)
-    DEFINE_STANDALONE(EOR_R64_R64_IMM_IMM, execEorR64R64ImmImm)
+    DEFINE_STANDALONE(EOR_R64_R64_SIMM, execEorR64R64SImm)
     DEFINE_STANDALONE(LSL_R32_R32_R32, execLslR32R32R32)
     DEFINE_STANDALONE(LSL_R32_R32_IMM, execLslR32R32Imm)
     DEFINE_STANDALONE(LSL_R64_R64_R64, execLslR64R64R64)
@@ -180,8 +180,8 @@ namespace arm64 {
     DEFINE_STANDALONE(CMP_R64_R64, execCmpR64R64)
     DEFINE_STANDALONE(CMP_R32_IMM, execCmpR32Imm)
     DEFINE_STANDALONE(CMP_R64_IMM, execCmpR64Imm)
-    DEFINE_STANDALONE(CMP_R32_IMM_IMM, execCmpR32ImmImm)
-    DEFINE_STANDALONE(CMP_R64_IMM_IMM, execCmpR64ImmImm)
+    DEFINE_STANDALONE(CMP_R32_SIMM, execCmpR32SImm)
+    DEFINE_STANDALONE(CMP_R64_SIMM, execCmpR64SImm)
     DEFINE_STANDALONE(CCMP_R32_R32_IMM_CC, execCcmpR32R32ImmCond)
     DEFINE_STANDALONE(CCMP_R32_IMM_IMM_CC, execCcmpR32ImmImmCond)
     DEFINE_STANDALONE(CCMP_R64_R64_IMM_CC, execCcmpR64R64ImmCond)
@@ -190,8 +190,8 @@ namespace arm64 {
     DEFINE_STANDALONE(CMN_R64_R64, execCmnR64R64)
     DEFINE_STANDALONE(CMN_R32_IMM, execCmnR32Imm)
     DEFINE_STANDALONE(CMN_R64_IMM, execCmnR64Imm)
-    DEFINE_STANDALONE(CMN_R32_IMM_IMM, execCmnR32ImmImm)
-    DEFINE_STANDALONE(CMN_R64_IMM_IMM, execCmnR64ImmImm)
+    DEFINE_STANDALONE(CMN_R32_SIMM, execCmnR32SImm)
+    DEFINE_STANDALONE(CMN_R64_SIMM, execCmnR64SImm)
     DEFINE_STANDALONE(CSET_R32_CC, execCsetR32Cond)
     DEFINE_STANDALONE(CSET_R64_CC, execCsetR64Cond)
     DEFINE_STANDALONE(CSETM_R32_CC, execCsetmR32Cond)
@@ -245,17 +245,17 @@ namespace arm64 {
         STANDALONE_NAME(MOV_R32_R32),
         STANDALONE_NAME(MOV_R64_IMM),
         STANDALONE_NAME(MOV_R64_R64),
-        STANDALONE_NAME(MOV_R64_IMM_IMM),
+        STANDALONE_NAME(MOV_R64_SIMM),
         STANDALONE_NAME(MOVK_R32_IMM),
-        STANDALONE_NAME(MOVK_R32_IMM_IMM),
+        STANDALONE_NAME(MOVK_R32_SIMM),
         STANDALONE_NAME(MOVK_R64_IMM),
-        STANDALONE_NAME(MOVK_R64_IMM_IMM),
+        STANDALONE_NAME(MOVK_R64_SIMM),
         STANDALONE_NAME(MOVN_R32_IMM),
         STANDALONE_NAME(MOVN_R64_IMM),
         STANDALONE_NAME(MOVZ_R32_IMM),
         STANDALONE_NAME(MOVZ_R64_IMM),
-        STANDALONE_NAME(MOVZ_R32_IMM_IMM),
-        STANDALONE_NAME(MOVZ_R64_IMM_IMM),
+        STANDALONE_NAME(MOVZ_R32_SIMM),
+        STANDALONE_NAME(MOVZ_R64_SIMM),
         STANDALONE_NAME(MRS_R64_SYSREG),
         STANDALONE_NAME(MSR_SYSREG_R64),
         STANDALONE_NAME(LDR_R32_M32),
@@ -300,21 +300,21 @@ namespace arm64 {
         STANDALONE_NAME(ADD_R64_R64_IMM),
         STANDALONE_NAME(ADD_R64_R64_R32_SXTW_IMM),
         STANDALONE_NAME(ADD_R64_R64_R32_UXTW_IMM),
-        STANDALONE_NAME(ADD_R64_R64_IMM_IMM),
+        STANDALONE_NAME(ADD_R64_R64_SIMM),
         STANDALONE_NAME(ADD_R64_R64_SR64),
         STANDALONE_NAME(ADDS_R32_R32_R32),
         STANDALONE_NAME(ADDS_R32_R32_IMM),
         STANDALONE_NAME(ADDS_R64_R64_R64),
         STANDALONE_NAME(ADDS_R64_R64_IMM),
         STANDALONE_NAME(SUB_R32_R32_R32),
-        STANDALONE_NAME(SUB_R32_R32_IMM),
+        STANDALONE_NAME(SUB_R32_R32_SIMM),
         STANDALONE_NAME(SUB_R64_R64_SR64),
-        STANDALONE_NAME(SUB_R64_R64_IMM),
+        STANDALONE_NAME(SUB_R64_R64_SIMM),
         STANDALONE_NAME(SUB_R64_R64_R32_UXTW),
         STANDALONE_NAME(SUBS_R32_R32_R32),
-        STANDALONE_NAME(SUBS_R32_R32_IMM),
+        STANDALONE_NAME(SUBS_R32_R32_SIMM),
         STANDALONE_NAME(SUBS_R64_R64_R64),
-        STANDALONE_NAME(SUBS_R64_R64_IMM),
+        STANDALONE_NAME(SUBS_R64_R64_SIMM),
         STANDALONE_NAME(NEG_R32_R32),
         STANDALONE_NAME(NEG_R64_R64),
         STANDALONE_NAME(MUL_R32_R32_R32),
@@ -343,17 +343,17 @@ namespace arm64 {
         STANDALONE_NAME(ORR_R64_R64_R64),
         STANDALONE_NAME(ORR_R64_R64_IMM),
         STANDALONE_NAME(ORR_R32_R32_SR32),
-        STANDALONE_NAME(ORR_R32_R32_IMM_IMM),
+        STANDALONE_NAME(ORR_R32_R32_SIMM),
         STANDALONE_NAME(ORR_R64_R64_SR64),
-        STANDALONE_NAME(ORR_R64_R64_IMM_IMM),
+        STANDALONE_NAME(ORR_R64_R64_SIMM),
         STANDALONE_NAME(EOR_R32_R32_R32),
         STANDALONE_NAME(EOR_R32_R32_IMM),
         STANDALONE_NAME(EOR_R64_R64_R64),
         STANDALONE_NAME(EOR_R64_R64_IMM),
         STANDALONE_NAME(EOR_R32_R32_SR32),
-        STANDALONE_NAME(EOR_R32_R32_IMM_IMM),
+        STANDALONE_NAME(EOR_R32_R32_SIMM),
         STANDALONE_NAME(EOR_R64_R64_SR64),
-        STANDALONE_NAME(EOR_R64_R64_IMM_IMM),
+        STANDALONE_NAME(EOR_R64_R64_SIMM),
         STANDALONE_NAME(LSL_R32_R32_R32),
         STANDALONE_NAME(LSL_R32_R32_IMM),
         STANDALONE_NAME(LSL_R64_R64_R64),
@@ -386,8 +386,8 @@ namespace arm64 {
         STANDALONE_NAME(CMP_R64_R64),
         STANDALONE_NAME(CMP_R32_IMM),
         STANDALONE_NAME(CMP_R64_IMM),
-        STANDALONE_NAME(CMP_R32_IMM_IMM),
-        STANDALONE_NAME(CMP_R64_IMM_IMM),
+        STANDALONE_NAME(CMP_R32_SIMM),
+        STANDALONE_NAME(CMP_R64_SIMM),
         STANDALONE_NAME(CCMP_R32_R32_IMM_CC),
         STANDALONE_NAME(CCMP_R32_IMM_IMM_CC),
         STANDALONE_NAME(CCMP_R64_R64_IMM_CC),
@@ -396,8 +396,8 @@ namespace arm64 {
         STANDALONE_NAME(CMN_R64_R64),
         STANDALONE_NAME(CMN_R32_IMM),
         STANDALONE_NAME(CMN_R64_IMM),
-        STANDALONE_NAME(CMN_R32_IMM_IMM),
-        STANDALONE_NAME(CMN_R64_IMM_IMM),
+        STANDALONE_NAME(CMN_R32_SIMM),
+        STANDALONE_NAME(CMN_R64_SIMM),
         STANDALONE_NAME(CSET_R32_CC),
         STANDALONE_NAME(CSET_R64_CC),
         STANDALONE_NAME(CSETM_R32_CC),
@@ -493,9 +493,9 @@ namespace arm64 {
 
     void Cpu::exec(const BasicBlock& bb) {
         for(const auto& p : bb.instructions()) {
-            fmt::println("{:x} : {:40}  | {} LR={:8x} SP={:8x}  X0={:8x}  X1={:8x}, X2={:8x}, X3={:8x}, X4={:8x}, X5={:8x}, X20={:8x}",
-                    get(R64::PC), p.first.toString(), flags_.toString(), get(R64::LR), get(R64::SP),
-                    get(R64::X0), get(R64::X1), get(R64::X2), get(R64::X3), get(R64::X4), get(R64::X5), get(R64::X20));
+            // fmt::println("{:x} : {:40}  | {} LR={:8x} SP={:8x}  X0={:8x}  X1={:8x}, X2={:8x}, X3={:8x}, X4={:8x}, X5={:8x}, X20={:8x}",
+            //         get(R64::PC), p.first.toString(), flags_.toString(), get(R64::LR), get(R64::SP),
+            //         get(R64::X0), get(R64::X1), get(R64::X2), get(R64::X3), get(R64::X4), get(R64::X5), get(R64::X20));
             set(R64::PC, p.first.nextAddress());
             p.second(*this, p.first);
         }
@@ -529,10 +529,10 @@ namespace arm64 {
         set(dst, get(src));
     }
 
-    void Cpu::execMovR64ImmImm(const Instruction& ins) {
+    void Cpu::execMovR64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
-        const auto& src = ins.op1<LSLImm>();
-        set(dst, ((u64)src.imm << src.shift));
+        const auto& src = ins.op1<ShiftedImm>();
+        set(dst, ((u64)src.imm << src.lsl));
     }
 
     void Cpu::execMoviD64Imm(const Instruction& ins) {
@@ -550,13 +550,13 @@ namespace arm64 {
         set(dst, val);
     }
 
-    void Cpu::execMovkR32ImmImm(const Instruction& ins) {
+    void Cpu::execMovkR32SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
-        const auto& src = ins.op1<LSLImm>();
+        const auto& src = ins.op1<ShiftedImm>();
         u32 val = get(dst);
-        u32 mask = ((u32)0xFFFF) << src.shift;
+        u32 mask = ((u32)0xFFFF) << src.lsl;
         val = val & ~mask;
-        u32 newval = ((u32)src.imm) << src.shift;
+        u32 newval = ((u32)src.imm) << src.lsl;
         val = val | newval;
         set(dst, val);
     }
@@ -570,13 +570,13 @@ namespace arm64 {
         set(dst, val);
     }
 
-    void Cpu::execMovkR64ImmImm(const Instruction& ins) {
+    void Cpu::execMovkR64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
-        const auto& src = ins.op1<LSLImm>();
+        const auto& src = ins.op1<ShiftedImm>();
         u64 val = get(dst);
-        u64 mask = ((u64)0xFFFF) << src.shift;
+        u64 mask = ((u64)0xFFFF) << src.lsl;
         val = val & ~mask;
-        u64 newval = ((u64)src.imm) << src.shift;
+        u64 newval = ((u64)src.imm) << src.lsl;
         val = val | newval;
         set(dst, val);
     }
@@ -605,16 +605,16 @@ namespace arm64 {
         set(dst, src.as<u32>());
     }
 
-    void Cpu::execMovzR32ImmImm(const Instruction& ins) {
+    void Cpu::execMovzR32SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
-        const auto& src = ins.op1<LSLImm>();
-        set(dst, ((u32)src.imm << src.shift));
+        const auto& src = ins.op1<ShiftedImm>();
+        set(dst, ((u32)src.imm << src.lsl));
     }
 
-    void Cpu::execMovzR64ImmImm(const Instruction& ins) {
+    void Cpu::execMovzR64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
-        const auto& src = ins.op1<LSLImm>();
-        set(dst, ((u64)src.imm << src.shift));
+        const auto& src = ins.op1<ShiftedImm>();
+        set(dst, ((u64)src.imm << src.lsl));
     }
 
     void Cpu::execMrsR64Sysreg(const Instruction& ins) {
@@ -1062,11 +1062,11 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execAddR64R64ImmImm(const Instruction& ins) {
+    void Cpu::execAddR64R64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src1 = ins.op1<R64>();
-        const auto& src2 = ins.op2<LSLImm>();
-        u64 res = get(src1) + (src2.imm << src2.shift);
+        const auto& src2 = ins.op2<ShiftedImm>();
+        u64 res = get(src1) + (src2.imm << src2.lsl);
         set(dst, res);
     }
 
@@ -1118,10 +1118,10 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execSubR32R32Imm(const Instruction& ins) {
+    void Cpu::execSubR32R32SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<R32>();
-        const auto& src2 = ins.op2<Imm>();
+        const auto& src2 = ins.op2<ShiftedImm>();
         u32 res = get(src1) - src2.as<u32>();
         set(dst, res);
     }
@@ -1134,10 +1134,10 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execSubR64R64Imm(const Instruction& ins) {
+    void Cpu::execSubR64R64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src1 = ins.op1<R64>();
-        const auto& src2 = ins.op2<Imm>();
+        const auto& src2 = ins.op2<ShiftedImm>();
         u64 res = get(src1) - src2.as<u64>();
         set(dst, res);
     }
@@ -1158,10 +1158,10 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execSubsR32R32Imm(const Instruction& ins) {
+    void Cpu::execSubsR32R32SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<R32>();
-        const auto& src2 = ins.op2<Imm>();
+        const auto& src2 = ins.op2<ShiftedImm>();
         u32 res = CpuImpl::sub32(get(src1), src2.as<u32>(), &flags_);
         set(dst, res);
     }
@@ -1174,10 +1174,10 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execSubsR64R64Imm(const Instruction& ins) {
+    void Cpu::execSubsR64R64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src1 = ins.op1<R64>();
-        const auto& src2 = ins.op2<Imm>();
+        const auto& src2 = ins.op2<ShiftedImm>();
         u64 res = CpuImpl::sub64(get(src1), src2.as<u64>(), &flags_);
         set(dst, res);
     }
@@ -1409,11 +1409,11 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execOrrR32R32ImmImm(const Instruction& ins) {
+    void Cpu::execOrrR32R32SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<R32>();
-        const auto& src2 = ins.op2<LSLImm>();
-        u32 res = get(src1) | (((u32)src2.imm) << src2.shift);
+        const auto& src2 = ins.op2<ShiftedImm>();
+        u32 res = get(src1) | (((u32)src2.imm) << src2.lsl);
         set(dst, res);
     }
 
@@ -1425,11 +1425,11 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execOrrR64R64ImmImm(const Instruction& ins) {
+    void Cpu::execOrrR64R64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src1 = ins.op1<R64>();
-        const auto& src2 = ins.op2<LSLImm>();
-        u64 res = get(src1) | (src2.imm << src2.shift);
+        const auto& src2 = ins.op2<ShiftedImm>();
+        u64 res = get(src1) | (src2.imm << src2.lsl);
         set(dst, res);
     }
 
@@ -1473,11 +1473,11 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execEorR32R32ImmImm(const Instruction& ins) {
+    void Cpu::execEorR32R32SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<R32>();
-        const auto& src2 = ins.op2<LSLImm>();
-        u32 res = get(src1) ^ (((u32)src2.imm) << src2.shift);
+        const auto& src2 = ins.op2<ShiftedImm>();
+        u32 res = get(src1) ^ (((u32)src2.imm) << src2.lsl);
         set(dst, res);
     }
 
@@ -1489,11 +1489,11 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execEorR64R64ImmImm(const Instruction& ins) {
+    void Cpu::execEorR64R64SImm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src1 = ins.op1<R64>();
-        const auto& src2 = ins.op2<LSLImm>();
-        u64 res = get(src1) ^ (src2.imm << src2.shift);
+        const auto& src2 = ins.op2<ShiftedImm>();
+        u64 res = get(src1) ^ (src2.imm << src2.lsl);
         set(dst, res);
     }
 
@@ -1791,17 +1791,17 @@ namespace arm64 {
         CpuImpl::cmp64(get(src1), src2.as<u64>(), &flags_);
     }
 
-    void Cpu::execCmpR32ImmImm(const Instruction& ins) {
+    void Cpu::execCmpR32SImm(const Instruction& ins) {
         const auto& src1 = ins.op0<R32>();
-        const auto& src2 = ins.op1<LSLImm>();
-        u32 val2 = (u32)src2.imm << src2.shift;
+        const auto& src2 = ins.op1<ShiftedImm>();
+        u32 val2 = (u32)src2.imm << src2.lsl;
         CpuImpl::cmp32(get(src1), val2, &flags_);
     }
 
-    void Cpu::execCmpR64ImmImm(const Instruction& ins) {
+    void Cpu::execCmpR64SImm(const Instruction& ins) {
         const auto& src1 = ins.op0<R64>();
-        const auto& src2 = ins.op1<LSLImm>();
-        u64 val2 = src2.imm << src2.shift;
+        const auto& src2 = ins.op1<ShiftedImm>();
+        u64 val2 = src2.imm << src2.lsl;
         CpuImpl::cmp64(get(src1), val2, &flags_);
     }
 
@@ -1885,19 +1885,19 @@ namespace arm64 {
         [[maybe_unused]] auto res = CpuImpl::add64(v1, v2, &flags_);
     }
 
-    void Cpu::execCmnR32ImmImm(const Instruction& ins) {
+    void Cpu::execCmnR32SImm(const Instruction& ins) {
         const auto& src1 = ins.op0<R32>();
-        const auto& src2 = ins.op1<LSLImm>();
+        const auto& src2 = ins.op1<ShiftedImm>();
         u32 v1 = get(src1);
-        u32 v2 = ((u32)src2.imm) << src2.shift;
+        u32 v2 = ((u32)src2.imm) << src2.lsl;
         [[maybe_unused]] auto res = CpuImpl::add32(v1, v2, &flags_);
     }
 
-    void Cpu::execCmnR64ImmImm(const Instruction& ins) {
+    void Cpu::execCmnR64SImm(const Instruction& ins) {
         const auto& src1 = ins.op0<R64>();
-        const auto& src2 = ins.op1<LSLImm>();
+        const auto& src2 = ins.op1<ShiftedImm>();
         u64 v1 = get(src1);
-        u64 v2 = ((u64)src2.imm) << src2.shift;
+        u64 v2 = ((u64)src2.imm) << src2.lsl;
         [[maybe_unused]] auto res = CpuImpl::add64(v1, v2, &flags_);
     }
 

@@ -101,6 +101,7 @@ namespace arm64 {
             case 0x4f: return SYSCALL::FSTATAT64;
             case 0x5e: return SYSCALL::EXIT_GROUP;
             case 0x60: return SYSCALL::SET_TID_ADDRESS;
+            case 0x62: return SYSCALL::FUTEX;
             case 0x63: return SYSCALL::SET_ROBUST_LIST;
             case 0xa0: return SYSCALL::UNAME;
             case 0xd6: return SYSCALL::BRK;

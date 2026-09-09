@@ -459,9 +459,14 @@ namespace arm64 {
         u8 shift;
     };
 
-    struct LSLImm {
+    struct ShiftedImm {
         u64 imm;
-        u8 shift;
+        u8 lsl;
+
+        template<typename T>
+        T as() const {
+            return (T)(imm << lsl);
+        }
     };
 
     struct ShiftedR32 {

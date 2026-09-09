@@ -285,8 +285,8 @@ namespace arm64::utils {
         return fmt::format("{} UXTW", toString(se.reg));
     }
 
-    inline std::string toString(const LSLImm& se) {
-        return fmt::format("{:#x} LSL {:#x}", se.imm, (u16)se.shift);
+    inline std::string toString(const ShiftedImm& se) {
+        return fmt::format("{:#x} LSL {:#x}", se.imm, (u16)se.lsl);
     }
 
     inline std::string toString(const LSLSignExtendedR32& se) {
