@@ -901,6 +901,7 @@ namespace kernel::gnulinux {
             case AUX_TYPE::VDSO_ADDRESS: return getDummy(AT_SYSINFO_EHDR);
             case AUX_TYPE::EXEC_FILE_DESCRIPTOR: return getDummy(AT_EXECFD);
             case AUX_TYPE::EXEC_PATH_NAME: return getDummy(AT_EXECFN);
+            case AUX_TYPE::HWCAP: return Host::AuxVal{0x10, 0x119fff};
             default: break;
         }
         return {};

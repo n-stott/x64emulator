@@ -424,6 +424,7 @@ namespace kernel::gnulinux {
             EUID,
             EGID,
             SECURE,
+            HWCAP,
         };
 
         struct AuxVal {

@@ -294,6 +294,7 @@ namespace kernel::gnulinux {
                 .add((u64)Host::AUX_TYPE::GID)
                 .add((u64)Host::AUX_TYPE::EUID)
                 .add((u64)Host::AUX_TYPE::EGID)
+                .add((u64)Host::AUX_TYPE::HWCAP)
                 .add((u64)Host::AUX_TYPE::SECURE);
         std::vector<u64> data = auxvec.create();
 
