@@ -59,6 +59,8 @@ namespace arm64 {
     DEFINE_STANDALONE(LDRB_R32_M8, execLdrbR32M8)
     DEFINE_STANDALONE(LDRH_R32_M16, execLdrhR32M16)
     DEFINE_STANDALONE(LDRH_R32_M16_IMM, execLdrhR32M16Imm)
+    DEFINE_STANDALONE(LDAR_R32_M32, execLdarR32M32)
+    DEFINE_STANDALONE(LDAR_R64_M64, execLdarR64M64)
     DEFINE_STANDALONE(LDXR_R32_M32, execLdxrR32M32)
     DEFINE_STANDALONE(LDXR_R64_M64, execLdxrR64M64)
     DEFINE_STANDALONE(LDAXR_R32_M32, execLdaxrR32M32)
@@ -263,6 +265,8 @@ namespace arm64 {
         STANDALONE_NAME(LDRB_R32_M8),
         STANDALONE_NAME(LDRH_R32_M16),
         STANDALONE_NAME(LDRH_R32_M16_IMM),
+        STANDALONE_NAME(LDAR_R32_M32),
+        STANDALONE_NAME(LDAR_R64_M64),
         STANDALONE_NAME(LDXR_R32_M32),
         STANDALONE_NAME(LDXR_R64_M64),
         STANDALONE_NAME(LDAXR_R32_M32),
@@ -489,9 +493,9 @@ namespace arm64 {
 
     void Cpu::exec(const BasicBlock& bb) {
         for(const auto& p : bb.instructions()) {
-            // fmt::println("{:x} : {:40}  | {} LR={:8x} SP={:8x}  X0={:8x}  X1={:8x}, X2={:8x}, X3={:8x}, X4={:8x}, X5={:8x}, X20={:8x}",
-            //         get(R64::PC), p.first.toString(), flags_.toString(), get(R64::LR), get(R64::SP),
-            //         get(R64::X0), get(R64::X1), get(R64::X2), get(R64::X3), get(R64::X4), get(R64::X5), get(R64::X20));
+            fmt::println("{:x} : {:40}  | {} LR={:8x} SP={:8x}  X0={:8x}  X1={:8x}, X2={:8x}, X3={:8x}, X4={:8x}, X5={:8x}, X20={:8x}",
+                    get(R64::PC), p.first.toString(), flags_.toString(), get(R64::LR), get(R64::SP),
+                    get(R64::X0), get(R64::X1), get(R64::X2), get(R64::X3), get(R64::X4), get(R64::X5), get(R64::X20));
             set(R64::PC, p.first.nextAddress());
             p.second(*this, p.first);
         }
@@ -665,7 +669,10 @@ namespace arm64 {
         const auto& src = ins.op1<M128>();
         u128 val = mmu_.read128(resolve(src));
         set(dst, val);
-        verify(!ins.writeBack(), "wb support missing");
+        if(ins.writeBack()) {
+            verify(src.encoding.index == R64::ZERO);
+            set(src.encoding.base, resolve(src).address());
+        }
     }
 
     void Cpu::execLdrbR32M8(const Instruction& ins) {
@@ -692,6 +699,22 @@ namespace arm64 {
         if(ins.writeBack()) {
             set(src.encoding.base, ptr.address() + imm.as<u64>());
         }
+    }
+
+    void Cpu::execLdarR32M32(const Instruction& ins) {
+        warn("atomic ldar");
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<M32>();
+        u32 srcval = mmu_.read32(resolve(src));
+        set(dst, srcval);
+    }
+
+    void Cpu::execLdarR64M64(const Instruction& ins) {
+        warn("atomic ldar");
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<M64>();
+        u64 srcval = mmu_.read64(resolve(src));
+        set(dst, srcval);
     }
 
     void Cpu::execLdxrR32M32(const Instruction& ins) {

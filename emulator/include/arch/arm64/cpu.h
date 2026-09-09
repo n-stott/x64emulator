@@ -100,6 +100,8 @@ namespace arm64 {
         void execLdrbR32M8(const Instruction& ins);
         void execLdrhR32M16(const Instruction& ins);
         void execLdrhR32M16Imm(const Instruction& ins);
+        void execLdarR32M32(const Instruction& ins);
+        void execLdarR64M64(const Instruction& ins);
         void execLdxrR32M32(const Instruction& ins);
         void execLdxrR64M64(const Instruction& ins);
         void execLdaxrR32M32(const Instruction& ins);

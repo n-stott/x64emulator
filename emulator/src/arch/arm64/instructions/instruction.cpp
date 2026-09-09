@@ -80,6 +80,8 @@ namespace arm64 {
             case Insn::LDRB_R32_M8: return toString<R32, M8>("ldrb");
             case Insn::LDRH_R32_M16: return toString<R32, M16>("ldrh");
             case Insn::LDRH_R32_M16_IMM: return toString<R32, M16, Imm>("ldrh");
+            case Insn::LDAR_R32_M32: return toString<R32, M32>("ldar");
+            case Insn::LDAR_R64_M64: return toString<R64, M64>("ldar");
             case Insn::LDXR_R32_M32: return toString<R32, M32>("ldxr");
             case Insn::LDXR_R64_M64: return toString<R64, M64>("ldxr");
             case Insn::LDAXR_R32_M32: return toString<R32, M32>("ldaxr");

@@ -37,6 +37,8 @@ namespace arm64 {
         LDRB_R32_M8,
         LDRH_R32_M16,
         LDRH_R32_M16_IMM,
+        LDAR_R32_M32,
+        LDAR_R64_M64,
         LDXR_R32_M32,
         LDXR_R64_M64,
         LDAXR_R32_M32,

@@ -719,6 +719,24 @@ namespace arm64 {
         return make_failed(insn);
     }
 
+    static Instruction makeLdar(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r32dst = asRegister32(dst);
+            auto r64dst = asRegister64(dst);
+            auto mem32src = asMemory32(src);
+            auto mem64src = asMemory64(src);
+            if(r32dst && mem32src) return Instruction::make<Insn::LDAR_R32_M32>(insn.address, insn.size, r32dst.value(), mem32src.value());
+            if(r64dst && mem64src) return Instruction::make<Insn::LDAR_R64_M64>(insn.address, insn.size, r64dst.value(), mem64src.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
     static Instruction makeLdxr(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.update_flags) return make_failed(insn);
@@ -2177,6 +2195,7 @@ namespace arm64 {
             case ARM64_INS_LDRB:
             case ARM64_INS_LDURB: return makeLdrb(insn);
             case ARM64_INS_LDRH: return makeLdrh(insn);
+            case ARM64_INS_LDAR: return makeLdar(insn);
             case ARM64_INS_LDXR: return makeLdxr(insn);
             case ARM64_INS_LDAXR: return makeLdaxr(insn);
             case ARM64_INS_LDP: return makeLdp(insn);
