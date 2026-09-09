@@ -56,6 +56,7 @@ namespace kernel::gnulinux {
         if(rc < 0) return ErrnoOrBuffer(-errno);
         Buffer buf(sizeof(st), 0x0);
         std::memcpy(buf.data(), &st, sizeof(st));
+        buf.shrink(104);
         return ErrnoOrBuffer(std::move(buf));
     }
 

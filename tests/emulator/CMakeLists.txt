@@ -123,6 +123,7 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     create_simple_test(failexec)
     create_simple_test(posixspawn)
     create_simple_test(getpgid)
+    create_simple_test(stat)
 endif()
 
 if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
