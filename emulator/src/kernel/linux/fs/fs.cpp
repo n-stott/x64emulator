@@ -397,7 +397,10 @@ namespace kernel::gnulinux {
         if(pathname.empty()) {
             if(tag == AllowEmptyPathname::YES) {
                 OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
-                verify(!!openFileDescription, "Trying to resolve path for unopened directory");
+                if(!openFileDescription) {
+                    warn("Trying to resolve path for unopened directory");
+                    return {};
+                }
                 return openFileDescription->file()->path();
             } else {
                 return {};
@@ -410,7 +413,10 @@ namespace kernel::gnulinux {
             return resolvePath(dirfd.cwd, pathname);
         } else {
             OpenFileDescription* openFileDescription = dirfd.directoryDescriptor.openFiledescription.get();
-            verify(!!openFileDescription, "Trying to resolve path for unopened directory");
+            if(!openFileDescription) {
+                warn("Trying to resolve path for unopened directory");
+                return {};
+            }
             verify(openFileDescription->file()->isDirectory(), "Trying to resolve path for non-directory");
             const Directory* dir = static_cast<const Directory*>(openFileDescription->file());
             return resolvePath(dir, pathname);
