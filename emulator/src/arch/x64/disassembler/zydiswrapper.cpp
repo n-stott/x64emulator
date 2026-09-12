@@ -5189,6 +5189,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_CMOVNL: return makeCmov<Cond::GE>(insn);
             case ZYDIS_MNEMONIC_CMOVL: return makeCmov<Cond::L>(insn);
             case ZYDIS_MNEMONIC_CMOVLE: return makeCmov<Cond::LE>(insn);
+            case ZYDIS_MNEMONIC_CMOVO: return makeCmov<Cond::O>(insn);
+            case ZYDIS_MNEMONIC_CMOVNO: return makeCmov<Cond::NO>(insn);
             case ZYDIS_MNEMONIC_CMOVNZ: return makeCmov<Cond::NE>(insn);
             case ZYDIS_MNEMONIC_CMOVNS: return makeCmov<Cond::NS>(insn);
             case ZYDIS_MNEMONIC_CMOVNP: return makeCmov<Cond::NP>(insn);

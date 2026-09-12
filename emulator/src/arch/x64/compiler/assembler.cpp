@@ -1683,6 +1683,8 @@ namespace x64 {
         }
         write8(0x0F);
         switch(cond) {
+            case Cond::O:  write8(0x40); break;
+            case Cond::NO: write8(0x41); break;
             case Cond::B:  write8(0x42); break;
             case Cond::NB:
             case Cond::AE: write8(0x43); break;
@@ -1708,6 +1710,8 @@ namespace x64 {
         write8((u8)(0x48 | (((u8)dst >= 8) ? 4 : 0) | (((u8)src >= 8) ? 1 : 0) ));
         write8(0x0F);
         switch(cond) {
+            case Cond::O:  write8(0x40); break;
+            case Cond::NO: write8(0x41); break;
             case Cond::B:  write8(0x42); break;
             case Cond::NB:
             case Cond::AE: write8(0x43); break;
