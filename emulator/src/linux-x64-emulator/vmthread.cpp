@@ -288,6 +288,7 @@ namespace x64 {
             case 0x13e: return kernel::gnulinux::SYSCALL::GETRANDOM;
             case 0x13f: return kernel::gnulinux::SYSCALL::MEMFD_CREATE;
             case 0x14c: return kernel::gnulinux::SYSCALL::STATX;
+            case 0x14e: return kernel::gnulinux::SYSCALL::RSEQ;
             case 0x1b3: return kernel::gnulinux::SYSCALL::CLONE3;
         }
         return {};
