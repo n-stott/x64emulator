@@ -3340,6 +3340,17 @@ namespace x64 {
         return dst;
     }
 
+    u128 CpuImpl::movsldup(u128 src) {
+        std::array<float, 4> TMP;
+        static_assert(sizeof(src) == sizeof(TMP));
+        std::memcpy(&TMP, &src, sizeof(src));
+        TMP[1] = TMP[0];
+        TMP[3] = TMP[2];
+        u128 dst;
+        std::memcpy(&dst, &TMP, sizeof(dst));
+        return dst;
+    }
+
     u128 CpuImpl::movddup64(u64 src) {
         return u128 { src, src };
     }

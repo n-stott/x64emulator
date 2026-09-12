@@ -3452,6 +3452,20 @@ namespace x64 {
 #endif
     }
 
+    u128 NativeCpuImpl::movsldup(u128 src) {
+#ifdef SSE3
+        __m128 msrc;
+        std::memcpy(&msrc, &src, sizeof(src));
+        __m128 mdst = _mm_moveldup_ps(msrc);
+        u128 dst;
+        std::memcpy(&dst, &mdst, sizeof(dst));
+        return dst;
+#else
+        assert(!"movsldup not defined");
+        return src; // dummy value
+#endif
+    }
+
     u128 NativeCpuImpl::movddup64(u64 src) {
 #ifdef SSE3
         __m128d msrc;

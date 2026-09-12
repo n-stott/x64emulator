@@ -744,6 +744,7 @@ namespace x64 {
         // SSE3
         LDDQU_XMM_M128,
         MOVSHDUP_XMM_XMMM128,
+        MOVSLDUP_XMM_XMMM128,
         MOVDDUP_XMM_XMM,
         MOVDDUP_XMM_M64,
         ADDSUBPS_XMM_XMMM128,

@@ -1427,6 +1427,10 @@ namespace x64 {
         return checkCall<u128>(&CpuImpl::movshdup, &NativeCpuImpl::movshdup, src);
     }
 
+    u128 CheckedCpuImpl::movsldup(u128 src) {
+        return checkCall<u128>(&CpuImpl::movsldup, &NativeCpuImpl::movsldup, src);
+    }
+
     u128 CheckedCpuImpl::movddup64(u64 src) {
         return checkCall<u128>(&CpuImpl::movddup64, &NativeCpuImpl::movddup64, src);
     }

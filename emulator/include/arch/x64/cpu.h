@@ -1091,6 +1091,7 @@ namespace x64 {
 
         void execLddquXMMM128(const Instruction&);
         void execMovshdupXMMXMMM128(const Instruction&);
+        void execMovsldupXMMXMMM128(const Instruction&);
         void execMovddupXMMXMM(const Instruction&);
         void execMovddupXMMM64(const Instruction&);
         void execAddsubpsXMXMMM128(const Instruction&);
