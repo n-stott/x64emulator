@@ -301,6 +301,8 @@ namespace x64 {
             case Insn::ROR_RM32_IMM: return toString<RM32, Imm>("ror");
             case Insn::ROR_RM64_R8: return toString<RM64, R8>("ror");
             case Insn::ROR_RM64_IMM: return toString<RM64, Imm>("ror");
+            case Insn::RORX_R32_RM32_IMM: return toString<R32, RM32, Imm>("rorx");
+            case Insn::RORX_R64_RM64_IMM: return toString<R64, RM64, Imm>("rorx");
             case Insn::TZCNT_R16_RM16: return toString<R16, RM16>("tzcnt");
             case Insn::TZCNT_R32_RM32: return toString<R32, RM32>("tzcnt");
             case Insn::TZCNT_R64_RM64: return toString<R64, RM64>("tzcnt");

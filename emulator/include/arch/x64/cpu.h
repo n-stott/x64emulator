@@ -533,6 +533,8 @@ namespace x64 {
         void execRorRM32Imm(const Instruction&);
         void execRorRM64R8(const Instruction&);
         void execRorRM64Imm(const Instruction&);
+        void execRorxR32RM32Imm(const Instruction&);
+        void execRorxR64RM64Imm(const Instruction&);
 
         void execTzcntR16RM16(const Instruction&);
         void execTzcntR32RM32(const Instruction&);

@@ -282,6 +282,8 @@ namespace x64 {
         ROR_RM32_IMM,
         ROR_RM64_R8,
         ROR_RM64_IMM,
+        RORX_R32_RM32_IMM,
+        RORX_R64_RM64_IMM,
         TZCNT_R16_RM16,
         TZCNT_R32_RM32,
         TZCNT_R64_RM64,

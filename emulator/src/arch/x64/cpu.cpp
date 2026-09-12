@@ -470,6 +470,8 @@ namespace x64 {
     DEFINE_STANDALONE(ROR_RM32_IMM, execRorRM32Imm)
     DEFINE_STANDALONE(ROR_RM64_R8, execRorRM64R8)
     DEFINE_STANDALONE(ROR_RM64_IMM, execRorRM64Imm)
+    DEFINE_STANDALONE(RORX_R32_RM32_IMM, execRorxR32RM32Imm)
+    DEFINE_STANDALONE(RORX_R64_RM64_IMM, execRorxR64RM64Imm)
     DEFINE_STANDALONE(TZCNT_R16_RM16, execTzcntR16RM16)
     DEFINE_STANDALONE(TZCNT_R32_RM32, execTzcntR32RM32)
     DEFINE_STANDALONE(TZCNT_R64_RM64, execTzcntR64RM64)
@@ -1299,6 +1301,8 @@ namespace x64 {
         STANDALONE_NAME(ROR_RM32_IMM),
         STANDALONE_NAME(ROR_RM64_R8),
         STANDALONE_NAME(ROR_RM64_IMM),
+        STANDALONE_NAME(RORX_R32_RM32_IMM),
+        STANDALONE_NAME(RORX_R64_RM64_IMM),
         STANDALONE_NAME(TZCNT_R16_RM16),
         STANDALONE_NAME(TZCNT_R32_RM32),
         STANDALONE_NAME(TZCNT_R64_RM64),
@@ -3439,6 +3443,23 @@ namespace x64 {
         const auto& dst = ins.op0<RM64>();
         const auto& src = ins.op1<Imm>();
         set(dst, Impl::ror64(get(dst), get<u8>(src), &flags_));
+    }
+
+    void Cpu::execRorxR32RM32Imm(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<RM32>();
+        const auto& imm = ins.op2<Imm>();
+        Flags flags;
+        u32 res = Impl::ror32(get(src), get<u8>(imm), &flags);
+        set(dst, res);
+    }
+    void Cpu::execRorxR64RM64Imm(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<RM64>();
+        const auto& imm = ins.op2<Imm>();
+        Flags flags;
+        u64 res = Impl::ror64(get(src), get<u8>(imm), &flags);
+        set(dst, res);
     }
 
     void Cpu::execTzcntR16RM16(const Instruction& ins) {

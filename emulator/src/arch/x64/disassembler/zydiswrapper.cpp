@@ -1437,6 +1437,21 @@ namespace x64 {
         return make_failed(insn);
     }
 
+    static Instruction makeRorx(const ZydisDisassembledInstruction& insn) {
+        assert(insn.info.operand_count_visible == 3);
+        const auto& dst = insn.operands[0];
+        const auto& src = insn.operands[1];
+        const auto& imm = insn.operands[2];
+        auto r32dst = asRegister32(dst);
+        auto r64dst = asRegister64(dst);
+        auto rm32src = asRM32(src);
+        auto rm64src = asRM64(src);
+        auto immsrc = asImmediate(imm);
+        if(r32dst && rm32src && immsrc) return Instruction::make<Insn::RORX_R32_RM32_IMM>(insn.runtime_address, insn.info.length, r32dst.value(), rm32src.value(), immsrc.value());
+        if(r64dst && rm64src && immsrc) return Instruction::make<Insn::RORX_R64_RM64_IMM>(insn.runtime_address, insn.info.length, r64dst.value(), rm64src.value(), immsrc.value());
+        return make_failed(insn);
+    }
+
     static Instruction makeTzcnt(const ZydisDisassembledInstruction& insn) {
         assert(insn.info.operand_count_visible == 2);
         const auto& dst = insn.operands[0];
@@ -5108,6 +5123,7 @@ namespace x64 {
             case ZYDIS_MNEMONIC_RCR: return makeRcr(insn);
             case ZYDIS_MNEMONIC_ROL: return makeRol(insn);
             case ZYDIS_MNEMONIC_ROR: return makeRor(insn);
+            case ZYDIS_MNEMONIC_RORX: return makeRorx(insn);
             case ZYDIS_MNEMONIC_TZCNT: return makeTzcnt(insn);
             case ZYDIS_MNEMONIC_POPCNT: return makePopcnt(insn);
             case ZYDIS_MNEMONIC_SETNBE: return makeSet<Cond::A>(insn);
