@@ -131,6 +131,7 @@ namespace kernel::gnulinux {
         EPOLL_CTL = 0xe9,
         TGKILL = 0xea,
         MBIND = 0xed,
+        GET_MEMPOLICY = 0xef,
         WAITID = 0xf7,
         INOTIFY_INIT = 0xfd,
         INOTIFY_ADD_WATCH = 0xfe,

@@ -186,6 +186,7 @@ namespace kernel::gnulinux {
             case SYSCALL::EPOLL_CTL: return currentThread_->setSyscallOutput(invoke_syscall_4(&Sys::epoll_ctl, regs));
             case SYSCALL::TGKILL: return currentThread_->setSyscallOutput(invoke_syscall_3(&Sys::tgkill, regs));
             case SYSCALL::MBIND: return currentThread_->setSyscallOutput(invoke_syscall_6(&Sys::mbind, regs));
+            case SYSCALL::GET_MEMPOLICY: return currentThread_->setSyscallOutput(invoke_syscall_5(&Sys::get_mempolicy, regs));
             case SYSCALL::WAITID: return currentThread_->setSyscallOutput(invoke_syscall_5(&Sys::waitid, regs));
             case SYSCALL::INOTIFY_INIT: return currentThread_->setSyscallOutput(invoke_syscall_0(&Sys::inotify_init, regs));
             case SYSCALL::INOTIFY_ADD_WATCH: return currentThread_->setSyscallOutput(invoke_syscall_3(&Sys::inotify_add_watch, regs));
@@ -1717,6 +1718,14 @@ namespace kernel::gnulinux {
             print("Sys::mbind(start={}, len={}, mode={}, nmask={:#x}, maxnode={}, flags={})", start, len, mode, nmask.address(), maxnode, flags);
         }
         warn("mbind not implemented");
+        return -ENOTSUP;
+    }
+
+    long Sys::get_mempolicy(mem::Ptr mode, mem::Ptr nodemask, unsigned long maxnode, mem::Ptr addr, unsigned long flags) {
+        if(kernel_.logSyscalls()) {
+            print("Sys::get_mempolicy(mode={:#x}, nodemask={:#x}, maxnode={}, addr={:#x}, flags={})", mode.address(), nodemask.address(), maxnode, addr.address(), flags);
+        }
+        warn("get_mempolicy not implemented");
         return -ENOTSUP;
     }
 

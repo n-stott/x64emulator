@@ -369,6 +369,8 @@ namespace kernel::gnulinux {
         int tgkill(int tgid, int tid, int sig);
         // 0xed
         int mbind(unsigned long start, unsigned long len, unsigned long mode, mem::Ptr64 nmask, unsigned long maxnode, unsigned flags);
+        // 0xef
+        long get_mempolicy(mem::Ptr mode, mem::Ptr nodemask, unsigned long maxnode, mem::Ptr addr, unsigned long flags);
         // 0xf7
         int waitid(int idtype, id_t id, mem::Ptr infop, int options, mem::Ptr rusage);
         // 0xfd

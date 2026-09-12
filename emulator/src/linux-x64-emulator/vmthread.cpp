@@ -261,6 +261,7 @@ namespace x64 {
             case 0xe9: return kernel::gnulinux::SYSCALL::EPOLL_CTL;
             case 0xea: return kernel::gnulinux::SYSCALL::TGKILL;
             case 0xed: return kernel::gnulinux::SYSCALL::MBIND;
+            case 0xef: return kernel::gnulinux::SYSCALL::GET_MEMPOLICY;
             case 0xf7: return kernel::gnulinux::SYSCALL::WAITID;
             case 0xfd: return kernel::gnulinux::SYSCALL::INOTIFY_INIT;
             case 0xfe: return kernel::gnulinux::SYSCALL::INOTIFY_ADD_WATCH;
