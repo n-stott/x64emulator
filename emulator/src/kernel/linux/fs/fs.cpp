@@ -498,7 +498,48 @@ namespace kernel::gnulinux {
         if(!!file && file->isSymlink() && followSymlink == FollowSymlink::YES) {
             return resolveSymlink(*static_cast<const Symlink*>(file));
         }
-        return file;
+        if(!!file) {
+            return file;
+        }
+
+        // Otherwise, try creating hostbacked versions as a last resort
+        auto hostBackedDirectory = HostDirectory::tryCreate(path);
+        if(!!hostBackedDirectory) {
+            // create and add the node to the filesystem
+            Directory* parent = ensurePathExceptLast(path);
+            HostDirectory* dir = parent->addFile<HostDirectory>(std::move(hostBackedDirectory));
+            return dir;
+        }
+
+        // try open the file
+        auto hostBackedFile = HostFile::tryCreate(path, BitFlags<AccessMode>{AccessMode::READ}, false);
+        if(!!hostBackedFile) {
+            // create and add the node to the filesystem
+            Directory* parent = ensurePathExceptLast(path);
+            HostFile* file = parent->addFile<HostFile>(std::move(hostBackedFile));
+            return file;
+        }
+
+        // try shadow device
+        auto shadowDevice = ShadowDevice::tryCreate(path, true);
+        if(!!shadowDevice) {
+            // create and add the node to the filesystem
+            Directory* parent = ensurePathExceptLast(path);
+            Device* device = parent->addFile<Device>(std::move(shadowDevice));
+            return device;
+        }
+
+        // try open device
+        auto hostDevice = HostDevice::tryCreate(path);
+        if(!!hostDevice) {
+            // create and add the node to the filesystem
+            Directory* parent = ensurePathExceptLast(path);
+            HostDevice* device = parent->addFile<HostDevice>(std::move(hostDevice));
+            return device;
+        }
+
+        // fail
+        return nullptr;
     }
 
     std::unique_ptr<File> FS::tryTakeFile(const Path& path) {
@@ -772,6 +813,7 @@ namespace kernel::gnulinux {
     ErrnoOrBuffer FS::fstatat64(const Path& path, int flags) {
         verify(!Host::Fstatat::isNoAutomount(flags), "no automount not supported");
         FollowSymlink followSymlink = Host::Fstatat::isSymlinkNofollow(flags) ? FollowSymlink::YES : FollowSymlink::NO;
+        ensurePathExceptLast(path);
         File* file = tryGetFile(path, followSymlink);
         if(!file) {
             return ErrnoOrBuffer(-ENOENT);
