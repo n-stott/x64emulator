@@ -5504,7 +5504,8 @@ namespace x64 {
             case ZYDIS_MNEMONIC_PCMPESTRI: return makePcmpestri(insn);
             case ZYDIS_MNEMONIC_CRC32: return makeCrc32(insn);
 
-            case ZYDIS_MNEMONIC_RDTSC: return makeRdtsc(insn);
+            case ZYDIS_MNEMONIC_RDTSC:
+            case ZYDIS_MNEMONIC_RDTSCP: return makeRdtsc(insn);
             case ZYDIS_MNEMONIC_CPUID: return makeCpuid(insn);
             case ZYDIS_MNEMONIC_XGETBV: return makeXgetbv(insn);
             case ZYDIS_MNEMONIC_FXSAVE: return makeFxsave(insn);
