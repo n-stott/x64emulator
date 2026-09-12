@@ -53,8 +53,8 @@ namespace kernel::gnulinux {
     }
 
     void ProcessTable::terminate(int pid) {
-        auto it = std::remove_if(processes_.begin(), processes_.end(), [=](const auto& p) {
-            return p->pid() == pid;
+        auto it = std::partition(processes_.begin(), processes_.end(), [=](const auto& p) {
+            return p->pid() != pid;
         });
         verify(it != processes_.end(), "Could not find process to kill");
         dyingProcesses_.push_back(std::move(*it));

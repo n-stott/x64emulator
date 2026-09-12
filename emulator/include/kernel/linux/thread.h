@@ -49,6 +49,7 @@ namespace kernel::gnulinux {
     class Thread {
     public:
         Thread(Process* process, int tid);
+        virtual ~Thread() = default;
 
         virtual void loadSyscallInput(SYSCALL* number, Span<u64> arguments) = 0;
         virtual void setSyscallOutput(u64 value) = 0;
