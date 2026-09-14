@@ -83,6 +83,30 @@ namespace kernel::gnulinux {
         FS::SelectData selectData_; // cached vector
     };
 
+    class PSelectBlocker {
+    public:
+        PSelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout);
+
+        [[nodiscard]] bool tryUnblock(FS& fs);
+        [[nodiscard]] bool hasTimeout() const { return !!timeLimit_; }
+
+        Thread* thread() const { return thread_; }
+
+        std::string toString() const;
+
+    private:
+        Process* process_;
+        Thread* thread_;
+        Timers* timers_;
+        int nfds_;
+        mem::Ptr readfds_;
+        mem::Ptr writefds_;
+        mem::Ptr exceptfds_;
+        mem::Ptr timeout_;
+        std::optional<PreciseTime> timeLimit_;
+        FS::SelectData selectData_; // cached vector
+    };
+
     class EpollWaitBlocker {
     public:
         EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, mem::Ptr events, size_t maxevents, int timeoutInMs);

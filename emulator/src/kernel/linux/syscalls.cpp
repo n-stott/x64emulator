@@ -654,23 +654,6 @@ namespace kernel::gnulinux {
     }
 
     int Sys::select(int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout) {
-        // assert(sizeof(FS::PollData) == Host::pollRequiredBufferSize(1));
-        // std::vector<FS::PollData> pollfds = mmu_->readFromMmu<FS::PollData>(fds, nfds);
-        // if(timeout == 0) {
-        //     auto errnoOrBufferAndReturnValue = kernel_.fs().pollImmediate(pollfds);
-        //     if(kernel_.logSyscalls()) {
-        //         print("Sys::poll(fds={:#x}, nfds={}, timeout={}) = {}",
-        //                     fds.address(), nfds, timeout, errnoOrBufferAndReturnValue.errorOrWith<int>([](const auto&){ return 0; }));
-        //     }
-        //     return errnoOrBufferAndReturnValue.errorOrWith<int>([&](const auto& bufferAndRetVal) {
-        //         mmu_->copyToMmu(fds, bufferAndRetVal.buffer.data(), bufferAndRetVal.buffer.size());
-        //         return bufferAndRetVal.returnValue;
-        //     });
-        // } else {
-        //     kernel_.scheduler().poll(currentThread_, fds, nfds, timeout);
-        // }
-        // return 0;
-
         static_assert(sizeof(FS::SelectData::readfds) == sizeof(fd_set));
         FS::SelectData selectData;
         selectData.fds.reserve(nfds);
@@ -2267,31 +2250,33 @@ namespace kernel::gnulinux {
     }
 
     int Sys::pselect6(int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout, mem::Ptr sigmask) {
-        fd_set rfds;
-        if(readfds.address() != 0) mmu_->copyFromMmu((u8*)&rfds, readfds, sizeof(fd_set));
-        fd_set wfds;
-        if(writefds.address() != 0) mmu_->copyFromMmu((u8*)&wfds, writefds, sizeof(fd_set));
-        fd_set efds;
-        if(exceptfds.address() != 0) mmu_->copyFromMmu((u8*)&efds, exceptfds, sizeof(fd_set));
-        timespec ts;
-        if(timeout.address() != 0) mmu_->copyFromMmu((u8*)&ts, timeout, sizeof(timespec));
-        sigset_t smask;
-        if(sigmask.address() != 0) mmu_->copyFromMmu((u8*)&smask, sigmask, sizeof(sigset_t));
-        int ret = Host::pselect6(nfds,
-                               readfds.address() != 0 ?   &rfds : nullptr,
-                               writefds.address() != 0 ?  &wfds : nullptr,
-                               exceptfds.address() != 0 ? &efds : nullptr,
-                               timeout.address() != 0 ?   &ts : nullptr,
-                               sigmask.address() != 0 ?   &smask : nullptr);
-        if(kernel_.logSyscalls()) {
-            print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x},sigmask={:#x}) = {}",
-                        nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), sigmask.address(), ret);
+        verify(!sigmask, "non-null sigmask not supported in Sys::pselect6");
+        static_assert(sizeof(FS::SelectData::readfds) == sizeof(fd_set));
+        FS::SelectData selectData;
+        selectData.fds.reserve(nfds);
+        for(int fd = 0; fd < nfds; ++fd) {
+            selectData.fds.push_back(currentProcess_->fds()[fd]);
         }
-        if(readfds.address() != 0) mmu_->copyToMmu(readfds, (const u8*)&rfds, sizeof(fd_set));
-        if(writefds.address() != 0) mmu_->copyToMmu(writefds, (const u8*)&wfds, sizeof(fd_set));
-        if(exceptfds.address() != 0) mmu_->copyToMmu(exceptfds, (const u8*)&efds, sizeof(fd_set));
-        if(timeout.address() != 0) mmu_->copyToMmu(timeout, (const u8*)&ts, sizeof(timespec));
-        return ret;
+        if(!!readfds) mmu_->copyFromMmu((u8*)&selectData.readfds, readfds, sizeof(selectData.readfds));
+        if(!!writefds) mmu_->copyFromMmu((u8*)&selectData.writefds, writefds, sizeof(selectData.writefds));
+        if(!!exceptfds) mmu_->copyFromMmu((u8*)&selectData.exceptfds, exceptfds, sizeof(selectData.exceptfds));
+        Timer* timer = kernel_.timers().getOrTryCreate(0);
+        auto timeoutDuration = timer->readTimespec(*mmu_, timeout);
+        if(!!timeoutDuration && timeoutDuration->seconds == 0 && timeoutDuration->nanoseconds == 0) {
+            int ret = kernel_.fs().selectImmediate(&selectData);
+            if(kernel_.logSyscalls()) {
+                print("Sys::pselect6(nfds={}, readfds={:#x}, writefds={:#x}, exceptfds={:#x}, timeout={:#x}, sigmask={:#x}) = {}",
+                            nfds, readfds.address(), writefds.address(), exceptfds.address(), timeout.address(), sigmask.address(), ret);
+            }
+            if(ret < 0) return ret;
+            if(!!readfds) mmu_->copyToMmu(readfds, (const u8*)&selectData.readfds, sizeof(selectData.readfds));
+            if(!!writefds) mmu_->copyToMmu(writefds, (const u8*)&selectData.writefds, sizeof(selectData.writefds));
+            if(!!exceptfds) mmu_->copyToMmu(exceptfds, (const u8*)&selectData.exceptfds, sizeof(selectData.exceptfds));
+            return ret;
+        } else {
+            kernel_.scheduler().pselect(currentThread_, nfds, readfds, writefds, exceptfds, timeout);
+            return 0;
+        }
     }
 
     int Sys::ppoll(mem::Ptr fds, int nfds, mem::Ptr tmo_p, mem::Ptr sigmask, size_t sigsetsize) {

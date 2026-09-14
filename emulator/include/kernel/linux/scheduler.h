@@ -43,6 +43,7 @@ namespace kernel::gnulinux {
 
         void poll(Thread* thread, mem::Ptr fds, size_t nfds, int timeout);
         void select(Thread* thread, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout);
+        void pselect(Thread* thread, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout);
         void epoll_wait(Thread* thread, int epfd, mem::Ptr events, size_t maxevents, int timeout);
 
         void wait4(Thread* thread, int pid, mem::Ptr32 wstatus);
@@ -158,6 +159,7 @@ namespace kernel::gnulinux {
         std::vector<FutexBlocker> futexBlockers_;
         std::vector<PollBlocker> pollBlockers_;
         std::vector<SelectBlocker> selectBlockers_;
+        std::vector<PSelectBlocker> pselectBlockers_;
         std::vector<EpollWaitBlocker> epollWaitBlockers_;
         std::vector<SleepBlocker> sleepBlockers_;
         std::vector<WaitBlocker> waitBlockers_;

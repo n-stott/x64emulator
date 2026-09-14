@@ -339,6 +339,7 @@ namespace kernel::gnulinux {
             bool needsToWaitForNewThreads = !sleepBlockers_.empty()
                     || std::any_of(pollBlockers_.begin(), pollBlockers_.end(), [](const PollBlocker& blocker) { return blocker.hasTimeout(); })
                     || std::any_of(selectBlockers_.begin(), selectBlockers_.end(), [](const SelectBlocker& blocker) { return blocker.hasTimeout(); })
+                    || std::any_of(pselectBlockers_.begin(), pselectBlockers_.end(), [](const PSelectBlocker& blocker) { return blocker.hasTimeout(); })
                     || std::any_of(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [](const EpollWaitBlocker& blocker) { return blocker.hasTimeout(); })
                     || std::any_of(futexBlockers_.begin(), futexBlockers_.end(), [](const FutexBlocker& blocker) { return blocker.hasTimeout(); });
             if(needsToWaitForNewThreads) {
@@ -430,6 +431,21 @@ namespace kernel::gnulinux {
                 return &blocker == compareBlocker;
             });
         }), selectBlockers_.end());
+
+        std::vector<PSelectBlocker*> removablePselectBlockers;
+        for(PSelectBlocker& blocker : pselectBlockers_) {
+            bool canUnblock = blocker.tryUnblock(kernel_.fs());
+            if(canUnblock) {
+                unblock(blocker.thread(), &lock);
+                removablePselectBlockers.push_back(&blocker);
+                didUnblock = true;
+            }
+        }
+        pselectBlockers_.erase(std::remove_if(pselectBlockers_.begin(), pselectBlockers_.end(), [&](const PSelectBlocker& blocker) {
+            return std::any_of(removablePselectBlockers.begin(), removablePselectBlockers.end(), [&](PSelectBlocker* compareBlocker) {
+                return &blocker == compareBlocker;
+            });
+        }), pselectBlockers_.end());
 
         std::vector<EpollWaitBlocker*> removableEpollWaitBlockers;
         for(EpollWaitBlocker& blocker : epollWaitBlockers_) {
@@ -554,6 +570,9 @@ namespace kernel::gnulinux {
         selectBlockers_.erase(std::remove_if(selectBlockers_.begin(), selectBlockers_.end(), [=](const SelectBlocker& blocker) {
             return blocker.thread() == thread;
         }), selectBlockers_.end());
+        pselectBlockers_.erase(std::remove_if(pselectBlockers_.begin(), pselectBlockers_.end(), [=](const PSelectBlocker& blocker) {
+            return blocker.thread() == thread;
+        }), pselectBlockers_.end());
         epollWaitBlockers_.erase(std::remove_if(epollWaitBlockers_.begin(), epollWaitBlockers_.end(), [=](const EpollWaitBlocker& blocker) {
             return blocker.thread() == thread;
         }), epollWaitBlockers_.end());
@@ -728,6 +747,14 @@ namespace kernel::gnulinux {
         thread->yield();
     }
 
+    void Scheduler::pselect(Thread* thread, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout) {
+        verifyInKernel();
+        // verify(!timeout || (timeout->seconds + timeout->nanoseconds > 0), "select with zero timeout should not reach the scheduler");
+        pselectBlockers_.push_back(PSelectBlocker(thread->process(), thread, kernel_.timers(), nfds, readfds, writefds, exceptfds, timeout));
+        block(thread);
+        thread->yield();
+    }
+
     void Scheduler::epoll_wait(Thread* thread, int epfd, mem::Ptr events, size_t maxevents, int timeout) {
         verifyInKernel();
         epollWaitBlockers_.push_back(EpollWaitBlocker(thread->process(), thread, kernel_.timers(), epfd, events, maxevents, timeout));
@@ -785,6 +812,10 @@ namespace kernel::gnulinux {
         }
         fmt::print("Select blockers :\n");
         for(const SelectBlocker& blocker : selectBlockers_) {
+            fmt::print("  {}\n", blocker.toString());
+        }
+        fmt::print("Pselect blockers :\n");
+        for(const PSelectBlocker& blocker : pselectBlockers_) {
             fmt::print("  {}\n", blocker.toString());
         }
         fmt::print("Epoll-wait blockers :\n");

@@ -203,6 +203,60 @@ namespace kernel::gnulinux {
         return fmt::format("thread {}:{} selecting on {} fds {}", pid, tid, nfds_, timeoutString);
     }
 
+    PSelectBlocker::PSelectBlocker(Process* process, Thread* thread, Timers& timers, int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout)
+            : process_(process), thread_(thread), timers_(&timers), nfds_(nfds), readfds_(readfds), writefds_(writefds), exceptfds_(exceptfds), timeout_(timeout) {
+        Timer* timer = timers_->getOrTryCreate(0); // get any timer
+        verify(!!timer);
+        mem::Mmu mmu(thread_->process()->addressSpace());
+        auto duration = timer->readRelativeTimespec(mmu, timeout);
+        if(!!duration) {
+            PreciseTime now = timer->now();
+            timeLimit_ = now + duration.value();
+        }
+    }
+
+    bool PSelectBlocker::tryUnblock(FS& fs) {
+        selectData_.fds.clear();
+        selectData_.fds.reserve(nfds_);
+        for(int fd = 0; fd < nfds_; ++fd) {
+            selectData_.fds.push_back(process_->fds()[fd]);
+        }
+        mem::Mmu mmu(thread_->process()->addressSpace());
+        if(!!readfds_) mmu.copyFromMmu((u8*)&selectData_.readfds, readfds_, sizeof(selectData_.readfds));
+        if(!!writefds_) mmu.copyFromMmu((u8*)&selectData_.writefds, writefds_, sizeof(selectData_.writefds));
+        if(!!exceptfds_) mmu.copyFromMmu((u8*)&selectData_.exceptfds, exceptfds_, sizeof(selectData_.exceptfds));
+        int ret = fs.selectImmediate(&selectData_);
+        u64 nzevents = selectData_.readfds.count() + selectData_.writefds.count() + selectData_.exceptfds.count();
+        bool timeout = false;
+        if(!!timeLimit_) {
+            Timer* timer = timers_->get(0); // get the same timer as in the ctor
+            verify(!!timer);
+            PreciseTime now = timer->now();
+            timeout |= (now > timeLimit_);
+        }
+        bool canUnblock = (ret < 0) || (nzevents > 0) || timeout;
+        if(!canUnblock) return false;
+
+        if(!!readfds_) mmu.copyToMmu(readfds_, (const u8*)&selectData_.readfds, sizeof(selectData_.readfds));
+        if(!!writefds_) mmu.copyToMmu(writefds_, (const u8*)&selectData_.writefds, sizeof(selectData_.writefds));
+        if(!!exceptfds_) mmu.copyToMmu(exceptfds_, (const u8*)&selectData_.exceptfds, sizeof(selectData_.exceptfds));
+        if(ret >= 0) ret = (int)nzevents;
+        thread_->setSyscallOutput((u64)ret);
+        return true;
+    }
+
+    std::string PSelectBlocker::toString() const {
+        int pid = thread_->description().pid;
+        int tid = thread_->description().tid;
+        std::string timeoutString;
+        if(!!timeLimit_) {
+            timeoutString = fmt::format("with timeout at {}s{}ns", timeLimit_->seconds, timeLimit_->nanoseconds);
+        } else {
+            timeoutString = "without timeout";
+        }
+        return fmt::format("thread {}:{} pselecting on {} fds {}", pid, tid, nfds_, timeoutString);
+    }
+
     EpollWaitBlocker::EpollWaitBlocker(Process* process, Thread* thread, Timers& timers, int epfd, mem::Ptr events, size_t maxevents, int timeoutInMs)
         : process_(process), thread_(thread), timers_(&timers), epfd_(epfd), events_(events), maxevents_(maxevents) {
         if(timeoutInMs > 0) {
