@@ -30,8 +30,6 @@ namespace kernel::gnulinux {
         void close() override;
         bool keepAfterClose() const override { return false; }
 
-        std::optional<int> hostFileDescriptor() const override { return hostFd_; }
-
         ReadResult read(OpenFileDescription&, size_t count) override;
         ssize_t write(OpenFileDescription&, const u8* buf, size_t count) override;
 

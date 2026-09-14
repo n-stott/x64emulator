@@ -63,8 +63,6 @@ namespace kernel::gnulinux {
         
         ErrnoOrBuffer getdents64(size_t count) override;
 
-        std::optional<int> hostFileDescriptor() const override { return hostFd_; }
-
         std::string className() const override {
             return fmt::format("Socket(realfd={})", hostFd_);
         }

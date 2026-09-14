@@ -38,8 +38,6 @@ namespace kernel::gnulinux {
         void close() override;
         bool keepAfterClose() const override { return true; }
 
-        std::optional<int> hostFileDescriptor() const override { return {}; }
-
         bool isReadable() const override { return false; }
         bool isWritable() const override { return false; }
 

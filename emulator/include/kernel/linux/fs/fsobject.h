@@ -37,8 +37,6 @@ namespace kernel::gnulinux {
 
         virtual bool isPollable() const { return false; }
 
-        virtual std::optional<int> hostFileDescriptor() const = 0;
-
     protected:
         u32 refCount_ { 0 };
         bool deleteAfterClose_ { false };

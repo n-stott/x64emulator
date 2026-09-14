@@ -37,8 +37,6 @@ namespace kernel::gnulinux {
         std::optional<int> fcntl(FcntlCommand cmd, int arg) override;
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
-        std::optional<int> hostFileDescriptor() const override { return {}; }
-
         std::string className() const override {
             return "Event";
         }

@@ -27,7 +27,6 @@ namespace kernel::gnulinux {
         void close() override;
         bool isClosed() const { return isClosed_; }
         bool keepAfterClose() const override { return false; }
-        std::optional<int> hostFileDescriptor() const override { return {}; };
 
         bool canRead() const;
         bool canWrite() const;
@@ -75,8 +74,6 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
         
         ErrnoOrBuffer getdents64(size_t count) override;
-
-        std::optional<int> hostFileDescriptor() const override { return {}; }
 
         std::string className() const override;
     

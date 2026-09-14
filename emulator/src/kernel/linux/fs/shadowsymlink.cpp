@@ -19,10 +19,6 @@ namespace kernel::gnulinux {
         return true;
     }
 
-    std::optional<int> ShadowSymlink::hostFileDescriptor() const {
-        return {};
-    }
-
     ErrnoOrBuffer ShadowSymlink::statx(unsigned int mask) {
         (void)mask;
         return ErrnoOrBuffer(-ENOTSUP);

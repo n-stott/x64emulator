@@ -43,9 +43,4 @@ namespace kernel::gnulinux {
         return true;
     }
 
-    std::optional<int> HostSymlink::hostFileDescriptor() const {
-        verify(false, "HostSymlink::hostFileDescriptor not implemented");
-        return {};
-    }
-
 }

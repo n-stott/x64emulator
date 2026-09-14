@@ -16,7 +16,6 @@ namespace kernel::gnulinux {
 
         void close() override;
         bool keepAfterClose() const override;
-        std::optional<int> hostFileDescriptor() const override;
 
         ErrnoOrBuffer statx(unsigned int) override;
 

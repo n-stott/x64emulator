@@ -12,7 +12,6 @@ namespace kernel::gnulinux {
 
         void close() override;
         bool keepAfterClose() const override;
-        std::optional<int> hostFileDescriptor() const override;
 
         std::string className() const override {
             return fmt::format("HostSymlink(link={})", link());
