@@ -1129,9 +1129,19 @@ namespace x64 {
     }
 
     u128 CpuImpl::cvttpd2dq(u128 src) {
-        return packedOp<i64, double>(src, src, [](auto, auto s) {
-            return (i64)s;
-        });
+        u128 res;
+        std::array<double, 2> SRC;
+        static_assert(sizeof(SRC) == sizeof(u128));
+        std::memcpy(SRC.data(), &src, sizeof(u128));
+
+        std::array<i32, 4> RES;
+        RES[0] = (i32)SRC[0];
+        RES[1] = (i32)SRC[1];
+        RES[2] = 0;
+        RES[3] = 0;
+        static_assert(sizeof(RES) == sizeof(u128));
+        std::memcpy(&res, RES.data(), sizeof(u128));
+        return res;
     }
 
     u32 CpuImpl::cvttss2si32(u128 src) {
