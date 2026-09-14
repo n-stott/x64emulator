@@ -2250,7 +2250,7 @@ namespace kernel::gnulinux {
     }
 
     int Sys::pselect6(int nfds, mem::Ptr readfds, mem::Ptr writefds, mem::Ptr exceptfds, mem::Ptr timeout, mem::Ptr sigmask) {
-        verify(!sigmask, "non-null sigmask not supported in Sys::pselect6");
+        if(!sigmask) warn("non-null sigmask not supported in Sys::pselect6");
         static_assert(sizeof(FS::SelectData::readfds) == sizeof(fd_set));
         FS::SelectData selectData;
         selectData.fds.reserve(nfds);
