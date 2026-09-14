@@ -931,6 +931,7 @@ namespace kernel::gnulinux {
         int flags = O_RDONLY;
         if(cloexec == CloseOnExec::YES) flags |= O_CLOEXEC;
         int fd = ::openat(AT_FDCWD, pathname, flags);
+        verify(!(fd == -1 && errno == EMFILE), "too many files opened");
         if(fd < 0) return {};
 
         ScopeGuard guard([=]() {
