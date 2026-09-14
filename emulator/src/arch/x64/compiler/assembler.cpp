@@ -3951,6 +3951,7 @@ namespace x64 {
                 write32((u32)mem.encoding.displacement);
             }
         } else {
+            verify(mem.encoding.base != R64::ZERO, "ZERO cannot be used as base");
             verify(mem.encoding.index != R64::RSP, "RSP cannot be used as an index");
             if((i8)mem.encoding.displacement == mem.encoding.displacement) {
                 writerex((u8)(0x40 | (rexw == REX::W ? 8 : 0)
