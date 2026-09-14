@@ -5,6 +5,7 @@
 #include "mem/mmutypes.h"
 #include "mem/spinlock.h"
 #include "bitflags.h"
+#include "smallvector.h"
 #include "utils.h"
 #include "verify.h"
 #include <fmt/core.h>
@@ -289,7 +290,7 @@ namespace mem {
         }
 
         void removeCallback(Callback* callback) {
-            callbacks_.erase(std::remove(callbacks_.begin(), callbacks_.end(), callback), callbacks_.end());
+            callbacks_.erase(callback);
         }
 
     private:
@@ -404,7 +405,7 @@ namespace mem {
         u8* base_ { nullptr };
         u64 size_ { 0 };
         AddressSpace& addressSpace_;
-        std::vector<Callback*> callbacks_;
+        SmallVector<Callback*, 2> callbacks_;
 
 #ifdef MULTIPROCESSING
         std::atomic<bool> syscallInProgress_ { false };
