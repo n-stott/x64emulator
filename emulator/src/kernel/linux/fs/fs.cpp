@@ -6,6 +6,7 @@
 #include "kernel/linux/fs/openfiledescription.h"
 #include "kernel/linux/fs/epoll.h"
 #include "kernel/linux/fs/event.h"
+#include "kernel/linux/fs/inotify.h"
 #include "kernel/linux/fs/regularfile.h"
 #include "kernel/linux/fs/hostdirectory.h"
 #include "kernel/linux/fs/hostfile.h"
@@ -168,6 +169,16 @@ namespace kernel::gnulinux {
 
     FD FileDescriptors::epoll_create1(int flags) {
         auto descriptor = fs_.epoll_create1(flags);
+        int ret = descriptor.errorOrWith<int>([&](auto& descr) {
+            FD fd = allocateFd();
+            fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
+            return fd.fd;
+        });
+        return FD{ret};
+    }
+
+    FD FileDescriptors::inotify_init1(int flags) {
+        auto descriptor = fs_.inotify_init1(flags);
         int ret = descriptor.errorOrWith<int>([&](auto& descr) {
             FD fd = allocateFd();
             fileDescriptors_[fd.fd] = std::make_unique<FileDescriptor>(descr);
@@ -1104,6 +1115,16 @@ namespace kernel::gnulinux {
                 data,
             });
         });
+    }
+
+    ErrnoOr<FileDescriptor> FS::inotify_init1(int flags) {
+        std::unique_ptr<Inotify> inotify = std::make_unique<Inotify>(flags);
+        verify(!!inotify, "Unable to create inotify");
+        BitFlags<AccessMode> accessMode { AccessMode::READ, AccessMode::WRITE };
+        BitFlags<StatusFlags> statusFlags { };
+        bool closeOnExec = Host::EpollFlags::isCloseOnExec(flags);
+        auto descriptor = insertNode(std::move(inotify), accessMode, statusFlags, closeOnExec);
+        return ErrnoOr<FileDescriptor>(descriptor);
     }
 
     ErrnoOr<FileDescriptor> FS::socket(int domain, int type, int protocol) {

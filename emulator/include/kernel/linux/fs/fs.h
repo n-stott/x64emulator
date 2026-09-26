@@ -21,6 +21,7 @@ namespace kernel::gnulinux {
 
     class Directory;
     class File;
+    class Inotify;
     class OpenFileDescription;
     class Pipe;
     class Tty;
@@ -87,6 +88,7 @@ namespace kernel::gnulinux {
 
         FD eventfd2(unsigned int initval, int flags);
         FD epoll_create1(int flags);
+        FD inotify_init1(int flags);
         FD socket(int domain, int type, int protocol);
         ErrnoOr<std::pair<FD, FD>> pipe2(int flags);
 
@@ -182,6 +184,8 @@ namespace kernel::gnulinux {
         int epoll_ctl(FileDescriptor epfd, int op, FileDescriptor fd, BitFlags<EpollEventType> events, u64 data);
         int epollWaitImmediate(FileDescriptor epfd, std::vector<EpollEvent>* events);
         void doEpollWait(FileDescriptor epfd, std::vector<EpollEvent>* events);
+
+        ErrnoOr<FileDescriptor> inotify_init1(int flags);
 
         ErrnoOr<FileDescriptor> socket(int domain, int type, int protocol);
         int connect(FileDescriptor sockfd, const Buffer& buffer);

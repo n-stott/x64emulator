@@ -1723,9 +1723,11 @@ namespace kernel::gnulinux {
     }
 
     int Sys::inotify_init() {
-        if(kernel_.logSyscalls()) print("Sys::inotify_init() = {}", -ENOTSUP);
-        warn("inotify_init not implemented");
-        return -ENOTSUP;
+        auto fd = currentProcess_->fds().inotify_init1(0);
+        if(kernel_.logSyscalls()) {
+            print("Sys::inotify_init() = {}", fd.fd);
+        }
+        return fd.fd;
     }
 
     int Sys::inotify_add_watch(int fd, mem::Ptr pathname, uint32_t mask) {
