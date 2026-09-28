@@ -84,8 +84,8 @@ namespace kernel::gnulinux {
 
     void ProcessTable::retrieveProfilingData(profiling::ProfilingData* profilingData) {
         if(!profilingData) return;
-        verify(processes_.size() == 1, "Cannot profile more than 1 process");
-        Process* process = processes_[0].get();
+        verify(deadProcesses_.size() == 1, "Cannot profile more than 1 process");
+        Process* process = deadProcesses_[0].get();
         process->retrieveProfilingData(profilingData);
         std::unordered_set<u64> calls;
         for(size_t i = 0; i < profilingData->nbThreads(); ++i) {
