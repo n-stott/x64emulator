@@ -1,7 +1,7 @@
 #include "host/hostinstructions.h"
+#include <cstdlib>
 
 #ifdef MSVC_COMPILER
-#include <cstdlib>
 #include <intrin.h>
 #endif
 
@@ -12,6 +12,7 @@ namespace host {
 #if defined(HOST_LINUX) && defined(ARCH_X64)
         asm volatile("cvtss2si %1, %0" : "+r"(res) : "m"(src));
 #else
+        (void)src;
         std::abort();
 #endif
         return res;
@@ -22,6 +23,7 @@ namespace host {
 #if defined(HOST_LINUX) && defined(ARCH_X64)
         asm volatile("cvtss2si %1, %0" : "+r"(res) : "m"(src));
 #else
+        (void)src;
         std::abort();
 #endif
         return res;
@@ -32,6 +34,7 @@ namespace host {
 #if defined(HOST_LINUX) && defined(ARCH_X64)
         asm volatile("cvtsd2si %1, %0" : "+r"(res) : "m"(src));
 #else
+        (void)src;
         std::abort();
 #endif
         return res;
@@ -42,6 +45,7 @@ namespace host {
 #if defined(HOST_LINUX) && defined(ARCH_X64)
         asm volatile("cvtsd2si %1, %0" : "+r"(res) : "m"(src));
 #else
+        (void)src;
         std::abort();
 #endif
         return res;
@@ -69,6 +73,7 @@ namespace host {
 
         memcpy(&val, &x, sizeof(val));
 #else
+        (void)val;
         std::abort();
 #endif
         return val;
@@ -87,6 +92,7 @@ namespace host {
                         : "m"(x));
         memcpy(&val, &x, sizeof(val));
 #else
+        (void)val;
         std::abort();
 #endif
         return val;
@@ -109,6 +115,8 @@ namespace host {
                         : "+m"(x), "+m"(y));
         memcpy(&x, &xd, sizeof(x));
 #else
+        (void)x;
+        (void)y;
         std::abort();
 #endif
         return x;
@@ -133,6 +141,8 @@ namespace host {
                         : "m"(v), "m"(s));
         memcpy(&val, &v, sizeof(val));
 #else
+        (void)val;
+        (void)scale;
         std::abort();
 #endif
         return val;
@@ -151,6 +161,7 @@ namespace host {
                         : "m"(v));
         memcpy(&val, &v, sizeof(val));
 #else
+        (void)val;
         std::abort();
 #endif
         return val;
@@ -169,6 +180,7 @@ namespace host {
                         : "m"(v));
         memcpy(&val, &v, sizeof(val));
 #else
+        (void)val;
         std::abort();
 #endif
         return val;
@@ -201,6 +213,9 @@ namespace host {
                                     : "r"(upperDividend), "r"(lowerDividend), "r"(divisor)
                                     : "eax", "edx");
 #else
+        (void)upperDividend;
+        (void)lowerDividend;
+        (void)divisor;
         std::abort();
 #endif
         return IdivResult<u32>{quotient, remainder};
@@ -218,6 +233,9 @@ namespace host {
                                     : "r"(upperDividend), "r"(lowerDividend), "r"(divisor)
                                     : "rax", "rdx");
 #else
+        (void)upperDividend;
+        (void)lowerDividend;
+        (void)divisor;
         std::abort();
 #endif
         return IdivResult<u64>{quotient, remainder};
@@ -237,6 +255,8 @@ namespace host {
                               : "m"(a), "m"(b)
                               : "cc", "rax", "rdx");
 #else
+        (void)a;
+        (void)b;
         std::abort();
 #endif
         static constexpr u64 CARRY_MASK = 0x1;
@@ -248,8 +268,9 @@ namespace host {
     }
 
     CPUID cpuid(u32 a, u32 c) {
-        CPUID s;
-#if defined(HOST_LINUX) && defined(ARCH_X64)
+        CPUID s{};
+#ifdef ARCH_X64
+#ifdef HOST_LINUX
         s.a = a;
         s.c = c;
         s.b = s.d = 0;
@@ -267,6 +288,9 @@ namespace host {
         s.b = (u32)cpuInfo[1];
         s.c = (u32)cpuInfo[2];
         s.d = (u32)cpuInfo[3];
+#endif
+#else
+        std::abort();
 #endif
         if(a == 1) {
             // Pretend that we run on cpu 0
@@ -320,6 +344,7 @@ namespace host {
         asm volatile("mov %0, %%ecx" :: "r"(c));
         asm volatile("xgetbv" : "=a" (s.a), "=d" (s.d));
 #else
+        (void)c;
         std::abort();
 #endif
         return s;
