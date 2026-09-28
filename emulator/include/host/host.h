@@ -109,7 +109,31 @@ namespace kernel::gnulinux {
             FileHandle(const FileHandle&) = delete;
         };
 
-        static std::optional<FileHandle> tryOpen(const char* pathname, FileType type, CloseOnExec cloexec = CloseOnExec::YES);
+        enum class Purgeable {
+            NO,
+            YES,
+        };
+
+        class FileHandleCache {
+        public:
+            std::shared_ptr<FileHandle> addEntry(const std::string& path, FileType type, Purgeable purgeable, FileHandle handle);
+            std::shared_ptr<FileHandle> tryGetEntry(const std::string& path, FileType type);
+            void purgeEntry(const std::string& path);
+
+        private:
+            struct Entry {
+                std::shared_ptr<FileHandle> handle;
+                FileType type { FileType::REGULAR_FILE };
+                Purgeable purgeable { Purgeable::YES };
+                size_t lookups { 0 };
+            };
+
+            std::unordered_map<std::string, Entry> entries_;
+            size_t nonnullEntries_ { 0 };
+        };
+
+        static std::shared_ptr<FileHandle> tryOpen(const std::string& pathname, FileType type, Purgeable purgeable, CloseOnExec cloexec = CloseOnExec::YES);
+        static void purgeHandle(const char* pathname);
 
         struct Fcntl {
             static std::optional<FcntlCommand> toCommand(int cmd);

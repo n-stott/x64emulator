@@ -927,10 +927,94 @@ namespace kernel::gnulinux {
         return *this;
     }
 
-    std::optional<Host::FileHandle> Host::tryOpen(const char* pathname, FileType type, CloseOnExec cloexec) {
+    Host::FileHandleCache& fileHandleCache() {
+        static Host::FileHandleCache cache;
+        return cache;
+    }
+
+    static constexpr size_t MAX_FILEHANDLE_CACHE_SIZE = 10;
+    static constexpr bool DEBUG_FILEHANDLE_CACHE = false;
+
+    std::shared_ptr<Host::FileHandle> Host::FileHandleCache::addEntry(const std::string& path, FileType type, Purgeable purgeable, FileHandle handle) {
+        if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache] add entry for {} (purgeable={})", path, purgeable == Purgeable::YES);
+        auto it = entries_.find(path);
+        if(it != entries_.end()) {
+            if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   updating existing entry");
+            verify(!it->second.handle, "entry already present");
+            verify(it->second.type == type, "type differs from existing entry");
+            it->second.handle = std::make_shared<FileHandle>(std::move(handle));
+            ++nonnullEntries_;
+            return it->second.handle;
+        }
+        if(nonnullEntries_ >= MAX_FILEHANDLE_CACHE_SIZE) {
+            std::vector<std::pair<const std::string*, const Entry*>> elems;
+            for(const auto& p : entries_) elems.push_back(std::make_pair(&p.first, &p.second));
+            elems.erase(std::remove_if(elems.begin(), elems.end(), [](const auto& p) {
+                return p.second->purgeable == Purgeable::NO;
+            }), elems.end());
+
+            // replace a purgeable entry with few lookups
+            assert(entries_.size() >= nonnullEntries_);
+            auto remit = std::min_element(elems.begin(), elems.end(), [&](const auto& a, const auto& b) {
+                return a.second->lookups < b.second->lookups;
+            });
+            if(remit != elems.end()) {
+                if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   removing entry for {}", *remit->first);
+                verify(remit->second->purgeable == Purgeable::YES, "cannot remove purgeable entry");
+                nonnullEntries_ -= remit->second->handle != nullptr;
+                entries_.erase(*remit->first);
+            }
+        }
+        if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   adding new entry");
+        auto& entry = entries_[path];
+        entry.handle = std::make_shared<FileHandle>(std::move(handle));
+        entry.lookups = 0;
+        entry.type = type;
+        entry.purgeable = purgeable;
+        ++nonnullEntries_;
+        return entry.handle;
+    }
+
+    std::shared_ptr<Host::FileHandle> Host::FileHandleCache::tryGetEntry(const std::string& path, FileType type) {
+        if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache] try get entry for {}", path);
+        auto it = entries_.find(path);
+        if(it == entries_.end()) {
+            if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   not found", path);
+            return {};
+        }
+        auto& entry = it->second;
+        if(entry.type != type) {
+            if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   type does not match");
+            return {};
+        }
+        ++entry.lookups;
+        if(entry.lookups < 10 && entry.purgeable == Purgeable::YES) {
+            if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   take entry", path);
+            auto handle = entry.handle;
+            nonnullEntries_ -= handle != nullptr;
+            entry.handle = {};
+            return handle;
+        } else {
+            if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache]   keep entry", path);
+            return entry.handle;
+        }
+    }
+
+    void Host::FileHandleCache::purgeEntry(const std::string& path) {
+        if constexpr(DEBUG_FILEHANDLE_CACHE) fmt::println("[filecache] purge entry for {}", path);
+        auto it = entries_.find(path);
+        if(it == entries_.end()) return;
+        nonnullEntries_ -= it->second.handle != nullptr;
+        it->second.handle = {};
+    }
+
+    std::shared_ptr<Host::FileHandle> Host::tryOpen(const std::string& pathname, FileType type, Purgeable purgeable, CloseOnExec cloexec) {
+        auto cachedHandle = fileHandleCache().tryGetEntry(pathname, type);
+        if(cachedHandle) return cachedHandle;
+
         int flags = O_RDONLY;
         if(cloexec == CloseOnExec::YES) flags |= O_CLOEXEC;
-        int fd = ::openat(AT_FDCWD, pathname, flags);
+        int fd = ::openat(AT_FDCWD, pathname.c_str(), flags);
         verify(!(fd == -1 && errno == EMFILE), "too many files opened");
         if(fd < 0) return {};
 
@@ -962,7 +1046,12 @@ namespace kernel::gnulinux {
         }
         guard.disable();
 
-        return FileHandle(FD{fd});
+        auto handle = fileHandleCache().addEntry(pathname, type, purgeable, FileHandle(FD{fd}));
+        return handle;
+    }
+
+    void Host::purgeHandle(const char* pathname) {
+        fileHandleCache().purgeEntry(pathname);
     }
 
     ssize_t Host::FileHandle::read(u8* buffer, size_t count) const {

@@ -11,44 +11,46 @@
 
 namespace kernel::gnulinux {
 
+    std::shared_ptr<Host::FileHandle> HostDirectory::tryGetHandle() const {
+        auto absolutePath = path().absolute();
+        auto handle = Host::tryOpen(absolutePath, Host::FileType::DIRECTORY, Host::Purgeable::NO, Host::CloseOnExec::YES);
+        return handle;
+    }
+
     std::unique_ptr<HostDirectory> HostDirectory::tryCreateRoot() {
         return std::unique_ptr<HostDirectory>(new HostDirectory(""));
     }
 
     std::unique_ptr<HostDirectory> HostDirectory::tryCreate(const Path& path) {
         std::string pathname = path.absolute();
-        auto handle = Host::tryOpen(pathname.c_str(),
+        auto handle = Host::tryOpen(pathname,
                 Host::FileType::DIRECTORY,
+                Host::Purgeable::NO,
                 Host::CloseOnExec::YES);
         if(!handle) return {};
         return std::unique_ptr<HostDirectory>(new HostDirectory(path.last()));
     }
 
     void HostDirectory::open() {
-        if(!handle_) {
-            std::string pathname = path().absolute();
-            handle_ = Host::tryOpen(pathname.c_str(),
-                    Host::FileType::DIRECTORY,
-                    Host::CloseOnExec::YES);
-            verify(handle_.has_value(), "Unable to open directory \"" + pathname + "\"");
-        }
+
     }
 
     void HostDirectory::close() {
-        verify(!!handle_, "Trying to close un-opened directory");
-        handle_.reset();
+        auto absolutePath = path().absolute();
+        Host::purgeHandle(absolutePath.c_str());
     }
 
     off_t HostDirectory::lseek(OpenFileDescription& ofd, off_t offset, int whence) {
-        verify(!!handle_, "Trying to close un-opened directory");
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
         off_t ret = [&]() {
             if(whence == SEEK_CUR) {
-                return handle_->lseek(ofd.offset() + offset, Host::FileHandle::SEEK::SET);
+                return handle->lseek(ofd.offset() + offset, Host::FileHandle::SEEK::SET);
             } else if(whence == SEEK_SET) {
-                return handle_->lseek(offset, Host::FileHandle::SEEK::SET);
+                return handle->lseek(offset, Host::FileHandle::SEEK::SET);
             } else {
                 verify(whence == SEEK_END);
-                return handle_->lseek(offset, Host::FileHandle::SEEK::END);
+                return handle->lseek(offset, Host::FileHandle::SEEK::END);
             }
         }();
         if(ret < 0) return -errno;
@@ -66,20 +68,22 @@ namespace kernel::gnulinux {
     }
 
     ErrnoOrBuffer HostDirectory::statx(unsigned int mask) {
-        if(!handle_) open();
-        verify(!!handle_, "Directory must be opened first");
-        return handle_->statx(mask); // NOLINT(bugprone-unchecked-optional-access)
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
+        return handle->statx(mask); // NOLINT(bugprone-unchecked-optional-access)
     }
 
     ErrnoOrBuffer HostDirectory::getdents64(size_t count) {
-        verify(!!handle_, "Directory must be opened first");
-        return handle_->getdents64(count); // NOLINT(bugprone-unchecked-optional-access)
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
+        return handle->getdents64(count); // NOLINT(bugprone-unchecked-optional-access)
     }
 
     std::optional<int> HostDirectory::fcntl(FcntlCommand cmd, int arg) {
-        verify(!!handle_, "Directory must be opened first");
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
         int hostcmd = Host::Fcntl::fromCommand(cmd);
-        return Host::fcntl(handle_->fd(), hostcmd, arg); // NOLINT(bugprone-unchecked-optional-access)
+        return Host::fcntl(handle->fd(), hostcmd, arg); // NOLINT(bugprone-unchecked-optional-access)
     }
 
 }

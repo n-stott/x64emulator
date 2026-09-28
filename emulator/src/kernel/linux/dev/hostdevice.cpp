@@ -10,20 +10,27 @@
 
 namespace kernel::gnulinux {
 
+    std::shared_ptr<Host::FileHandle> HostDevice::tryGetHandle() const {
+        auto absolutePath = path().absolute();
+        auto handle = Host::tryOpen(absolutePath, Host::FileType::DEVICE, Host::Purgeable::YES, Host::CloseOnExec::YES);
+        return handle;
+    }
+
     std::unique_ptr<HostDevice> HostDevice::tryCreate(const Path& path) {
         std::string pathname = path.absolute();
-        auto handle = Host::tryOpen(pathname.c_str(), Host::FileType::DEVICE, Host::CloseOnExec::YES);
+        auto handle = Host::tryOpen(pathname, Host::FileType::DEVICE, Host::Purgeable::YES, Host::CloseOnExec::YES);
         if(!handle) return {};
-        return std::unique_ptr<HostDevice>(new HostDevice(path.last(), std::move(handle)));
+        return std::unique_ptr<HostDevice>(new HostDevice(path.last()));
     }
 
     void HostDevice::close() {
         if(refCount_ > 0) return;
-        handle_.reset();
     }
 
     bool HostDevice::canRead() const {
-        return Host::pollCanRead(handle_->fd());
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
+        return Host::pollCanRead(handle->fd());
     }
 
     bool HostDevice::canWrite() const {
@@ -34,7 +41,9 @@ namespace kernel::gnulinux {
     ReadResult HostDevice::read(OpenFileDescription&, size_t count) {
         if(!isReadable()) return ErrnoOrBuffer{-EINVAL};
         Buffer buffer(count, 0x0);
-        ssize_t nbytes = handle_->read(buffer.data(), count);
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
+        ssize_t nbytes = handle->read(buffer.data(), count);
         if(nbytes < 0) return ErrnoOrBuffer(-errno);
         buffer.shrink((size_t)nbytes);
         return ErrnoOrBuffer(std::move(buffer));
@@ -60,7 +69,9 @@ namespace kernel::gnulinux {
     }
 
     void HostDevice::advanceInternalOffset(off_t offset) {
-        off_t ret = handle_->lseek(offset, Host::FileHandle::SEEK::CUR);
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
+        off_t ret = handle->lseek(offset, Host::FileHandle::SEEK::CUR);
         verify(ret >= 0, "advanceInternalOffset failed in HostDevice");
     }
 
@@ -71,7 +82,9 @@ namespace kernel::gnulinux {
 
     std::optional<int> HostDevice::fcntl(FcntlCommand cmd, int arg) {
         int hostcmd = Host::Fcntl::fromCommand(cmd);
-        return Host::fcntl(handle_->fd(), hostcmd, arg);
+        auto handle = tryGetHandle();
+        verify(!!handle, "Unable to obtain handle");
+        return Host::fcntl(handle->fd(), hostcmd, arg);
     }
 
     ErrnoOrBuffer HostDevice::ioctl(OpenFileDescription&, Ioctl, const Buffer&) {

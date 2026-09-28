@@ -34,7 +34,8 @@ namespace kernel::gnulinux {
         std::string className() const override { return "HostDirectory"; }
     private:
         HostDirectory(std::string name) : Directory(std::move(name)) { }
-        std::optional<Host::FileHandle> handle_;
+
+        std::shared_ptr<Host::FileHandle> tryGetHandle() const;
     };
 
 }

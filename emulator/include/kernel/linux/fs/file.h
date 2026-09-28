@@ -26,7 +26,7 @@ namespace kernel::gnulinux {
         virtual bool isShadow() const { return false; }
 
         Path path() const;
-        virtual std::string name() const { return name_; }
+        virtual const std::string& name() const { return name_; }
 
         virtual void open() { }
 

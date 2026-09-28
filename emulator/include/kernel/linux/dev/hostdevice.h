@@ -40,14 +40,14 @@ namespace kernel::gnulinux {
         ErrnoOrBuffer ioctl(OpenFileDescription&, Ioctl request, const Buffer& buffer) override;
 
         std::string className() const override {
-            return fmt::format("HostDevice(realfd={})", handle_->fd().fd);
+            return "HostDevice";
         }
 
     private:
-        HostDevice(std::string name, std::optional<Host::FileHandle> handle) :
-                Device(std::move(name)),
-                handle_(std::move(handle)) { }
-        std::optional<Host::FileHandle> handle_;
+        explicit HostDevice(std::string name) :
+                Device(std::move(name)) { }
+
+        std::shared_ptr<Host::FileHandle> tryGetHandle() const;
     };
 
 }
