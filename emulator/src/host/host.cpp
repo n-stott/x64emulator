@@ -6,7 +6,9 @@
 #include <sstream>
 #include <dirent.h>
 #include <poll.h>
+#ifdef ARCH_X64
 #include <asm/prctl.h>
+#endif
 #include <asm/termbits.h>
 #include <sched.h>
 #include <sys/auxv.h>
@@ -64,9 +66,14 @@ namespace kernel::gnulinux {
     }
 
     bool Host::ArchPrctl::isSetFS(int code) {
+#ifdef ARCH_X64
         return code == ARCH_SET_FS;
+#else
+        (void)code;
+        std::abort();
+        return false;
+#endif
     }
-
 
     bool Host::Open::isReadOnly(int flag) {
         return (flag & O_ACCMODE) == O_RDONLY;
