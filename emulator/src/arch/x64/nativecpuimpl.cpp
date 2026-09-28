@@ -920,13 +920,13 @@ namespace x64 {
     static u64 readRflags() {
         u64 rflags;
         asm volatile("pushf;"
-                     "pop %0" : "=r"(rflags) :: "cc");
+                     "pop %0" : "=r"(rflags) :: "cc", "memory");
         return rflags;
     }
 
     static void writeRflags(u64 rflags) {
         asm volatile("push %0;"
-                     "popf;" :: "m"(rflags) : "cc");
+                     "popf;" :: "r"(rflags) : "cc", "memory");
     }
 
     static u64 toRflags(const Flags& flags) {
@@ -1091,7 +1091,7 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%al" :: "m"(src1));
             asm volatile("mul %0" :: "r"(src2) : "ax");
-            asm volatile("mov %%ax, %0" : "=m"(res));
+            asm volatile("mov %%ax, %0" : "=m"(res) :: "ax");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
 
@@ -1107,8 +1107,8 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%ax" :: "m"(src1));
             asm volatile("mul %0" :: "r"(src2) : "ax", "dx");
-            asm volatile("mov %%ax, %0" : "=m"(lower));
-            asm volatile("mov %%dx, %0" : "=m"(upper));
+            asm volatile("mov %%ax, %0" : "=m"(lower) :: "ax");
+            asm volatile("mov %%dx, %0" : "=m"(upper) :: "dx");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return std::make_pair(upper, lower);
@@ -1121,8 +1121,8 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%eax" :: "m"(src1));
             asm volatile("mul %0" :: "r"(src2) : "eax", "edx");
-            asm volatile("mov %%eax, %0" : "=m"(lower));
-            asm volatile("mov %%edx, %0" : "=m"(upper));
+            asm volatile("mov %%eax, %0" : "=m"(lower) :: "eax");
+            asm volatile("mov %%edx, %0" : "=m"(upper) :: "edx");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return std::make_pair(upper, lower);
@@ -1135,8 +1135,8 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%rax" :: "m"(src1));
             asm volatile("mulq %0" :: "m"(src2) : "rax", "rdx");
-            asm volatile("mov %%rax, %0" : "=m"(lower));
-            asm volatile("mov %%rdx, %0" : "=m"(upper));
+            asm volatile("mov %%rax, %0" : "=m"(lower) :: "rax");
+            asm volatile("mov %%rdx, %0" : "=m"(upper) :: "rdx");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return std::make_pair(upper, lower);
@@ -1149,8 +1149,8 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%ax" :: "m"(src1));
             asm volatile("imul %0" :: "r"(src2) : "ax", "dx");
-            asm volatile("mov %%ax, %0" : "=m"(lower));
-            asm volatile("mov %%dx, %0" : "=m"(upper));
+            asm volatile("mov %%ax, %0" : "=m"(lower) :: "ax");
+            asm volatile("mov %%dx, %0" : "=m"(upper) :: "dx");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return std::make_pair(upper, lower);
@@ -1163,8 +1163,8 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%eax" :: "m"(src1));
             asm volatile("imul %0" :: "r"(src2) : "eax", "edx");
-            asm volatile("mov %%eax, %0" : "=m"(lower));
-            asm volatile("mov %%edx, %0" : "=m"(upper));
+            asm volatile("mov %%eax, %0" : "=m"(lower) :: "eax");
+            asm volatile("mov %%edx, %0" : "=m"(upper) :: "edx");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return std::make_pair(upper, lower);
@@ -1177,8 +1177,8 @@ namespace x64 {
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%rax" :: "m"(src1));
             asm volatile("imulq %0" :: "m"(src2) : "rax", "rdx");
-            asm volatile("mov %%rax, %0" : "=m"(lower));
-            asm volatile("mov %%rdx, %0" : "=m"(upper));
+            asm volatile("mov %%rax, %0" : "=m"(lower) :: "rax");
+            asm volatile("mov %%rdx, %0" : "=m"(upper) :: "rdx");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return std::make_pair(upper, lower);
@@ -1322,7 +1322,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"((u8)src));
-            asm volatile("shl %%cl, %0" : "+r" (nativeRes));
+            asm volatile("shl %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
@@ -1339,7 +1339,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"((u8)src));
-            asm volatile("shr %%cl, %0" : "+r" (nativeRes));
+            asm volatile("shr %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
@@ -1372,7 +1372,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"((u8)src));
-            asm volatile("sar %%cl, %0" : "+r" (nativeRes));
+            asm volatile("sar %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
@@ -1389,7 +1389,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"(count));
-            asm volatile("rcl %%cl, %0" : "+r" (nativeRes));
+            asm volatile("rcl %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
@@ -1407,7 +1407,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"(count));
-            asm volatile("rcr %%cl, %0" : "+r" (nativeRes));
+            asm volatile("rcr %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
@@ -1424,7 +1424,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"(count));
-            asm volatile("rol %%cl, %0" : "+r" (nativeRes));
+            asm volatile("rol %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
@@ -1442,7 +1442,7 @@ namespace x64 {
         BEGIN_RFLAGS_SCOPE
             SET_RFLAGS(*flags);
             asm volatile("mov %0, %%cl" :: "r"(count));
-            asm volatile("ror %%cl, %0" : "+r" (nativeRes));
+            asm volatile("ror %%cl, %0" : "+r" (nativeRes) :: "cl");
             GET_RFLAGS(flags);
         END_RFLAGS_SCOPE
         return nativeRes;
