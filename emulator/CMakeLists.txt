@@ -211,6 +211,7 @@ if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
     target_link_directories(linuxkernel PRIVATE ${capstone_BINARY_DIR})
     target_link_libraries(linuxkernel PUBLIC
         profiling
+        Boost::core
         fmt::fmt-header-only
     )
     target_compile_definitions(linuxkernel PRIVATE ${COMPILE_DEFINITIONS})
