@@ -1,4 +1,4 @@
-#ifdef GCC_COMPILER
+#if defined(HOST_LINUX) && defined(ARCH_X64)
 
 #include "arch/x64/nativecpuimpl.h"
 #include <cassert>

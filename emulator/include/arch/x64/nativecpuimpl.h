@@ -3,7 +3,7 @@
 
 #include "utils.h"
 
-#ifdef GCC_COMPILER
+#if defined(HOST_LINUX) && defined(ARCH_X64)
 
 #include "arch/x64/flags.h"
 #include "arch/x64/simd.h"
