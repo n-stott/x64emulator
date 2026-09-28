@@ -22,17 +22,18 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL GNU OR ${CMAKE_CXX_COMPILER_ID} STREQUAL Cl
     target_include_directories(profileviewer PUBLIC
         include
         ${CMAKE_SOURCE_DIR}/profiling/include
+        ${SDL2_SOURCE_DIR}
         external/imgui
         external/imgui/backends
         external/imgui-flame-graph
-        /usr/include/SDL2
     )
     target_link_libraries(profileviewer PUBLIC
         profiling
         fmt::fmt-header-only
         nlohmann_json::nlohmann_json
         pthread
-        SDL2
+        SDL2::SDL2main
+        SDL2::SDL2-static
         dl
         GL
     )

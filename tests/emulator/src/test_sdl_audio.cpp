@@ -1,6 +1,6 @@
 // Source : https://bitbucket.org/dandago/gigilabs/src/3a16971c18c1b4db0dd3f75de7fe880e80d8dbf7/Sdl2PlayWav/?at=master
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <cstdio>
 
 int main(int argc, char ** argv)
