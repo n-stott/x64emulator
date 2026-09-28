@@ -329,7 +329,7 @@ target_link_libraries(test_compiler_movdqu PUBLIC x64cpu x64jit)
 target_link_options(test_compiler_movdqu PUBLIC ${LD_OPTIONS})
 add_test(NAME compiler_movdqu COMMAND test_compiler_movdqu)
 
-if(NOT ${CMAKE_CXX_COMPILER_ID} STREQUAL MSVC)
+if(${EMULATOR_ARCH} STREQUAL X64 AND ${EMULATOR_HOST} STREQUAL LINUX)
     add_executable(test_compiler_mmx_unordered_map src/test_mmx_unordered_map.cpp)
     target_compile_options(test_compiler_mmx_unordered_map PUBLIC ${CC_OPTIONS})
     target_link_options(test_compiler_mmx_unordered_map PUBLIC ${LD_OPTIONS})
