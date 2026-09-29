@@ -92,6 +92,8 @@ namespace arm64 {
             case Insn::LDP_Q128_Q128_M256: return toString<Q128, Q128, M256>("ldp");
             case Insn::STRB_R32_M8: return toString<R32, M8>("strb");
             case Insn::STRH_R32_M16: return toString<R32, M16>("strh");
+            case Insn::STURB_R32_M8: return toString<R32, M8>("sturb");
+            case Insn::STURH_R32_M16: return toString<R32, M16>("sturh");
             case Insn::STR_R32_M32: return toString<R32, M32>("str");
             case Insn::STR_R32_M32_IMM: return toString<R32, M32, Imm>("str");
             case Insn::STR_R64_M64: return toString<R64, M64>("str");

@@ -966,6 +966,36 @@ namespace arm64 {
         return make_failed(insn);
     }
 
+    static Instruction makeSturb(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r32dst = asRegister32(dst);
+            auto mem8src = asMemory8(src);
+            if(r32dst && mem8src) return Instruction::make<Insn::STURB_R32_M8>(insn.address, insn.size, r32dst.value(), mem8src.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeSturh(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r32dst = asRegister32(dst);
+            auto mem16src = asMemory16(src);
+            if(r32dst && mem16src) return Instruction::make<Insn::STURH_R32_M16>(insn.address, insn.size, r32dst.value(), mem16src.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
     static Instruction makeStp(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.update_flags) return make_failed(insn);
@@ -2212,6 +2242,8 @@ namespace arm64 {
             case ARM64_INS_STLXR: return makeStlxr(insn);
             case ARM64_INS_STRB: return makeStrb(insn);
             case ARM64_INS_STRH: return makeStrh(insn);
+            case ARM64_INS_STURB: return makeSturb(insn);
+            case ARM64_INS_STURH: return makeSturh(insn);
             case ARM64_INS_ADD: return makeAdd(insn);
             case ARM64_INS_ADDS: return makeAdds(insn);
             case ARM64_INS_SUB: return makeSub(insn);

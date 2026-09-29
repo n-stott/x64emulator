@@ -112,6 +112,8 @@ namespace arm64 {
         void execLdpQ128Q128M256(const Instruction& ins);
         void execStrbR32M8(const Instruction& ins);
         void execStrhR32M16(const Instruction& ins);
+        void execSturbR32M8(const Instruction& ins);
+        void execSturhR32M16(const Instruction& ins);
         void execStrR32M32(const Instruction& ins);
         void execStrR32M32Imm(const Instruction& ins);
         void execStrR64M64(const Instruction& ins);

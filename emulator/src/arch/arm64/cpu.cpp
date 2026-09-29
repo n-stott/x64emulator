@@ -71,6 +71,8 @@ namespace arm64 {
     DEFINE_STANDALONE(LDP_Q128_Q128_M256, execLdpQ128Q128M256)
     DEFINE_STANDALONE(STRB_R32_M8, execStrbR32M8)
     DEFINE_STANDALONE(STRH_R32_M16, execStrhR32M16)
+    DEFINE_STANDALONE(STURB_R32_M8, execSturbR32M8)
+    DEFINE_STANDALONE(STURH_R32_M16, execSturhR32M16)
     DEFINE_STANDALONE(STR_R32_M32, execStrR32M32)
     DEFINE_STANDALONE(STR_R32_M32_IMM, execStrR32M32Imm)
     DEFINE_STANDALONE(STR_R64_M64, execStrR64M64)
@@ -277,6 +279,8 @@ namespace arm64 {
         STANDALONE_NAME(LDP_Q128_Q128_M256),
         STANDALONE_NAME(STRB_R32_M8),
         STANDALONE_NAME(STRH_R32_M16),
+        STANDALONE_NAME(STURB_R32_M8),
+        STANDALONE_NAME(STURH_R32_M16),
         STANDALONE_NAME(STR_R32_M32),
         STANDALONE_NAME(STR_R32_M32_IMM),
         STANDALONE_NAME(STR_R64_M64),
@@ -827,6 +831,22 @@ namespace arm64 {
     }
 
     void Cpu::execStrhR32M16(const Instruction& ins) {
+        const auto& src = ins.op0<R32>();
+        const auto& dst = ins.op1<M16>();
+        u32 srcval = get(src);
+        mmu_.write16(resolve(dst), (u16)srcval);
+    }
+
+    void Cpu::execSturbR32M8(const Instruction& ins) {
+        warn("unscale in execSturbR32M8 not handled");
+        const auto& src = ins.op0<R32>();
+        const auto& dst = ins.op1<M8>();
+        u32 srcval = get(src);
+        mmu_.write8(resolve(dst), (u8)srcval);
+    }
+
+    void Cpu::execSturhR32M16(const Instruction& ins) {
+        warn("unscale in execSturhR32M16 not handled");
         const auto& src = ins.op0<R32>();
         const auto& dst = ins.op1<M16>();
         u32 srcval = get(src);

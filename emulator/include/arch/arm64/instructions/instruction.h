@@ -49,6 +49,8 @@ namespace arm64 {
         LDP_Q128_Q128_M256,
         STRB_R32_M8,
         STRH_R32_M16,
+        STURB_R32_M8,
+        STURH_R32_M16,
         STR_R32_M32,
         STR_R32_M32_IMM,
         STR_R64_M64,
