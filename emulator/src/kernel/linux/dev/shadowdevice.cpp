@@ -20,15 +20,12 @@ namespace kernel::gnulinux {
 
     std::unique_ptr<Device> ShadowDevice::tryCreate(const Path& path, bool closeOnExec) {
         std::string pathname = path.absolute();
-
         if(pathname == "/dev/null") {
             return NullDevice::tryCreate(path);
         }
         if(pathname == "/dev/tty") {
             return Tty::tryCreate(path, closeOnExec);
         }
-
-        warn(fmt::format("Device {} is not a supported shadow device", pathname));
         return nullptr;
     }
 
