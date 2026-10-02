@@ -2238,7 +2238,7 @@ namespace kernel::gnulinux {
             print("Sys::readlinkat(dirfd={}, path={}, buf={:#x}, size={}) = {:#x}",
                         dirfd, path, buf.address(), bufsiz, errnoOrBuffer.errorOrWith<ssize_t>([](const auto& buffer) { return (ssize_t)buffer.size(); }));
             errnoOrBuffer.with([](const Buffer& buf) {
-                std::string bufstr((const char*)buf.data());
+                std::string bufstr((const char*)buf.data(), (const char*)buf.data()+buf.size());
                 fmt::println("  buf={}", bufstr);
             });
         }
