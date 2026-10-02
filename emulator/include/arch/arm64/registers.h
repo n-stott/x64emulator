@@ -12,7 +12,7 @@ namespace arm64 {
     private:
         std::array<u64, 34> gpr_;
         std::array<u128, 32> simd_;
-        std::array<u64, 2> sys_;
+        std::array<u64, 3> sys_;
 
     public:
         Registers();

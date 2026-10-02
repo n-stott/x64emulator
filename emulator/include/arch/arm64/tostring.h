@@ -204,6 +204,10 @@ namespace arm64::utils {
         return "";
     }
 
+    inline std::string toString(const V2D& reg) {
+        return fmt::format("{}.2d", toString(reg.reg));
+    }
+
     inline std::string toString(const V4S& reg) {
         return fmt::format("{}.4s", toString(reg.reg));
     }
@@ -224,6 +228,7 @@ namespace arm64::utils {
         switch(reg) {
             case Sysreg::DCZID_EL0: return "DCZID_EL0";
             case Sysreg::TPIDR_EL0: return "TPIDR_EL0";
+            case Sysreg::MIDR_EL1: return "MIDR_EL1";
         }
         return "";
     }
@@ -279,6 +284,18 @@ namespace arm64::utils {
     template<typename T>
     inline std::string toString(const SignExtended<T>& se) {
         return fmt::format("{:#x}", se.extendedValue);
+    }
+
+    inline std::string toString(const SignExtendedR16& se) {
+        return fmt::format("{} SXTH", toString(se.reg));
+    }
+
+    inline std::string toString(const ZeroExtendedR16& se) {
+        return fmt::format("{} UXTH", toString(se.reg));
+    }
+
+    inline std::string toString(const SignExtendedR32& se) {
+        return fmt::format("{} SXTW", toString(se.reg));
     }
 
     inline std::string toString(const ZeroExtendedR32& se) {

@@ -225,6 +225,30 @@ namespace arm64 {
         return asRegister32(op.reg);
     }
 
+    std::optional<SignExtendedR16> asSignExtendedR16(const cs_arm64_op& op) {
+        if(op.type != arm64_op_type::ARM64_OP_REG) return {};
+        if(op.ext != arm64_extender::ARM64_EXT_SXTH) return {};
+        auto reg = asRegister32(op.reg);
+        if(!reg) return {};
+        return SignExtendedR16{reg.value()};
+    }
+
+    std::optional<ZeroExtendedR16> asZeroExtendedR16(const cs_arm64_op& op) {
+        if(op.type != arm64_op_type::ARM64_OP_REG) return {};
+        if(op.ext != arm64_extender::ARM64_EXT_UXTH) return {};
+        auto reg = asRegister32(op.reg);
+        if(!reg) return {};
+        return ZeroExtendedR16{reg.value()};
+    }
+
+    std::optional<SignExtendedR32> asSignExtendedR32(const cs_arm64_op& op) {
+        if(op.type != arm64_op_type::ARM64_OP_REG) return {};
+        if(op.ext != arm64_extender::ARM64_EXT_SXTW) return {};
+        auto reg = asRegister32(op.reg);
+        if(!reg) return {};
+        return SignExtendedR32{reg.value()};
+    }
+
     std::optional<ZeroExtendedR32> asZeroExtendedR32(const cs_arm64_op& op) {
         if(op.type != arm64_op_type::ARM64_OP_REG) return {};
         if(op.ext != arm64_extender::ARM64_EXT_UXTW) return {};
@@ -312,6 +336,16 @@ namespace arm64 {
         return asSimd128(op.reg);
     }
 
+    std::optional<V2D> asV2D(const cs_arm64_op& op) {
+        if(op.type != arm64_op_type::ARM64_OP_REG) return {};
+        if(op.ext != arm64_extender::ARM64_EXT_INVALID) return {};
+        if(op.shift.type != arm64_shifter::ARM64_SFT_INVALID) return {};
+        if(op.vas != arm64_vas::ARM64_VAS_2D) return {};
+        auto reg = asV128(op.reg);
+        if(!reg) return {};
+        return V2D{(V128)reg.value()};
+    }
+
     std::optional<V4S> asV4S(const cs_arm64_op& op) {
         if(op.type != arm64_op_type::ARM64_OP_REG) return {};
         if(op.ext != arm64_extender::ARM64_EXT_INVALID) return {};
@@ -356,6 +390,7 @@ namespace arm64 {
         switch(sysreg) {
             case ARM64_SYSREG_DCZID_EL0: return Sysreg::DCZID_EL0;
             case ARM64_SYSREG_TPIDR_EL0: return Sysreg::TPIDR_EL0;
+            case ARM64_SYSREG_MIDR_EL1: return Sysreg::MIDR_EL1;
             default: return {};
         }
     }
@@ -500,11 +535,14 @@ namespace arm64 {
             auto r64src = asRegister64(src);
             auto immsrc = asImmediate(src);
             auto lslimmsrc = asShiftedImm(src);
+            auto v16bdst = asV16B(dst);
+            auto v16bsrc = asV16B(src);
             if(r32dst && immsrc) return Instruction::make<Insn::MOV_R32_IMM>(insn.address, insn.size, r32dst.value(), immsrc.value());
             if(r32dst && r32src) return Instruction::make<Insn::MOV_R32_R32>(insn.address, insn.size, r32dst.value(), r32src.value());
             if(r64dst && immsrc) return Instruction::make<Insn::MOV_R64_IMM>(insn.address, insn.size, r64dst.value(), immsrc.value());
             if(r64dst && r64src) return Instruction::make<Insn::MOV_R64_R64>(insn.address, insn.size, r64dst.value(), r64src.value());
             if(r64dst && lslimmsrc) return Instruction::make<Insn::MOV_R64_SIMM>(insn.address, insn.size, r64dst.value(), lslimmsrc.value());
+            if(v16bdst && v16bsrc) return Instruction::make<Insn::MOV_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -605,6 +643,7 @@ namespace arm64 {
             const auto& src = arm64.operands[1];
             auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto d64dst = asSimd64(dst);
             auto r128dst = asSimd128(dst);
             auto mem32src = asMemory32(src);
             auto mem64src = asMemory64(src);
@@ -621,6 +660,13 @@ namespace arm64 {
                     return Instruction::makeWithWriteBack<Insn::LDR_R64_M64>(insn.address, insn.size, r64dst.value(), mem64src.value());
                 } else {
                     return Instruction::make<Insn::LDR_R64_M64>(insn.address, insn.size, r64dst.value(), mem64src.value());
+                }
+            }
+            if(d64dst && mem64src) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::LDR_D64_M64>(insn.address, insn.size, d64dst.value(), mem64src.value());
+                } else {
+                    return Instruction::make<Insn::LDR_D64_M64>(insn.address, insn.size, d64dst.value(), mem64src.value());
                 }
             }
             if(r128dst && mem128src) {
@@ -646,6 +692,21 @@ namespace arm64 {
                     return Instruction::make<Insn::LDR_R64_M64_IMM>(insn.address, insn.size, r64dst.value(), mem64src.value(), immsrc.value());
                 }
             }
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeLdrsw(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r64dst = asRegister64(dst);
+            auto mem32src = asMemory32(src);
+            if(r64dst && mem32src) return Instruction::make<Insn::LDRSW_R64_M32>(insn.address, insn.size, r64dst.value(), mem32src.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -845,7 +906,6 @@ namespace arm64 {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.update_flags) return make_failed(insn);
         if(arm64.op_count == 2) {
-            if(arm64.writeback) return make_failed(insn);
             const auto& dst = arm64.operands[0];
             const auto& src = arm64.operands[1];
             auto r32dst = asRegister32(dst);
@@ -855,10 +915,34 @@ namespace arm64 {
             auto mem32src = asMemory32(src);
             auto mem64src = asMemory64(src);
             auto mem128src = asMemory128(src);
-            if(r32dst && mem32src) return Instruction::make<Insn::STR_R32_M32>(insn.address, insn.size, r32dst.value(), mem32src.value());
-            if(r64dst && mem64src) return Instruction::make<Insn::STR_R64_M64>(insn.address, insn.size, r64dst.value(), mem64src.value());
-            if(d64dst && mem64src) return Instruction::make<Insn::STR_D64_M64>(insn.address, insn.size, d64dst.value(), mem64src.value());
-            if(q128dst && mem128src) return Instruction::make<Insn::STR_Q128_M128>(insn.address, insn.size, q128dst.value(), mem128src.value());
+            if(r32dst && mem32src) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::STR_R32_M32>(insn.address, insn.size, r32dst.value(), mem32src.value());
+                } else {
+                    return Instruction::make<Insn::STR_R32_M32>(insn.address, insn.size, r32dst.value(), mem32src.value());
+                }
+            }
+            if(r64dst && mem64src) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::STR_R64_M64>(insn.address, insn.size, r64dst.value(), mem64src.value());
+                } else {
+                    return Instruction::make<Insn::STR_R64_M64>(insn.address, insn.size, r64dst.value(), mem64src.value());
+                }
+            }
+            if(d64dst && mem64src) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::STR_D64_M64>(insn.address, insn.size, d64dst.value(), mem64src.value());
+                } else {
+                    return Instruction::make<Insn::STR_D64_M64>(insn.address, insn.size, d64dst.value(), mem64src.value());
+                }
+            }
+            if(q128dst && mem128src) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::STR_Q128_M128>(insn.address, insn.size, q128dst.value(), mem128src.value());
+                } else {
+                    return Instruction::make<Insn::STR_Q128_M128>(insn.address, insn.size, q128dst.value(), mem128src.value());
+                }
+            }
             return make_failed(insn);
         }
         if(arm64.op_count == 3) {
@@ -868,11 +952,16 @@ namespace arm64 {
             const auto& imm = arm64.operands[2];
             auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto d64dst = asSimd64(dst);
+            auto q128dst = asSimd128(dst);
             auto mem32src = asMemory32(src);
             auto mem64src = asMemory64(src);
+            auto mem128src = asMemory128(src);
             auto immsrc = asImmediate(imm);
             if(r32dst && mem32src && immsrc) return Instruction::makeWithWriteBack<Insn::STR_R32_M32_IMM>(insn.address, insn.size, r32dst.value(), mem32src.value(), immsrc.value());
             if(r64dst && mem64src && immsrc) return Instruction::makeWithWriteBack<Insn::STR_R64_M64_IMM>(insn.address, insn.size, r64dst.value(), mem64src.value(), immsrc.value());
+            if(d64dst && mem64src && immsrc) return Instruction::makeWithWriteBack<Insn::STR_D64_M64_IMM>(insn.address, insn.size, d64dst.value(), mem64src.value(), immsrc.value());
+            if(q128dst && mem128src && immsrc) return Instruction::makeWithWriteBack<Insn::STR_Q128_M128_IMM>(insn.address, insn.size, q128dst.value(), mem128src.value(), immsrc.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -939,13 +1028,18 @@ namespace arm64 {
     static Instruction makeStrb(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.update_flags) return make_failed(insn);
-        if(arm64.writeback) return make_failed(insn);
         if(arm64.op_count == 2) {
             const auto& dst = arm64.operands[0];
             const auto& src = arm64.operands[1];
             auto r32dst = asRegister32(dst);
             auto mem8src = asMemory8(src);
-            if(r32dst && mem8src) return Instruction::make<Insn::STRB_R32_M8>(insn.address, insn.size, r32dst.value(), mem8src.value());
+            if(r32dst && mem8src) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::STRB_R32_M8>(insn.address, insn.size, r32dst.value(), mem8src.value());
+                } else {
+                    return Instruction::make<Insn::STRB_R32_M8>(insn.address, insn.size, r32dst.value(), mem8src.value());
+                }
+            }
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1067,6 +1161,9 @@ namespace arm64 {
             auto sr32src2 = asShiftedR32(src2);
             auto sr64src2 = asShiftedR64(src2);
             auto lslimmsrc2 = asShiftedImm(src2);
+            auto v2ddst = asV2D(dst);
+            auto v2dsrc1 = asV2D(src1);
+            auto v2dsrc2 = asV2D(src2);
             if(r32dst && r32src1 && r32src2) return Instruction::make<Insn::ADD_R32_R32_R32>(insn.address, insn.size, r32dst.value(), r32src1.value(), r32src2.value());
             if(r32dst && r32src1 && immsrc2) return Instruction::make<Insn::ADD_R32_R32_IMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), immsrc2.value());
             if(r32dst && r32src1 && sr32src2) return Instruction::make<Insn::ADD_R32_R32_SR32>(insn.address, insn.size, r32dst.value(), r32src1.value(), sr32src2.value());
@@ -1076,6 +1173,41 @@ namespace arm64 {
             if(r64dst && r64src1 && r32lslzesrc2) return Instruction::make<Insn::ADD_R64_R64_R32_UXTW_IMM>(insn.address, insn.size, r64dst.value(), r64src1.value(), r32lslzesrc2.value());
             if(r64dst && r64src1 && sr64src2) return Instruction::make<Insn::ADD_R64_R64_SR64>(insn.address, insn.size, r64dst.value(), r64src1.value(), sr64src2.value());
             if(r64dst && r64src1 && lslimmsrc2) return Instruction::make<Insn::ADD_R64_R64_SIMM>(insn.address, insn.size, r64dst.value(), r64src1.value(), lslimmsrc2.value());
+            if(v2ddst && v2dsrc1 && v2dsrc2) return Instruction::make<Insn::ADD_V2D_V2D_V2D>(insn.address, insn.size, v2ddst.value(), v2dsrc1.value(), v2dsrc2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeAddp(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto v16bdst = asV16B(dst);
+            auto v16bsrc1 = asV16B(src1);
+            auto v16bsrc2 = asV16B(src2);
+            if(v16bdst && v16bsrc1 && v16bsrc2) return Instruction::make<Insn::ADDP_V16B_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeUminp(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto v16bdst = asV16B(dst);
+            auto v16bsrc1 = asV16B(src1);
+            auto v16bsrc2 = asV16B(src2);
+            if(v16bdst && v16bsrc1 && v16bsrc2) return Instruction::make<Insn::UMINP_V16B_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1096,10 +1228,12 @@ namespace arm64 {
             auto immsrc2 = asImmediate(src2);
             auto r32src2 = asRegister32(src2);
             auto r64src2 = asRegister64(src2);
+            auto sr32src2 = asSignExtendedR32(src2);
             if(r32dst && r32src1 && r32src2) return Instruction::make<Insn::ADDS_R32_R32_R32>(insn.address, insn.size, r32dst.value(), r32src1.value(), r32src2.value());
             if(r32dst && r32src1 && immsrc2) return Instruction::make<Insn::ADDS_R32_R32_IMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), immsrc2.value());
             if(r64dst && r64src1 && r64src2) return Instruction::make<Insn::ADDS_R64_R64_R64>(insn.address, insn.size, r64dst.value(), r64src1.value(), r64src2.value());
             if(r64dst && r64src1 && immsrc2) return Instruction::make<Insn::ADDS_R64_R64_IMM>(insn.address, insn.size, r64dst.value(), r64src1.value(), immsrc2.value());
+            if(r64dst && r64src1 && sr32src2) return Instruction::make<Insn::ADDS_R64_R64_R32_SXTW>(insn.address, insn.size, r64dst.value(), r64src1.value(), sr32src2.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1171,6 +1305,40 @@ namespace arm64 {
             auto r64src2 = asRegister64(src2);
             if(r32dst && r32src1 && r32src2) return Instruction::make<Insn::MUL_R32_R32_R32>(insn.address, insn.size, r32dst.value(), r32src1.value(), r32src2.value());
             if(r64dst && r64src1 && r64src2) return Instruction::make<Insn::MUL_R64_R64_R64>(insn.address, insn.size, r64dst.value(), r64src1.value(), r64src2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeUmull(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto r64dst = asRegister64(dst);
+            auto r32src1 = asRegister32(src1);
+            auto r32src2 = asRegister32(src2);
+            if(r64dst && r32src1 && r32src2) return Instruction::make<Insn::UMULL_R64_R32_R32>(insn.address, insn.size, r64dst.value(), r32src1.value(), r32src2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeUmulh(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto r64dst = asRegister64(dst);
+            auto r64src1 = asRegister64(src1);
+            auto r64src2 = asRegister64(src2);
+            if(r64dst && r64src1 && r64src2) return Instruction::make<Insn::UMULH_R64_R64_R64>(insn.address, insn.size, r64dst.value(), r64src1.value(), r64src2.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1292,15 +1460,19 @@ namespace arm64 {
             const auto& src2 = arm64.operands[2];
             auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto v16bdst = asV16B(dst);
             auto r32src1 = asRegister32(src1);
             auto r64src1 = asRegister64(src1);
+            auto v16bsrc1 = asV16B(src1);
             auto immsrc2 = asImmediate(src2);
             auto r32src2 = asRegister32(src2);
             auto r64src2 = asRegister64(src2);
+            auto v16bsrc2 = asV16B(src2);
             if(r32dst && r32src1 && r32src2) return Instruction::make<Insn::AND_R32_R32_R32>(insn.address, insn.size, r32dst.value(), r32src1.value(), r32src2.value());
             if(r32dst && r32src1 && immsrc2) return Instruction::make<Insn::AND_R32_R32_IMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), immsrc2.value());
             if(r64dst && r64src1 && r64src2) return Instruction::make<Insn::AND_R64_R64_R64>(insn.address, insn.size, r64dst.value(), r64src1.value(), r64src2.value());
             if(r64dst && r64src1 && immsrc2) return Instruction::make<Insn::AND_R64_R64_IMM>(insn.address, insn.size, r64dst.value(), r64src1.value(), immsrc2.value());
+            if(v16bdst && v16bsrc1 && v16bsrc2) return Instruction::make<Insn::AND_V16B_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1382,14 +1554,17 @@ namespace arm64 {
             const auto& src2 = arm64.operands[2];
             auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto v16bdst = asV16B(dst);
             auto r32src1 = asRegister32(src1);
             auto r64src1 = asRegister64(src1);
+            auto v16bsrc1 = asV16B(src1);
             auto immsrc2 = asImmediate(src2);
             auto r32src2 = asRegister32(src2);
             auto r64src2 = asRegister64(src2);
             auto lslimmsrc2 = asShiftedImm(src2);
             auto sr32src2 = asShiftedR32(src2);
             auto sr64src2 = asShiftedR64(src2);
+            auto v16bsrc2 = asV16B(src2);
             if(r32dst && r32src1 && r32src2) return Instruction::make<Insn::ORR_R32_R32_R32>(insn.address, insn.size, r32dst.value(), r32src1.value(), r32src2.value());
             if(r32dst && r32src1 && immsrc2) return Instruction::make<Insn::ORR_R32_R32_IMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), immsrc2.value());
             if(r64dst && r64src1 && r64src2) return Instruction::make<Insn::ORR_R64_R64_R64>(insn.address, insn.size, r64dst.value(), r64src1.value(), r64src2.value());
@@ -1398,6 +1573,7 @@ namespace arm64 {
             if(r32dst && r32src1 && lslimmsrc2) return Instruction::make<Insn::ORR_R32_R32_SIMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), lslimmsrc2.value());
             if(r64dst && r64src1 && sr64src2) return Instruction::make<Insn::ORR_R64_R64_SR64>(insn.address, insn.size, r64dst.value(), r64src1.value(), sr64src2.value());
             if(r64dst && r64src1 && lslimmsrc2) return Instruction::make<Insn::ORR_R64_R64_SIMM>(insn.address, insn.size, r64dst.value(), r64src1.value(), lslimmsrc2.value());
+            if(v16bdst && v16bsrc1 && v16bsrc2) return Instruction::make<Insn::AND_V16B_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1413,14 +1589,17 @@ namespace arm64 {
             const auto& src2 = arm64.operands[2];
             auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto v16bdst = asV16B(dst);
             auto r32src1 = asRegister32(src1);
             auto r64src1 = asRegister64(src1);
+            auto v16bsrc1 = asV16B(src1);
             auto immsrc2 = asImmediate(src2);
             auto r32src2 = asRegister32(src2);
             auto r64src2 = asRegister64(src2);
             auto lslimmsrc2 = asShiftedImm(src2);
             auto sr32src2 = asShiftedR32(src2);
             auto sr64src2 = asShiftedR64(src2);
+            auto v16bsrc2 = asV16B(src2);
             if(r32dst && r32src1 && r32src2) return Instruction::make<Insn::EOR_R32_R32_R32>(insn.address, insn.size, r32dst.value(), r32src1.value(), r32src2.value());
             if(r32dst && r32src1 && immsrc2) return Instruction::make<Insn::EOR_R32_R32_IMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), immsrc2.value());
             if(r64dst && r64src1 && r64src2) return Instruction::make<Insn::EOR_R64_R64_R64>(insn.address, insn.size, r64dst.value(), r64src1.value(), r64src2.value());
@@ -1429,6 +1608,7 @@ namespace arm64 {
             if(r32dst && r32src1 && lslimmsrc2) return Instruction::make<Insn::EOR_R32_R32_SIMM>(insn.address, insn.size, r32dst.value(), r32src1.value(), lslimmsrc2.value());
             if(r64dst && r64src1 && sr64src2) return Instruction::make<Insn::EOR_R64_R64_SR64>(insn.address, insn.size, r64dst.value(), r64src1.value(), sr64src2.value());
             if(r64dst && r64src1 && lslimmsrc2) return Instruction::make<Insn::EOR_R64_R64_SIMM>(insn.address, insn.size, r64dst.value(), r64src1.value(), lslimmsrc2.value());
+            if(v16bdst && v16bsrc1 && v16bsrc2) return Instruction::make<Insn::EOR_V16B_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1569,10 +1749,13 @@ namespace arm64 {
             const auto& src = arm64.operands[1];
             const auto& imm1 = arm64.operands[2];
             const auto& imm2 = arm64.operands[2];
+            auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto r32src = asRegister32(src);
             auto r64src = asRegister64(src);
             auto immsrc1 = asImmediate(imm1);
             auto immsrc2 = asImmediate(imm2);
+            if(r32dst && r32src && immsrc1 && immsrc2) return Instruction::make<Insn::SBFIZ_R32_R32_IMM_IMM>(insn.address, insn.size, r32dst.value(), r32src.value(), immsrc1.value(), immsrc2.value());
             if(r64dst && r64src && immsrc1 && immsrc2) return Instruction::make<Insn::SBFIZ_R64_R64_IMM_IMM>(insn.address, insn.size, r64dst.value(), r64src.value(), immsrc1.value(), immsrc2.value());
             return make_failed(insn);
         }
@@ -1588,10 +1771,13 @@ namespace arm64 {
             const auto& src = arm64.operands[1];
             const auto& imm1 = arm64.operands[2];
             const auto& imm2 = arm64.operands[2];
+            auto r32dst = asRegister32(dst);
             auto r64dst = asRegister64(dst);
+            auto r32src = asRegister32(src);
             auto r64src = asRegister64(src);
             auto immsrc1 = asImmediate(imm1);
             auto immsrc2 = asImmediate(imm2);
+            if(r32dst && r32src && immsrc1 && immsrc2) return Instruction::make<Insn::UBFIZ_R32_R32_IMM_IMM>(insn.address, insn.size, r32dst.value(), r32src.value(), immsrc1.value(), immsrc2.value());
             if(r64dst && r64src && immsrc1 && immsrc2) return Instruction::make<Insn::UBFIZ_R64_R64_IMM_IMM>(insn.address, insn.size, r64dst.value(), r64src.value(), immsrc1.value(), immsrc2.value());
             return make_failed(insn);
         }
@@ -1692,12 +1878,42 @@ namespace arm64 {
             auto r64src2 = asRegister64(src2);
             auto immsrc2 = asImmediate(src2);
             auto lslimmsrc2 = asShiftedImm(src2);
+            auto sr16src2 = asSignExtendedR16(src2);
+            auto sr32src2 = asSignExtendedR32(src2);
+            auto ur16src2 = asZeroExtendedR16(src2);
             if(r32src1 && r32src2) return Instruction::make<Insn::CMP_R32_R32>(insn.address, insn.size, r32src1.value(), r32src2.value());
             if(r64src1 && r64src2) return Instruction::make<Insn::CMP_R64_R64>(insn.address, insn.size, r64src1.value(), r64src2.value());
             if(r32src1 && immsrc2) return Instruction::make<Insn::CMP_R32_IMM>(insn.address, insn.size, r32src1.value(), immsrc2.value());
             if(r64src1 && immsrc2) return Instruction::make<Insn::CMP_R64_IMM>(insn.address, insn.size, r64src1.value(), immsrc2.value());
             if(r32src1 && lslimmsrc2) return Instruction::make<Insn::CMP_R32_SIMM>(insn.address, insn.size, r32src1.value(), lslimmsrc2.value());
             if(r64src1 && lslimmsrc2) return Instruction::make<Insn::CMP_R64_SIMM>(insn.address, insn.size, r64src1.value(), lslimmsrc2.value());
+            if(r64src1 && sr16src2) return Instruction::make<Insn::CMP_R64_R32_SXTH>(insn.address, insn.size, r64src1.value(), sr16src2.value());
+            if(r64src1 && sr32src2) return Instruction::make<Insn::CMP_R64_R32_SXTW>(insn.address, insn.size, r64src1.value(), sr32src2.value());
+            if(r64src1 && ur16src2) return Instruction::make<Insn::CMP_R64_R32_UXTH>(insn.address, insn.size, r64src1.value(), ur16src2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeCcmn(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        verify(arm64.update_flags);
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto r32dst = asRegister32(dst);
+            auto r64dst = asRegister64(dst);
+            auto r32src1 = asRegister32(src1);
+            auto r64src1 = asRegister64(src1);
+            auto immsrc1 = asImmediate(src1);
+            auto immsrc2 = asImmediate(src2);
+            auto cond = asCond(arm64.cc);
+            if(r32dst && r32src1 && immsrc2 && cond) return Instruction::make<Insn::CCMN_R32_R32_IMM_CC>(insn.address, insn.size, r32dst.value(), r32src1.value(), immsrc2.value(), cond.value());
+            if(r32dst && immsrc1 && immsrc2 && cond) return Instruction::make<Insn::CCMN_R32_IMM_IMM_CC>(insn.address, insn.size, r32dst.value(), immsrc1.value(), immsrc2.value(), cond.value());
+            if(r64dst && r64src1 && immsrc2 && cond) return Instruction::make<Insn::CCMN_R64_R64_IMM_CC>(insn.address, insn.size, r64dst.value(), r64src1.value(), immsrc2.value(), cond.value());
+            if(r64dst && immsrc1 && immsrc2 && cond) return Instruction::make<Insn::CCMN_R64_IMM_IMM_CC>(insn.address, insn.size, r64dst.value(), immsrc1.value(), immsrc2.value(), cond.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -1746,6 +1962,44 @@ namespace arm64 {
             if(r64src1 && immsrc2) return Instruction::make<Insn::CMN_R64_IMM>(insn.address, insn.size, r64src1.value(), immsrc2.value());
             if(r32src1 && lslimmsrc2) return Instruction::make<Insn::CMN_R32_SIMM>(insn.address, insn.size, r32src1.value(), lslimmsrc2.value());
             if(r64src1 && lslimmsrc2) return Instruction::make<Insn::CMN_R64_SIMM>(insn.address, insn.size, r64src1.value(), lslimmsrc2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeCinc(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        verify(!arm64.update_flags);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r32dst = asRegister32(dst);
+            auto r64dst = asRegister64(dst);
+            auto r32src = asRegister32(src);
+            auto r64src = asRegister64(src);
+            auto cond = asCond(arm64.cc);
+            if(r32dst && r32src && cond) return Instruction::make<Insn::CINC_R32_R32_CC>(insn.address, insn.size, r32dst.value(), r32src.value(), cond.value());
+            if(r64dst && r64src && cond) return Instruction::make<Insn::CINC_R64_R64_CC>(insn.address, insn.size, r64dst.value(), r64src.value(), cond.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeCneg(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        verify(!arm64.update_flags);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r32dst = asRegister32(dst);
+            auto r64dst = asRegister64(dst);
+            auto r32src = asRegister32(src);
+            auto r64src = asRegister64(src);
+            auto cond = asCond(arm64.cc);
+            if(r32dst && r32src && cond) return Instruction::make<Insn::CNEG_R32_R32_CC>(insn.address, insn.size, r32dst.value(), r32src.value(), cond.value());
+            if(r64dst && r64src && cond) return Instruction::make<Insn::CNEG_R64_R64_CC>(insn.address, insn.size, r64dst.value(), r64src.value(), cond.value());
             return make_failed(insn);
         }
         return make_failed(insn);
@@ -2089,14 +2343,42 @@ namespace arm64 {
 
     static Instruction makeLd1(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
-        if(arm64.writeback) return make_failed(insn);
         if(arm64.update_flags) return make_failed(insn);
         if(arm64.op_count == 2) {
             const auto& dst = arm64.operands[0];
             const auto& src = arm64.operands[1];
             auto v16bdst = asV16B(dst);
             auto m128src = asMemory128(src);
-            if(v16bdst && m128src) return Instruction::make<Insn::LD1_V16B_M128>(insn.address, insn.size, v16bdst.value(), m128src.value());
+            if(v16bdst && m128src) {
+                if(arm64.writeback) {
+                    return Instruction::make<Insn::LD1_V16B_M128>(insn.address, insn.size, v16bdst.value(), m128src.value());
+                } else {
+                    return Instruction::makeWithWriteBack<Insn::LD1_V16B_M128>(insn.address, insn.size, v16bdst.value(), m128src.value());
+                }
+            }
+        }
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            const auto& imm = arm64.operands[2];
+            const auto& dst2 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto v16bdst = asV16B(dst);
+            auto v16bdst2 = asV16B(dst2);
+            auto m128src = asMemory128(src);
+            auto m128src2 = asMemory128(src2);
+            auto immsrc = asImmediate(imm);
+            if(v16bdst && m128src && immsrc) {
+                if(arm64.writeback) {
+                    return Instruction::makeWithWriteBack<Insn::LD1_V16B_M128_IMM>(insn.address, insn.size, v16bdst.value(), m128src.value(), immsrc.value());
+                } else {
+                    return Instruction::make<Insn::LD1_V16B_M128_IMM>(insn.address, insn.size, v16bdst.value(), m128src.value(), immsrc.value());
+                }
+            }
+            if(v16bdst && v16bdst2 && m128src2) {
+                if(arm64.writeback) return make_failed(insn);
+                return Instruction::make<Insn::LD1_V16B_V16B_M128>(insn.address, insn.size, v16bdst.value(), v16bdst2.value(), m128src2.value());
+            }
         }
         return make_failed(insn);
     }
@@ -2131,6 +2413,30 @@ namespace arm64 {
             auto v16bsrc2 = asV16B(src2);
             auto immval = asImmediate(imm);
             if(v16bdst && v16bsrc1 && v16bsrc2 && immval) return Instruction::make<Insn::EXT_V16B_V16B_V16B_IMM>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value(),immval.value());
+        }
+        return make_failed(insn);
+    }
+
+    static Instruction makeUzp1(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 3) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            auto v4sdst = asV4S(dst);
+            auto v4ssrc1 = asV4S(src1);
+            auto v4ssrc2 = asV4S(src2);
+            auto v8hdst = asV8H(dst);
+            auto v8hsrc1 = asV8H(src1);
+            auto v8hsrc2 = asV8H(src2);
+            auto v16bdst = asV16B(dst);
+            auto v16bsrc1 = asV16B(src1);
+            auto v16bsrc2 = asV16B(src2);
+            if(v4sdst && v4ssrc1 && v4ssrc2) return Instruction::make<Insn::UZP1_V4S_V4S_V4S>(insn.address, insn.size, v4sdst.value(), v4ssrc1.value(), v4ssrc2.value());
+            if(v8hdst && v8hsrc1 && v8hsrc2) return Instruction::make<Insn::UZP1_V8H_V8H_V8H>(insn.address, insn.size, v8hdst.value(), v8hsrc1.value(), v8hsrc2.value());
+            if(v16bdst && v16bsrc1 && v16bsrc2) return Instruction::make<Insn::UZP1_V16B_V16B_V16B>(insn.address, insn.size, v16bdst.value(), v16bsrc1.value(), v16bsrc2.value());
         }
         return make_failed(insn);
     }
@@ -2176,10 +2482,15 @@ namespace arm64 {
             const auto& dst = arm64.operands[0];
             const auto& src = arm64.operands[1];
             const auto& val = arm64.operands[2];
+            auto v8bdst = asV8B(dst);
             auto v16bdst = asV16B(dst);
+            auto v8bsrc = asV8B(src);
             auto v16bsrc = asV16B(src);
+            auto v8bval = asV8B(val);
             auto v16bval = asV16B(val);
             auto immval = asImmediate(val);
+            if(v8bdst && v8bsrc && immval && immval.value().as<u8>() == 0) return Instruction::make<Insn::CM_CC_V8B_V8B_0>(insn.address, insn.size, cond, v8bdst.value(), v8bsrc.value());
+            if(v8bdst && v8bsrc && v8bval) return Instruction::make<Insn::CM_CC_V8B_V8B_V8B>(insn.address, insn.size, cond, v8bdst.value(), v8bsrc.value(), v8bval.value());
             if(v16bdst && v16bsrc && immval && immval.value().as<u8>() == 0) return Instruction::make<Insn::CM_CC_V16B_V16B_0>(insn.address, insn.size, cond, v16bdst.value(), v16bsrc.value());
             if(v16bdst && v16bsrc && v16bval) return Instruction::make<Insn::CM_CC_V16B_V16B_V16B>(insn.address, insn.size, cond, v16bdst.value(), v16bsrc.value(), v16bval.value());
         }
@@ -2193,8 +2504,12 @@ namespace arm64 {
         if(arm64.op_count == 2) {
             const auto& dst = arm64.operands[0];
             const auto& src = arm64.operands[1];
+            auto v4sdst = asV4S(dst);
+            auto v8hdst = asV8H(dst);
             auto v16bdst = asV16B(dst);
             auto r32src = asRegister32(src);
+            if(v4sdst && r32src) return Instruction::make<Insn::DUP_V4S_R32>(insn.address, insn.size, v4sdst.value(), r32src.value());
+            if(v8hdst && r32src) return Instruction::make<Insn::DUP_V8H_R32>(insn.address, insn.size, v8hdst.value(), r32src.value());
             if(v16bdst && r32src) return Instruction::make<Insn::DUP_V16B_R32>(insn.address, insn.size, v16bdst.value(), r32src.value());
         }
         return make_failed(insn);
@@ -2227,6 +2542,7 @@ namespace arm64 {
             case ARM64_INS_MSR: return makeMsr(insn);
             case ARM64_INS_LDR:
             case ARM64_INS_LDUR: return makeLdr(insn);
+            case ARM64_INS_LDRSW: return makeLdrsw(insn);
             case ARM64_INS_LDRB:
             case ARM64_INS_LDURB: return makeLdrb(insn);
             case ARM64_INS_LDRH: return makeLdrh(insn);
@@ -2249,6 +2565,8 @@ namespace arm64 {
             case ARM64_INS_SUB: return makeSub(insn);
             case ARM64_INS_SUBS: return makeSubs(insn);
             case ARM64_INS_MUL: return makeMul(insn);
+            case ARM64_INS_UMULL: return makeUmull(insn);
+            case ARM64_INS_UMULH: return makeUmulh(insn);
             case ARM64_INS_UDIV: return makeUdiv(insn);
             case ARM64_INS_MADD: return makeMadd(insn);
             case ARM64_INS_MSUB: return makeMsub(insn);
@@ -2273,8 +2591,11 @@ namespace arm64 {
             case ARM64_INS_ADRP: return makeAdrp(insn);
             case ARM64_INS_TST: return makeTst(insn);
             case ARM64_INS_CMP: return makeCmp(insn);
+            case ARM64_INS_CCMN: return makeCcmn(insn);
             case ARM64_INS_CCMP: return makeCcmp(insn);
             case ARM64_INS_CMN: return makeCmn(insn);
+            case ARM64_INS_CINC: return makeCinc(insn);
+            case ARM64_INS_CNEG: return makeCneg(insn);
             case ARM64_INS_CSET: return makeCset(insn);
             case ARM64_INS_CSETM: return makeCsetm(insn);
             case ARM64_INS_CSEL: return makeCsel(insn);
@@ -2297,8 +2618,11 @@ namespace arm64 {
             case ARM64_INS_MOVI: return makeMovi(insn);
             case ARM64_INS_MVNI: return makeMvni(insn);
             case ARM64_INS_LD1: return makeLd1(insn);
+            case ARM64_INS_ADDP: return makeAddp(insn);
+            case ARM64_INS_UMINP: return makeUminp(insn);
             case ARM64_INS_SHRN: return makeShrn(insn);
             case ARM64_INS_EXT: return makeExt(insn);
+            case ARM64_INS_UZP1: return makeUzp1(insn);
             case ARM64_INS_BIT: return makeBit(insn);
             case ARM64_INS_UMAXP: return makeUmaxp(insn);
             case ARM64_INS_CMEQ: return makeCm<Cond::EQ>(insn);

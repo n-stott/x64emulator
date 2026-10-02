@@ -54,6 +54,7 @@ namespace arm64 {
     DEFINE_STANDALONE(MSR_SYSREG_R64, execMsrSysregR64)
     DEFINE_STANDALONE(LDR_R32_M32, execLdrR32M32)
     DEFINE_STANDALONE(LDR_R64_M64, execLdrR64M64)
+    DEFINE_STANDALONE(LDRSW_R64_M32, execLdrswR64M32)
     DEFINE_STANDALONE(LDR_R64_M64_IMM, execLdrR64M64Imm)
     DEFINE_STANDALONE(LDR_Q128_M128, execLdrQ128M128)
     DEFINE_STANDALONE(LDRB_R32_M8, execLdrbR32M8)
@@ -78,7 +79,9 @@ namespace arm64 {
     DEFINE_STANDALONE(STR_R64_M64, execStrR64M64)
     DEFINE_STANDALONE(STR_R64_M64_IMM, execStrR64M64Imm)
     DEFINE_STANDALONE(STR_D64_M64, execStrD64M64)
+    DEFINE_STANDALONE(STR_D64_M64_IMM, execStrD64M64Imm)
     DEFINE_STANDALONE(STR_Q128_M128, execStrQ128M128)
+    DEFINE_STANDALONE(STR_Q128_M128_IMM, execStrQ128M128Imm)
     DEFINE_STANDALONE(STLR_R32_M32, execStlrR32M32)
     DEFINE_STANDALONE(STLR_R64_M64, execStlrR64M64)
     DEFINE_STANDALONE(STXR_R32_R32_M32, execStxrR32R32M32)
@@ -102,6 +105,7 @@ namespace arm64 {
     DEFINE_STANDALONE(ADDS_R32_R32_IMM, execAddsR32R32Imm)
     DEFINE_STANDALONE(ADDS_R64_R64_R64, execAddsR64R64R64)
     DEFINE_STANDALONE(ADDS_R64_R64_IMM, execAddsR64R64Imm)
+    DEFINE_STANDALONE(ADDS_R64_R64_R32_SXTW, execAddsR64R64R32sxtw)
     DEFINE_STANDALONE(SUB_R32_R32_R32, execSubR32R32R32)
     DEFINE_STANDALONE(SUB_R32_R32_SIMM, execSubR32R32SImm)
     DEFINE_STANDALONE(SUB_R64_R64_SR64, execSubR64R64SR64)
@@ -115,6 +119,8 @@ namespace arm64 {
     DEFINE_STANDALONE(NEG_R64_R64, execNegR64R64)
     DEFINE_STANDALONE(MUL_R32_R32_R32, execMulR32R32R32)
     DEFINE_STANDALONE(MUL_R64_R64_R64, execMulR64R64R64)
+    DEFINE_STANDALONE(UMULL_R64_R32_R32, execUmullR64R32R32)
+    DEFINE_STANDALONE(UMULH_R64_R64_R64, execUmulhR64R64R64)
     DEFINE_STANDALONE(UDIV_R32_R32_R32, execUdivR32R32R32)
     DEFINE_STANDALONE(UDIV_R64_R64_R64, execUdivR64R64R64)
     DEFINE_STANDALONE(MADD_R32_R32_R32_R32, execMaddR32R32R32R32)
@@ -168,7 +174,9 @@ namespace arm64 {
     DEFINE_STANDALONE(REV_R64_R64, execRevR64R64)
     DEFINE_STANDALONE(RBIT_R32_R32, execRbitR32R32)
     DEFINE_STANDALONE(RBIT_R64_R64, execRbitR64R64)
+    DEFINE_STANDALONE(SBFIZ_R32_R32_IMM_IMM, execSbfizR32R32ImmImm)
     DEFINE_STANDALONE(SBFIZ_R64_R64_IMM_IMM, execSbfizR64R64ImmImm)
+    DEFINE_STANDALONE(UBFIZ_R32_R32_IMM_IMM, execUbfizR32R32ImmImm)
     DEFINE_STANDALONE(UBFIZ_R64_R64_IMM_IMM, execUbfizR64R64ImmImm)
     DEFINE_STANDALONE(UBFX_R32_R32_IMM_IMM, execUbfxR32R32ImmImm)
     DEFINE_STANDALONE(UBFX_R64_R64_IMM_IMM, execUbfxR64R64ImmImm)
@@ -184,6 +192,13 @@ namespace arm64 {
     DEFINE_STANDALONE(CMP_R64_IMM, execCmpR64Imm)
     DEFINE_STANDALONE(CMP_R32_SIMM, execCmpR32SImm)
     DEFINE_STANDALONE(CMP_R64_SIMM, execCmpR64SImm)
+    DEFINE_STANDALONE(CMP_R64_R32_SXTH, execCmpR64R32sxth)
+    DEFINE_STANDALONE(CMP_R64_R32_SXTW, execCmpR64R32sxtw)
+    DEFINE_STANDALONE(CMP_R64_R32_UXTH, execCmpR64R32uxth)
+    DEFINE_STANDALONE(CCMN_R32_R32_IMM_CC, execCcmnR32R32ImmCond)
+    DEFINE_STANDALONE(CCMN_R32_IMM_IMM_CC, execCcmnR32ImmImmCond)
+    DEFINE_STANDALONE(CCMN_R64_R64_IMM_CC, execCcmnR64R64ImmCond)
+    DEFINE_STANDALONE(CCMN_R64_IMM_IMM_CC, execCcmnR64ImmImmCond)
     DEFINE_STANDALONE(CCMP_R32_R32_IMM_CC, execCcmpR32R32ImmCond)
     DEFINE_STANDALONE(CCMP_R32_IMM_IMM_CC, execCcmpR32ImmImmCond)
     DEFINE_STANDALONE(CCMP_R64_R64_IMM_CC, execCcmpR64R64ImmCond)
@@ -194,6 +209,10 @@ namespace arm64 {
     DEFINE_STANDALONE(CMN_R64_IMM, execCmnR64Imm)
     DEFINE_STANDALONE(CMN_R32_SIMM, execCmnR32SImm)
     DEFINE_STANDALONE(CMN_R64_SIMM, execCmnR64SImm)
+    DEFINE_STANDALONE(CINC_R32_R32_CC, execCincR32R32Cond)
+    DEFINE_STANDALONE(CINC_R64_R64_CC, execCincR64R64Cond)
+    DEFINE_STANDALONE(CNEG_R32_R32_CC, execCnegR32R32Cond)
+    DEFINE_STANDALONE(CNEG_R64_R64_CC, execCnegR64R64Cond)
     DEFINE_STANDALONE(CSET_R32_CC, execCsetR32Cond)
     DEFINE_STANDALONE(CSET_R64_CC, execCsetR64Cond)
     DEFINE_STANDALONE(CSETM_R32_CC, execCsetmR32Cond)
@@ -225,16 +244,34 @@ namespace arm64 {
     DEFINE_STANDALONE(SVC_IMM, execSvcImm)
     DEFINE_STANDALONE(DC_SYSOP_R64, execDcSysopR64)
 // simd
+    DEFINE_STANDALONE(MOV_V16B_V16B, execMovV16bV16b)
     DEFINE_STANDALONE(MOVI_D64_IMM, execMoviD64Imm)
     DEFINE_STANDALONE(MOVI_V4S_IMM, execMoviV4sImm)
     DEFINE_STANDALONE(MOVI_V16B_IMM, execMoviV16bImm)
     DEFINE_STANDALONE(MVNI_V4S_IMM, execMvniV4SImm)
     DEFINE_STANDALONE(LD1_V16B_M128, execLd1V16bM128)
+    DEFINE_STANDALONE(LD1_V16B_M128_IMM, execLd1V16bM128Imm)
+    DEFINE_STANDALONE(LD1_V16B_V16B_M128, execLd1V16bV16bM128)
+    DEFINE_STANDALONE(LDR_D64_M64, execLdrD64M64)
+    DEFINE_STANDALONE(DUP_V4S_R32, execDupV4sR32)
+    DEFINE_STANDALONE(DUP_V8H_R32, execDupV8hR32)
     DEFINE_STANDALONE(DUP_V16B_R32, execDupV16bR32)
+    DEFINE_STANDALONE(ADD_V2D_V2D_V2D, execAddV2dV2dV2d)
+    DEFINE_STANDALONE(ADDP_V16B_V16B_V16B, execAddpV16bV16bV16b)
+    DEFINE_STANDALONE(UMINP_V16B_V16B_V16B, execUminpV16bV16bV16b)
+    DEFINE_STANDALONE(AND_V16B_V16B_V16B, execAndV16bV16bV16b)
+    DEFINE_STANDALONE(ORR_V16B_V16B_V16B, execOrrV16bV16bV16b)
+    DEFINE_STANDALONE(EOR_V16B_V16B_V16B, execEorV16bV16bV16b)
     DEFINE_STANDALONE(SHRN_V8B_V8H_IMM, execShrnB8bV8hImm)
     DEFINE_STANDALONE(EXT_V16B_V16B_V16B_IMM, execExtV16bV16bV16bImm)
+    DEFINE_STANDALONE(UZP1_V4S_V4S_V4S, execUzp1V4sV4sV4s)
+    DEFINE_STANDALONE(UZP1_V8H_V8H_V8H, execUzp1V8hV8hV8h)
+    DEFINE_STANDALONE(UZP1_V16B_V16B_V16B, execUzp1V16bV16bV16b)
+    DEFINE_STANDALONE(BIC_V8H_IMM, execBicV8hImm)
     DEFINE_STANDALONE(BIT_V16B_V16B_V16B, execBitV16bV16bV16b)
     DEFINE_STANDALONE(UMAXP_V16B_V16B_V16B, execUmaxpV16bV16bV16b)
+    DEFINE_STANDALONE(CM_CC_V8B_V8B_0, execCmCondV8bV8bZero)
+    DEFINE_STANDALONE(CM_CC_V8B_V8B_V8B, execCmCondV8bV8bV8b)
     DEFINE_STANDALONE(CM_CC_V16B_V16B_0, execCmCondV16bV16bZero)
     DEFINE_STANDALONE(CM_CC_V16B_V16B_V16B, execCmCondV16bV16bV16b)
 // float
@@ -262,6 +299,7 @@ namespace arm64 {
         STANDALONE_NAME(MSR_SYSREG_R64),
         STANDALONE_NAME(LDR_R32_M32),
         STANDALONE_NAME(LDR_R64_M64),
+        STANDALONE_NAME(LDRSW_R64_M32),
         STANDALONE_NAME(LDR_R64_M64_IMM),
         STANDALONE_NAME(LDR_Q128_M128),
         STANDALONE_NAME(LDRB_R32_M8),
@@ -286,7 +324,9 @@ namespace arm64 {
         STANDALONE_NAME(STR_R64_M64),
         STANDALONE_NAME(STR_R64_M64_IMM),
         STANDALONE_NAME(STR_D64_M64),
+        STANDALONE_NAME(STR_D64_M64_IMM),
         STANDALONE_NAME(STR_Q128_M128),
+        STANDALONE_NAME(STR_Q128_M128_IMM),
         STANDALONE_NAME(STLR_R32_M32),
         STANDALONE_NAME(STLR_R64_M64),
         STANDALONE_NAME(STXR_R32_R32_M32),
@@ -310,6 +350,7 @@ namespace arm64 {
         STANDALONE_NAME(ADDS_R32_R32_IMM),
         STANDALONE_NAME(ADDS_R64_R64_R64),
         STANDALONE_NAME(ADDS_R64_R64_IMM),
+        STANDALONE_NAME(ADDS_R64_R64_R32_SXTW),
         STANDALONE_NAME(SUB_R32_R32_R32),
         STANDALONE_NAME(SUB_R32_R32_SIMM),
         STANDALONE_NAME(SUB_R64_R64_SR64),
@@ -323,6 +364,8 @@ namespace arm64 {
         STANDALONE_NAME(NEG_R64_R64),
         STANDALONE_NAME(MUL_R32_R32_R32),
         STANDALONE_NAME(MUL_R64_R64_R64),
+        STANDALONE_NAME(UMULL_R64_R32_R32),
+        STANDALONE_NAME(UMULH_R64_R64_R64),
         STANDALONE_NAME(UDIV_R32_R32_R32),
         STANDALONE_NAME(UDIV_R64_R64_R64),
         STANDALONE_NAME(MADD_R32_R32_R32_R32),
@@ -376,7 +419,9 @@ namespace arm64 {
         STANDALONE_NAME(REV_R64_R64),
         STANDALONE_NAME(RBIT_R32_R32),
         STANDALONE_NAME(RBIT_R64_R64),
+        STANDALONE_NAME(SBFIZ_R32_R32_IMM_IMM),
         STANDALONE_NAME(SBFIZ_R64_R64_IMM_IMM),
+        STANDALONE_NAME(UBFIZ_R32_R32_IMM_IMM),
         STANDALONE_NAME(UBFIZ_R64_R64_IMM_IMM),
         STANDALONE_NAME(UBFX_R32_R32_IMM_IMM),
         STANDALONE_NAME(UBFX_R64_R64_IMM_IMM),
@@ -392,6 +437,13 @@ namespace arm64 {
         STANDALONE_NAME(CMP_R64_IMM),
         STANDALONE_NAME(CMP_R32_SIMM),
         STANDALONE_NAME(CMP_R64_SIMM),
+        STANDALONE_NAME(CMP_R64_R32_SXTH),
+        STANDALONE_NAME(CMP_R64_R32_SXTW),
+        STANDALONE_NAME(CMP_R64_R32_UXTH),
+        STANDALONE_NAME(CCMN_R32_R32_IMM_CC),
+        STANDALONE_NAME(CCMN_R32_IMM_IMM_CC),
+        STANDALONE_NAME(CCMN_R64_R64_IMM_CC),
+        STANDALONE_NAME(CCMN_R64_IMM_IMM_CC),
         STANDALONE_NAME(CCMP_R32_R32_IMM_CC),
         STANDALONE_NAME(CCMP_R32_IMM_IMM_CC),
         STANDALONE_NAME(CCMP_R64_R64_IMM_CC),
@@ -402,6 +454,10 @@ namespace arm64 {
         STANDALONE_NAME(CMN_R64_IMM),
         STANDALONE_NAME(CMN_R32_SIMM),
         STANDALONE_NAME(CMN_R64_SIMM),
+        STANDALONE_NAME(CINC_R32_R32_CC),
+        STANDALONE_NAME(CINC_R64_R64_CC),
+        STANDALONE_NAME(CNEG_R32_R32_CC),
+        STANDALONE_NAME(CNEG_R64_R64_CC),
         STANDALONE_NAME(CSET_R32_CC),
         STANDALONE_NAME(CSET_R64_CC),
         STANDALONE_NAME(CSETM_R32_CC),
@@ -433,16 +489,34 @@ namespace arm64 {
         STANDALONE_NAME(SVC_IMM),
         STANDALONE_NAME(DC_SYSOP_R64),
     // simd
+        STANDALONE_NAME(MOV_V16B_V16B),
         STANDALONE_NAME(MOVI_D64_IMM),
         STANDALONE_NAME(MOVI_V4S_IMM),
         STANDALONE_NAME(MOVI_V16B_IMM),
         STANDALONE_NAME(MVNI_V4S_IMM),
         STANDALONE_NAME(LD1_V16B_M128),
+        STANDALONE_NAME(LD1_V16B_M128_IMM),
+        STANDALONE_NAME(LD1_V16B_V16B_M128),
+        STANDALONE_NAME(LDR_D64_M64),
+        STANDALONE_NAME(DUP_V4S_R32),
+        STANDALONE_NAME(DUP_V8H_R32),
         STANDALONE_NAME(DUP_V16B_R32),
+        STANDALONE_NAME(ADD_V2D_V2D_V2D),
+        STANDALONE_NAME(ADDP_V16B_V16B_V16B),
+        STANDALONE_NAME(UMINP_V16B_V16B_V16B),
+        STANDALONE_NAME(AND_V16B_V16B_V16B),
+        STANDALONE_NAME(ORR_V16B_V16B_V16B),
+        STANDALONE_NAME(EOR_V16B_V16B_V16B),
         STANDALONE_NAME(SHRN_V8B_V8H_IMM),
         STANDALONE_NAME(EXT_V16B_V16B_V16B_IMM),
+        STANDALONE_NAME(UZP1_V4S_V4S_V4S),
+        STANDALONE_NAME(UZP1_V8H_V8H_V8H),
+        STANDALONE_NAME(UZP1_V16B_V16B_V16B),
+        STANDALONE_NAME(BIC_V8H_IMM),
         STANDALONE_NAME(BIT_V16B_V16B_V16B),
         STANDALONE_NAME(UMAXP_V16B_V16B_V16B),
+        STANDALONE_NAME(CM_CC_V8B_V8B_0),
+        STANDALONE_NAME(CM_CC_V8B_V8B_V8B),
         STANDALONE_NAME(CM_CC_V16B_V16B_0),
         STANDALONE_NAME(CM_CC_V16B_V16B_V16B),
     // float
@@ -655,6 +729,14 @@ namespace arm64 {
         }
     }
 
+    void Cpu::execLdrswR64M32(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<M32>();
+        u32 srcval = mmu_.read32(resolve(src));
+        set(dst, (u64)(i64)(i32)srcval);
+        verify(!ins.writeBack());
+    }
+
     void Cpu::execLdrR64M64Imm(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
         const auto& src = ins.op1<M64>();
@@ -827,7 +909,11 @@ namespace arm64 {
         const auto& src = ins.op0<R32>();
         const auto& dst = ins.op1<M8>();
         u32 srcval = get(src);
-        mmu_.write8(resolve(dst), (u8)srcval);
+        auto ptr = resolve(dst);
+        mmu_.write8(ptr, (u8)srcval);
+        if(ins.writeBack()) {
+            set(dst.encoding.base, ptr.address());
+        }
     }
 
     void Cpu::execStrhR32M16(const Instruction& ins) {
@@ -857,31 +943,39 @@ namespace arm64 {
         const auto& src = ins.op0<R32>();
         const auto& dst = ins.op1<M32>();
         u32 srcval = get(src);
-        mmu_.write32(resolve(dst), srcval);
+        auto ptr = resolve(dst);
+        mmu_.write32(ptr, srcval);
+        if(ins.writeBack()) {
+            set(dst.encoding.base, ptr.address());
+        }
     }
 
     void Cpu::execStrR32M32Imm(const Instruction& ins) {
-        verify(false, "implement execStrR32M32Imm");
-        (void)ins;
-        // const auto& src = ins.op0<R32>();
-        // const auto& dst = ins.op1<R32>();
-        // const auto& imm = ins.op1<Imm>();
-        // u32 srcval = get(src);
-        // mmu_.write32(resolve(dst), srcval);
+        const auto& src = ins.op0<R32>();
+        const auto& dst = ins.op1<M32>();
+        const auto& imm = ins.op2<Imm>();
+        u32 val = get(src);
+        mem::Ptr32 ptr = resolve(M32{dst.encoding});
+        mmu_.write32(ptr, val);
+        verify(ins.writeBack());
+        set(dst.encoding.base, ptr.address() + imm.as<u64>());
     }
 
     void Cpu::execStrR64M64(const Instruction& ins) {
         const auto& src = ins.op0<R64>();
         const auto& dst = ins.op1<M64>();
         u64 srcval = get(src);
-        mmu_.write64(resolve(dst), srcval);
+        auto ptr = resolve(dst);
+        mmu_.write64(ptr, srcval);
+        if(ins.writeBack()) {
+            set(dst.encoding.base, ptr.address());
+        }
     }
 
     void Cpu::execStrR64M64Imm(const Instruction& ins) {
         const auto& src = ins.op0<R64>();
         const auto& dst = ins.op1<M64>();
         const auto& imm = ins.op2<Imm>();
-        (void)imm;
 
         u64 val = get(src);
         mem::Ptr64 ptr = resolve(M64{dst.encoding});
@@ -894,16 +988,44 @@ namespace arm64 {
         const auto& src = ins.op0<D64>();
         const auto& dst = ins.op1<M64>();
         u64 val = get(src);
-        mmu_.write64(resolve(dst), val);
-        verify(!ins.writeBack(), "wb support missing");
+        auto ptr = resolve(dst);
+        mmu_.write64(ptr, val);
+        if(ins.writeBack()) {
+            set(dst.encoding.base, ptr.address());
+        }
+    }
+
+    void Cpu::execStrD64M64Imm(const Instruction& ins) {
+        const auto& src = ins.op0<D64>();
+        const auto& dst = ins.op1<M64>();
+        const auto& imm = ins.op2<Imm>();
+        u64 val = get(src);
+        auto ptr = resolve(dst);
+        mmu_.write64(ptr, val);
+        verify(ins.writeBack());
+        set(dst.encoding.base, ptr.address() + imm.as<u64>());
     }
 
     void Cpu::execStrQ128M128(const Instruction& ins) {
         const auto& src = ins.op0<Q128>();
         const auto& dst = ins.op1<M128>();
         u128 val = get(src);
-        mmu_.write128(resolve(dst), val);
-        verify(!ins.writeBack(), "wb support missing");
+        auto ptr = resolve(dst);
+        mmu_.write128(ptr, val);
+        if(ins.writeBack()) {
+            set(dst.encoding.base, ptr.address());
+        }
+    }
+
+    void Cpu::execStrQ128M128Imm(const Instruction& ins) {
+        const auto& src = ins.op0<Q128>();
+        const auto& dst = ins.op1<M128>();
+        const auto& imm = ins.op2<Imm>();
+        u128 val = get(src);
+        auto ptr = resolve(dst);
+        mmu_.write128(ptr, val);
+        verify(ins.writeBack());
+        set(dst.encoding.base, ptr.address() + imm.as<u64>());
     }
 
     void Cpu::execStlrR32M32(const Instruction& ins) {
@@ -1130,6 +1252,14 @@ namespace arm64 {
         set(dst, res);
     }
 
+    void Cpu::execAddsR64R64R32sxtw(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src1 = ins.op1<R64>();
+        const auto& src2 = ins.op2<SignExtendedR32>();
+        u64 res = CpuImpl::add64(get(src1), (u64)(i64)(i32)get(src2.reg), &flags_);
+        set(dst, res);
+    }
+
     void Cpu::execSubR32R32R32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<R32>();
@@ -1208,6 +1338,38 @@ namespace arm64 {
         const auto& src2 = ins.op2<R32>();
         u32 res = get(src1) * get(src2);
         set(dst, res);
+    }
+
+    void Cpu::execUmullR64R32R32(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<R32>();
+        u64 res = (u64)get(src1) * (u64)get(src2);
+        set(dst, res);
+    }
+
+    void Cpu::execUmulhR64R64R64(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& rsrc1 = ins.op1<R64>();
+        const auto& rsrc2 = ins.op2<R64>();
+
+        u64 src1 = get(rsrc1);
+        u64 src2 = get(rsrc2);
+        u64 a = (u64)(u32)(src1 >> 32);
+        u64 b = (u64)(u32)src1;
+        u64 c = (u64)(u32)(src2 >> 32);
+        u64 d = (u64)(u32)src2;
+
+        u64 ac = a*c;
+        u64 adbc = a*d+b*c;
+        u64 bd = b*d;
+
+        bool adbc_carry = (a*d > std::numeric_limits<u64>::max() - b*c);
+        bool lower_carry = (bd > std::numeric_limits<u64>::max() - (adbc << 32));
+
+        u64 upper = ac + (adbc >> 32) + ((u64)adbc_carry << 32) + lower_carry;
+
+        set(dst, upper);
     }
 
     void Cpu::execMulR64R64R64(const Instruction& ins) {
@@ -1692,10 +1854,20 @@ namespace arm64 {
         u64 res = 0;
         for(u64 i = 0; i < 64; ++i) {
             if(val & (1u << i)) {
-                res = res | (1u << (63 - i));
+                res = res | ((u64)1 << (63 - i));
             }
         }
         set(dst, res);
+    }
+
+    void Cpu::execSbfizR32R32ImmImm(const Instruction& ins) {
+        // const auto& dst = ins.op0<R32>();
+        // const auto& src = ins.op1<R32>();
+        const auto& lsb = ins.op2<Imm>();
+        const auto& width = ins.op3<Imm>();
+        verify(width.as<u32>() < 32);
+        verify(lsb.as<u32>() < 32);
+        verify(false, "sbfiz not implemented");
     }
 
     void Cpu::execSbfizR64R64ImmImm(const Instruction& ins) {
@@ -1706,6 +1878,19 @@ namespace arm64 {
         verify(width.as<u64>() < 64);
         verify(lsb.as<u64>() < 64);
         verify(false, "sbfiz not implemented");
+    }
+
+    void Cpu::execUbfizR32R32ImmImm(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<R32>();
+        const auto& lsb = ins.op2<Imm>();
+        const auto& width = ins.op3<Imm>();
+        verify(width.as<u32>() < 32);
+        verify(lsb.as<u32>() < 32);
+        u32 val = get(src);
+        val = val & ((1 << width.as<u16>()) - 1);
+        val <<= lsb.as<u16>();
+        set(dst, val);
     }
 
     void Cpu::execUbfizR64R64ImmImm(const Instruction& ins) {
@@ -1825,6 +2010,75 @@ namespace arm64 {
         CpuImpl::cmp64(get(src1), val2, &flags_);
     }
 
+    void Cpu::execCmpR64R32sxth(const Instruction& ins) {
+        const auto& src1 = ins.op0<R64>();
+        const auto& src2 = ins.op1<SignExtendedR16>();
+        auto src2val = (u64)(i64)(i16)(u16)get(src2.reg);
+        CpuImpl::cmp64(get(src1), src2val, &flags_);
+    }
+
+    void Cpu::execCmpR64R32sxtw(const Instruction& ins) {
+        const auto& src1 = ins.op0<R64>();
+        const auto& src2 = ins.op1<SignExtendedR32>();
+        auto src2val = (u64)(i64)(i32)(u32)get(src2.reg);
+        CpuImpl::cmp64(get(src1), src2val, &flags_);
+    }
+
+    void Cpu::execCmpR64R32uxth(const Instruction& ins) {
+        const auto& src1 = ins.op0<R64>();
+        const auto& src2 = ins.op1<ZeroExtendedR16>();
+        auto src2val = (u64)(u16)get(src2.reg);
+        CpuImpl::cmp64(get(src1), src2val, &flags_);
+    }
+
+    void Cpu::execCcmnR32ImmImmCond(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src1 = ins.op1<Imm>();
+        const auto& src2 = ins.op2<Imm>();
+        const auto& cond = ins.op3<Cond>();
+        if(flags_.matches(cond)) {
+            CpuImpl::cmp32(get(dst), ~src1.as<u32>(), &flags_);
+        } else {
+            flags_ = Flags::fromU8(src2.as<u8>());
+        }
+    }
+
+    void Cpu::execCcmnR32R32ImmCond(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<Imm>();
+        const auto& cond = ins.op3<Cond>();
+        if(flags_.matches(cond)) {
+            CpuImpl::cmp32(get(dst), ~get(src1), &flags_);
+        } else {
+            flags_ = Flags::fromU8(src2.as<u8>());
+        }
+    }
+
+    void Cpu::execCcmnR64ImmImmCond(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src1 = ins.op1<Imm>();
+        const auto& src2 = ins.op2<Imm>();
+        const auto& cond = ins.op3<Cond>();
+        if(flags_.matches(cond)) {
+            CpuImpl::cmp64(get(dst), ~src1.as<u64>(), &flags_);
+        } else {
+            flags_ = Flags::fromU8(src2.as<u8>());
+        }
+    }
+
+    void Cpu::execCcmnR64R64ImmCond(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src1 = ins.op1<R64>();
+        const auto& src2 = ins.op2<Imm>();
+        const auto& cond = ins.op3<Cond>();
+        if(flags_.matches(cond)) {
+            CpuImpl::cmp64(get(dst), ~get(src1), &flags_);
+        } else {
+            flags_ = Flags::fromU8(src2.as<u8>());
+        }
+    }
+
     void Cpu::execCcmpR32ImmImmCond(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src1 = ins.op1<Imm>();
@@ -1919,6 +2173,50 @@ namespace arm64 {
         u64 v1 = get(src1);
         u64 v2 = ((u64)src2.imm) << src2.lsl;
         [[maybe_unused]] auto res = CpuImpl::add64(v1, v2, &flags_);
+    }
+
+    void Cpu::execCincR32R32Cond(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<R32>();
+        const auto& cond = ins.op2<Cond>();
+        if(flags_.matches(cond)) {
+            set(dst, get(src)+1);
+        } else {
+            set(dst, get(src));
+        }
+    }
+
+    void Cpu::execCincR64R64Cond(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<R64>();
+        const auto& cond = ins.op2<Cond>();
+        if(flags_.matches(cond)) {
+            set(dst, get(src)+1);
+        } else {
+            set(dst, get(src));
+        }
+    }
+
+    void Cpu::execCnegR32R32Cond(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<R32>();
+        const auto& cond = ins.op2<Cond>();
+        if(flags_.matches(cond)) {
+            set(dst, ~get(src));
+        } else {
+            set(dst, get(src));
+        }
+    }
+
+    void Cpu::execCnegR64R64Cond(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<R64>();
+        const auto& cond = ins.op2<Cond>();
+        if(flags_.matches(cond)) {
+            set(dst, ~get(src));
+        } else {
+            set(dst, get(src));
+        }
     }
 
     void Cpu::execCsetR32Cond(const Instruction& ins) {
@@ -2156,7 +2454,7 @@ namespace arm64 {
         const auto& label = ins.op2<Imm>();
         u32 bit = src2.as<u32>();
         verify(bit < 32);
-        if((get(src1) & (1 << bit)) == 1) {
+        if((get(src1) & (1 << bit))) {
             set(R64::PC, label.as<u64>());
         }
     }
@@ -2167,7 +2465,7 @@ namespace arm64 {
         const auto& label = ins.op2<Imm>();
         u32 bit = src2.as<u32>();
         verify(bit < 64);
-        if((get(src1) & (1 << bit)) == 1) {
+        if((get(src1) & (1 << bit))) {
             set(R64::PC, label.as<u64>());
         }
     }
@@ -2199,6 +2497,12 @@ namespace arm64 {
                 }
             }
         }
+    }
+
+    void Cpu::execMovV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src = ins.op1<V16B>();
+        set(dst.reg, get(src.reg));
     }
 
     void Cpu::execMoviV4sImm(const Instruction& ins) {
@@ -2238,8 +2542,64 @@ namespace arm64 {
     void Cpu::execLd1V16bM128(const Instruction& ins) {
         const auto& dst = ins.op0<V16B>();
         const auto& src = ins.op1<M128>();
-        u128 val = mmu_.read128(resolve(src));
+        auto ptr = resolve(src);
+        u128 val = mmu_.read128(ptr);
         set(dst.reg, val);
+        if(ins.writeBack()) {
+            set(src.encoding.base, ptr.address());
+        }
+    }
+
+    void Cpu::execLd1V16bM128Imm(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src = ins.op1<M128>();
+        const auto& imm = ins.op2<Imm>();
+        auto ptr = resolve(src);
+        u128 val = mmu_.read128(ptr);
+        set(dst.reg, val);
+        if(ins.writeBack()) {
+            set(src.encoding.base, ptr.address() + imm.as<u64>());
+        }
+    }
+
+    void Cpu::execLd1V16bV16bM128(const Instruction& ins) {
+        const auto& dst1 = ins.op0<V16B>();
+        const auto& dst2 = ins.op1<V16B>();
+        const auto& src = ins.op2<M128>();
+        auto ptr = resolve(src);
+        u128 val = mmu_.read128(ptr);
+        set(dst1.reg, val);
+        set(dst2.reg, val);
+        verify(!ins.writeBack());
+    }
+
+    void Cpu::execLdrD64M64(const Instruction& ins) {
+        const auto& dst = ins.op0<D64>();
+        const auto& src = ins.op1<M64>();
+        u64 val = mmu_.read64(resolve(src));
+        set(dst, val);
+    }
+
+    void Cpu::execDupV4sR32(const Instruction& ins) {
+        const auto& dst = ins.op0<V4S>();
+        const auto& src = ins.op1<R32>();
+        u64 val = (u32)get(src);
+        u64 valval = (val << 32)
+                | val;
+        u128 res { valval, valval };
+        set(dst.reg, res);
+    }
+
+    void Cpu::execDupV8hR32(const Instruction& ins) {
+        const auto& dst = ins.op0<V8H>();
+        const auto& src = ins.op1<R32>();
+        u64 val = (u16)get(src);
+        u64 valval = (val << 48)
+                | (val << 32)
+                | (val << 16)
+                | val;
+        u128 res { valval, valval };
+        set(dst.reg, res);
     }
 
     void Cpu::execDupV16bR32(const Instruction& ins) {
@@ -2258,6 +2618,81 @@ namespace arm64 {
         set(dst.reg, res);
     }
 
+    void Cpu::execAddV2dV2dV2d(const Instruction& ins) {
+        const auto& dst = ins.op0<V2D>();
+        const auto& src1 = ins.op1<V2D>();
+        const auto& src2 = ins.op2<V2D>();
+        std::array<u64, 2> DST;
+        std::array<u64, 2> SRC1;
+        std::array<u64, 2> SRC2;
+        u128 src1val = get(src1.reg);
+        std::memcpy(SRC1.data(), &src1val, sizeof(src1val));
+        u128 src2val = get(src2.reg);
+        std::memcpy(SRC2.data(), &src2val, sizeof(src2val));
+        DST[0] = SRC1[0] + SRC2[0];
+        DST[1] = SRC1[1] + SRC2[1];
+        u128 res{};
+        std::memcpy(&res, DST.data(), sizeof(res));
+        set(dst.reg, res);
+    }
+
+    void Cpu::execAddpV16bV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src1 = ins.op1<V16B>();
+        const auto& src2 = ins.op2<V16B>();
+        std::array<u8, 8> DST;
+        std::array<u8, 16> SRC;
+        u128 src1val = get(src1.reg);
+        u128 src2val = get(src2.reg);
+        std::memcpy(SRC.data() + 0, &src1val, sizeof(src1val));
+        std::memcpy(SRC.data() + 8, &src2val, sizeof(src2val));
+        for(int i = 0; i < 8; ++i) {
+            DST[i] = SRC[2*i+0] + SRC[2*i+1];
+        }
+        u128 res{};
+        std::memcpy(&res, DST.data(), sizeof(res));
+        set(dst.reg, res);
+    }
+
+    void Cpu::execUminpV16bV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src1 = ins.op1<V16B>();
+        const auto& src2 = ins.op2<V16B>();
+        std::array<u8, 8> DST;
+        std::array<u8, 16> SRC;
+        u128 src1val = get(src1.reg);
+        u128 src2val = get(src2.reg);
+        std::memcpy(SRC.data() + 0, &src1val, sizeof(src1val));
+        std::memcpy(SRC.data() + 8, &src2val, sizeof(src2val));
+        for(int i = 0; i < 8; ++i) {
+            DST[i] = std::min(SRC[2*i+0], SRC[2*i+1]);
+        }
+        u128 res{};
+        std::memcpy(&res, DST.data(), sizeof(res));
+        set(dst.reg, res);
+    }
+
+    void Cpu::execAndV16bV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src1 = ins.op1<V16B>();
+        const auto& src2 = ins.op2<V16B>();
+        set(dst.reg, get(src1.reg) & get(src2.reg));
+    }
+
+    void Cpu::execOrrV16bV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src1 = ins.op1<V16B>();
+        const auto& src2 = ins.op2<V16B>();
+        set(dst.reg, get(src1.reg) | get(src2.reg));
+    }
+
+    void Cpu::execEorV16bV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src1 = ins.op1<V16B>();
+        const auto& src2 = ins.op2<V16B>();
+        set(dst.reg, get(src1.reg) ^ get(src2.reg));
+    }
+
     void Cpu::execShrnB8bV8hImm(const Instruction& ins) {
         const auto& dst = ins.op0<V8B>();
         const auto& src = ins.op1<V8H>();
@@ -2270,10 +2705,11 @@ namespace arm64 {
         for(size_t i = 0; i < 8; ++i) {
             DST[i] = (u8)(SRC[i] >> shift);
         }
-        u128 res = get(dst.reg);
         u64 resval;
         std::memcpy(&resval, DST.data(), sizeof(resval));
+        u128 res;
         res.lo = resval;
+        res.hi = 0;
         set(dst.reg, res);
     }
 
@@ -2289,6 +2725,62 @@ namespace arm64 {
         res.hi = val2.lo;
         res.lo = val1.hi;
         set(dst.reg, res);
+    }
+
+    template<typename T>
+    static u128 uzp1(u128 src1, u128 src2) {
+        static constexpr int N = sizeof(u128) / sizeof(T);
+        static_assert(N >= 2, "");
+        std::array<T, N> SRC1;
+        std::array<T, N> SRC2;
+        std::memcpy(SRC1.data(), &src1, sizeof(src1));
+        std::memcpy(SRC2.data(), &src2, sizeof(src2));
+        std::array<T, N> DST;
+        for(int i = 0; i < N/2; ++i) {
+            DST[0   + i] = SRC1[2*i];
+            DST[N/2 + i] = SRC2[2*i];
+        }
+        u128 dst{};
+        std::memcpy(&dst, DST.data(), sizeof(dst));
+        return dst;
+    }
+
+    void Cpu::execUzp1V4sV4sV4s(const Instruction& ins) {
+        const auto& dst = ins.op0<V4S>();
+        const auto& src1 = ins.op1<V4S>();
+        const auto& src2 = ins.op2<V4S>();
+        u128 res = uzp1<u32>(get(src1.reg), get(src2.reg));
+        set(dst.reg, res);
+    }
+
+    void Cpu::execUzp1V8hV8hV8h(const Instruction& ins) {
+        const auto& dst = ins.op0<V8H>();
+        const auto& src1 = ins.op1<V8H>();
+        const auto& src2 = ins.op2<V8H>();
+        u128 res = uzp1<u16>(get(src1.reg), get(src2.reg));
+        set(dst.reg, res);
+    }
+
+    void Cpu::execUzp1V16bV16bV16b(const Instruction& ins) {
+        const auto& dst = ins.op0<V16B>();
+        const auto& src1 = ins.op1<V16B>();
+        const auto& src2 = ins.op2<V16B>();
+        u128 res = uzp1<u8>(get(src1.reg), get(src2.reg));
+        set(dst.reg, res);
+    }
+
+    void Cpu::execBicV8hImm(const Instruction& ins) {
+        const auto& dst = ins.op0<V8H>();
+        const auto& imm = ins.op1<Imm>();
+        u128 dstval = get(dst.reg);
+        u8 mask = ~imm.as<u8>();
+        std::array<u8, 16> DST;
+        std::memcpy(DST.data(), &dstval, sizeof(dstval));
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = DST[i] & mask;
+        }
+        std::memcpy(&dstval, DST.data(), sizeof(dstval));
+        set(dst.reg, dstval);
     }
 
     void Cpu::execBitV16bV16bV16b(const Instruction& ins) {
@@ -2319,6 +2811,57 @@ namespace arm64 {
         }
         u128 dstval;
         std::memcpy(&dstval, DST.data(), sizeof(dstval));
+        set(dst.reg, dstval);
+    }
+
+    void Cpu::execCmCondV8bV8bZero(const Instruction& ins) {
+        const auto& cond = ins.op0<Cond>();
+        const auto& dst = ins.op1<V8B>();
+        const auto& src = ins.op2<V8B>();
+        auto cmp = [&](u8 a) -> u8 {
+            switch(cond) {
+                case Cond::EQ: return a == 0 ? 0xFF : 0x00;
+                default: verify(false, "cond not implemented");
+            }
+            return 0;
+        };
+        std::array<u8, 16> SRC;
+        u128 srcval = get(src.reg);
+        std::memcpy(SRC.data(), &srcval, sizeof(srcval));
+        std::array<u8, 16> DST;
+        std::transform(SRC.begin(), SRC.end(), DST.begin(), cmp);
+        u128 dstval;
+        std::memcpy(&dstval, DST.data(), sizeof(dstval));
+        dstval.hi = 0;
+        set(dst.reg, dstval);
+    }
+
+    void Cpu::execCmCondV8bV8bV8b(const Instruction& ins) {
+        const auto& cond = ins.op0<Cond>();
+        const auto& dst = ins.op1<V8B>();
+        const auto& src1 = ins.op2<V8B>();
+        const auto& src2 = ins.op3<V8B>();
+        auto cmp = [&](u8 a, u8 b) -> u8 {
+            switch(cond) {
+                case Cond::EQ: return a == b ? 0xFF : 0x00;
+                case Cond::CS: return a >= b ? 0xFF : 0x00;
+                default: verify(false, "cond not implemented");
+            }
+            return 0;
+        };
+        std::array<u8, 16> SRC1;
+        std::array<u8, 16> SRC2;
+        u128 src1val = get(src1.reg);
+        u128 src2val = get(src2.reg);
+        std::memcpy(SRC1.data(), &src1val, sizeof(src1val));
+        std::memcpy(SRC2.data(), &src2val, sizeof(src2val));
+        std::array<u8, 16> DST;
+        for(size_t i = 0; i < 16; ++i) {
+            DST[i] = cmp(SRC1[i], SRC2[i]);
+        }
+        u128 dstval;
+        std::memcpy(&dstval, DST.data(), sizeof(dstval));
+        dstval.hi = 0;
         set(dst.reg, dstval);
     }
 

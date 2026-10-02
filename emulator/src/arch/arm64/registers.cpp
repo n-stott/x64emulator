@@ -9,6 +9,7 @@ namespace arm64 {
         std::fill(sys_.begin(), sys_.end(), (u64)0);
 
         sys_[(u8)Sysreg::DCZID_EL0] = 0x4;
+        sys_[(u8)Sysreg::MIDR_EL1] = 0x414fd0b1;
     }
 
     std::string Registers::toString() const {

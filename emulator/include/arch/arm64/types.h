@@ -104,6 +104,7 @@ namespace arm64 {
     enum class Sysreg : u8 {
         DCZID_EL0, // not writable
         TPIDR_EL0, // writable
+        MIDR_EL1, // not writable
     };
 
     enum class SysOp : u8 {
@@ -361,6 +362,10 @@ namespace arm64 {
         V31,
     };
 
+    struct V2D {
+        V128 reg;
+    };
+
     struct V4S {
         V128 reg;
     };
@@ -444,6 +449,18 @@ namespace arm64 {
         return a.encoding.base == b.encoding.base
             && a.encoding.offset == b.encoding.offset;
     }
+
+    struct SignExtendedR16 {
+        R32 reg;
+    };
+
+    struct ZeroExtendedR16 {
+        R32 reg;
+    };
+
+    struct SignExtendedR32 {
+        R32 reg;
+    };
 
     struct ZeroExtendedR32 {
         R32 reg;

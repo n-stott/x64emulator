@@ -12,9 +12,9 @@ namespace arm64 {
         );
     }
 
-    static constexpr u8 ZERO_MASK = 0x1;
-    static constexpr u8 OVERFLOW_MASK = 0x2;
-    static constexpr u8 CARRY_MASK = 0x4;
+    static constexpr u8 OVERFLOW_MASK = 0x1;
+    static constexpr u8 CARRY_MASK = 0x2;
+    static constexpr u8 ZERO_MASK = 0x4;
     static constexpr u8 NEGATIVE_MASK = 0x8;
 
     u8 Flags::asU8() const {
