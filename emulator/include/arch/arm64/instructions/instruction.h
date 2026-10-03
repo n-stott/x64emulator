@@ -152,6 +152,8 @@ namespace arm64 {
         REV_R64_R64,
         RBIT_R32_R32,
         RBIT_R64_R64,
+        BFXIL_R32_R32_IMM_IMM,
+        BFXIL_R64_R64_IMM_IMM,
         SBFIZ_R32_R32_IMM_IMM,
         SBFIZ_R64_R64_IMM_IMM,
         UBFIZ_R32_R32_IMM_IMM,

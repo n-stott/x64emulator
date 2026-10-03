@@ -1747,6 +1747,28 @@ namespace arm64 {
         return make_failed(insn);
     }
 
+    static Instruction makeBfxil(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 4) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            const auto& imm1 = arm64.operands[2];
+            const auto& imm2 = arm64.operands[2];
+            auto r32dst = asRegister32(dst);
+            auto r64dst = asRegister64(dst);
+            auto r32src = asRegister32(src);
+            auto r64src = asRegister64(src);
+            auto immsrc1 = asImmediate(imm1);
+            auto immsrc2 = asImmediate(imm2);
+            if(r32dst && r32src && immsrc1 && immsrc2) return Instruction::make<Insn::BFXIL_R32_R32_IMM_IMM>(insn.address, insn.size, r32dst.value(), r32src.value(), immsrc1.value(), immsrc2.value());
+            if(r64dst && r64src && immsrc1 && immsrc2) return Instruction::make<Insn::BFXIL_R64_R64_IMM_IMM>(insn.address, insn.size, r64dst.value(), r64src.value(), immsrc1.value(), immsrc2.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
     static Instruction makeSbfiz(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.writeback) return make_failed(insn);
@@ -2591,6 +2613,7 @@ namespace arm64 {
             case ARM64_INS_CLZ: return makeClz(insn);
             case ARM64_INS_REV: return makeRev(insn);
             case ARM64_INS_RBIT: return makeRbit(insn);
+            case ARM64_INS_BFXIL: return makeBfxil(insn);
             case ARM64_INS_SBFIZ: return makeSbfiz(insn);
             case ARM64_INS_UBFIZ: return makeUbfiz(insn);
             case ARM64_INS_UBFX: return makeUbfx(insn);

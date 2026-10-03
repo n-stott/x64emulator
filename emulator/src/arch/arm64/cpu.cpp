@@ -174,6 +174,8 @@ namespace arm64 {
     DEFINE_STANDALONE(REV_R64_R64, execRevR64R64)
     DEFINE_STANDALONE(RBIT_R32_R32, execRbitR32R32)
     DEFINE_STANDALONE(RBIT_R64_R64, execRbitR64R64)
+    DEFINE_STANDALONE(BFXIL_R32_R32_IMM_IMM, execBfxilR32R32ImmImm)
+    DEFINE_STANDALONE(BFXIL_R64_R64_IMM_IMM, execBfxilR64R64ImmImm)
     DEFINE_STANDALONE(SBFIZ_R32_R32_IMM_IMM, execSbfizR32R32ImmImm)
     DEFINE_STANDALONE(SBFIZ_R64_R64_IMM_IMM, execSbfizR64R64ImmImm)
     DEFINE_STANDALONE(UBFIZ_R32_R32_IMM_IMM, execUbfizR32R32ImmImm)
@@ -419,6 +421,8 @@ namespace arm64 {
         STANDALONE_NAME(REV_R64_R64),
         STANDALONE_NAME(RBIT_R32_R32),
         STANDALONE_NAME(RBIT_R64_R64),
+        STANDALONE_NAME(BFXIL_R32_R32_IMM_IMM),
+        STANDALONE_NAME(BFXIL_R64_R64_IMM_IMM),
         STANDALONE_NAME(SBFIZ_R32_R32_IMM_IMM),
         STANDALONE_NAME(SBFIZ_R64_R64_IMM_IMM),
         STANDALONE_NAME(UBFIZ_R32_R32_IMM_IMM),
@@ -1857,6 +1861,32 @@ namespace arm64 {
                 res = res | ((u64)1 << (63 - i));
             }
         }
+        set(dst, res);
+    }
+
+    void Cpu::execBfxilR32R32ImmImm(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<R32>();
+        const auto& lsb = ins.op2<Imm>();
+        const auto& width = ins.op3<Imm>();
+        verify(width.as<u32>() < 32);
+        verify(lsb.as<u32>() < 32);
+        u32 mask = ((u32)1 << width.as<u32>()) - 1;
+        u32 val = (get(src) >> lsb.as<u32>()) & mask;
+        u32 res = (get(dst) & ~mask) | val;
+        set(dst, res);
+    }
+
+    void Cpu::execBfxilR64R64ImmImm(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<R64>();
+        const auto& lsb = ins.op2<Imm>();
+        const auto& width = ins.op3<Imm>();
+        verify(width.as<u64>() < 64);
+        verify(lsb.as<u64>() < 64);
+        u64 mask = ((u64)1 << width.as<u64>()) - 1;
+        u64 val = (get(src) >> lsb.as<u64>()) & mask;
+        u64 res = (get(dst) & ~mask) | val;
         set(dst, res);
     }
 

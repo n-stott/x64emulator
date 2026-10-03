@@ -195,6 +195,8 @@ namespace arm64 {
             case Insn::REV_R64_R64: return toString<R64, R64>("rev");
             case Insn::RBIT_R32_R32: return toString<R32, R32>("rbit");
             case Insn::RBIT_R64_R64: return toString<R64, R64>("rbit");
+            case Insn::BFXIL_R32_R32_IMM_IMM: return toString<R32, R32, Imm, Imm>("bfxil");
+            case Insn::BFXIL_R64_R64_IMM_IMM: return toString<R64, R64, Imm, Imm>("bfxil");
             case Insn::SBFIZ_R32_R32_IMM_IMM: return toString<R32, R32, Imm, Imm>("sbfiz");
             case Insn::SBFIZ_R64_R64_IMM_IMM: return toString<R64, R64, Imm, Imm>("sbfiz");
             case Insn::UBFIZ_R32_R32_IMM_IMM: return toString<R32, R32, Imm, Imm>("ubfiz");
