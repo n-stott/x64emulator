@@ -245,7 +245,7 @@ namespace arm64 {
         UZP1_V4S_V4S_V4S,
         UZP1_V8H_V8H_V8H,
         UZP1_V16B_V16B_V16B,
-        BIC_V8H_IMM,
+        BIC_V8H_SIMM,
         BIT_V16B_V16B_V16B,
         UMAXP_V16B_V16B_V16B,
         CM_CC_V8B_V8B_0,

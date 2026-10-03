@@ -1506,6 +1506,13 @@ namespace arm64 {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.writeback) return make_failed(insn);
         verify(!arm64.update_flags);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& imm = arm64.operands[1];
+            auto v8hdst = asV8H(dst);
+            auto lslimmsrc = asShiftedImm(imm);
+            if(v8hdst && lslimmsrc) return Instruction::make<Insn::BIC_V8H_SIMM>(insn.address, insn.size, v8hdst.value(), lslimmsrc.value());
+        }
         if(arm64.op_count == 3) {
             const auto& dst = arm64.operands[0];
             const auto& src1 = arm64.operands[1];

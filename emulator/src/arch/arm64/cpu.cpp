@@ -267,7 +267,7 @@ namespace arm64 {
     DEFINE_STANDALONE(UZP1_V4S_V4S_V4S, execUzp1V4sV4sV4s)
     DEFINE_STANDALONE(UZP1_V8H_V8H_V8H, execUzp1V8hV8hV8h)
     DEFINE_STANDALONE(UZP1_V16B_V16B_V16B, execUzp1V16bV16bV16b)
-    DEFINE_STANDALONE(BIC_V8H_IMM, execBicV8hImm)
+    DEFINE_STANDALONE(BIC_V8H_SIMM, execBicV8hSImm)
     DEFINE_STANDALONE(BIT_V16B_V16B_V16B, execBitV16bV16bV16b)
     DEFINE_STANDALONE(UMAXP_V16B_V16B_V16B, execUmaxpV16bV16bV16b)
     DEFINE_STANDALONE(CM_CC_V8B_V8B_0, execCmCondV8bV8bZero)
@@ -512,7 +512,7 @@ namespace arm64 {
         STANDALONE_NAME(UZP1_V4S_V4S_V4S),
         STANDALONE_NAME(UZP1_V8H_V8H_V8H),
         STANDALONE_NAME(UZP1_V16B_V16B_V16B),
-        STANDALONE_NAME(BIC_V8H_IMM),
+        STANDALONE_NAME(BIC_V8H_SIMM),
         STANDALONE_NAME(BIT_V16B_V16B_V16B),
         STANDALONE_NAME(UMAXP_V16B_V16B_V16B),
         STANDALONE_NAME(CM_CC_V8B_V8B_0),
@@ -2769,9 +2769,9 @@ namespace arm64 {
         set(dst.reg, res);
     }
 
-    void Cpu::execBicV8hImm(const Instruction& ins) {
+    void Cpu::execBicV8hSImm(const Instruction& ins) {
         const auto& dst = ins.op0<V8H>();
-        const auto& imm = ins.op1<Imm>();
+        const auto& imm = ins.op1<ShiftedImm>();
         u128 dstval = get(dst.reg);
         u8 mask = ~imm.as<u8>();
         std::array<u8, 16> DST;

@@ -288,7 +288,7 @@ namespace arm64 {
             case Insn::UZP1_V4S_V4S_V4S: return toString<V4S, V4S, V4S>("uzp1");
             case Insn::UZP1_V8H_V8H_V8H: return toString<V8H, V8H, V8H>("uzp1");
             case Insn::UZP1_V16B_V16B_V16B: return toString<V16B, V16B, V16B>("uzp1");
-            case Insn::BIC_V8H_IMM: return toString<V8H, Imm>("bic");
+            case Insn::BIC_V8H_SIMM: return toString<V8H, ShiftedImm>("bic");
             case Insn::BIT_V16B_V16B_V16B: return toString<V16B, V16B, V16B>("bit");
             case Insn::UMAXP_V16B_V16B_V16B: return toString<V16B, V16B, V16B>("umaxp");
             case Insn::CM_CC_V8B_V8B_0: return toString<Cond, V8B, V8B>("cm0");

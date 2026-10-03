@@ -307,7 +307,7 @@ namespace arm64 {
         void execUzp1V4sV4sV4s(const Instruction& ins);
         void execUzp1V8hV8hV8h(const Instruction& ins);
         void execUzp1V16bV16bV16b(const Instruction& ins);
-        void execBicV8hImm(const Instruction& ins);
+        void execBicV8hSImm(const Instruction& ins);
         void execBitV16bV16bV16b(const Instruction& ins);
         void execUmaxpV16bV16bV16b(const Instruction& ins);
         void execCmCondV8bV8bZero(const Instruction& ins);
