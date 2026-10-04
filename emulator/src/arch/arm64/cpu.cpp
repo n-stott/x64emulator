@@ -44,6 +44,8 @@ namespace arm64 {
     DEFINE_STANDALONE(MOVK_R32_SIMM, execMovkR32SImm)
     DEFINE_STANDALONE(MOVK_R64_IMM, execMovkR64Imm)
     DEFINE_STANDALONE(MOVK_R64_SIMM, execMovkR64SImm)
+    DEFINE_STANDALONE(MVN_R32_R32, execMvnR32R32)
+    DEFINE_STANDALONE(MVN_R64_R64, execMvnR64R64)
     DEFINE_STANDALONE(MOVN_R32_IMM, execMovnR32Imm)
     DEFINE_STANDALONE(MOVN_R64_IMM, execMovnR64Imm)
     DEFINE_STANDALONE(MOVZ_R32_IMM, execMovzR32Imm)
@@ -291,6 +293,8 @@ namespace arm64 {
         STANDALONE_NAME(MOVK_R32_SIMM),
         STANDALONE_NAME(MOVK_R64_IMM),
         STANDALONE_NAME(MOVK_R64_SIMM),
+        STANDALONE_NAME(MVN_R32_R32),
+        STANDALONE_NAME(MVN_R64_R64),
         STANDALONE_NAME(MOVN_R32_IMM),
         STANDALONE_NAME(MOVN_R64_IMM),
         STANDALONE_NAME(MOVZ_R32_IMM),
@@ -661,6 +665,18 @@ namespace arm64 {
         u64 newval = ((u64)src.imm) << src.lsl;
         val = val | newval;
         set(dst, val);
+    }
+
+    void Cpu::execMvnR32R32(const Instruction& ins) {
+        const auto& dst = ins.op0<R32>();
+        const auto& src = ins.op1<R32>();
+        set(dst, ~get(src));
+    }
+
+    void Cpu::execMvnR64R64(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src = ins.op1<R64>();
+        set(dst, ~get(src));
     }
 
     void Cpu::execMovnR32Imm(const Instruction& ins) {

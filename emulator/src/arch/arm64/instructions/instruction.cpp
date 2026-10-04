@@ -65,6 +65,8 @@ namespace arm64 {
             case Insn::MOVK_R32_SIMM: return toString<R32, ShiftedImm>("movk");
             case Insn::MOVK_R64_IMM: return toString<R64, Imm>("movk");
             case Insn::MOVK_R64_SIMM: return toString<R64, ShiftedImm>("movk");
+            case Insn::MVN_R32_R32: return toString<R32, R32>("mvn");
+            case Insn::MVN_R64_R64: return toString<R64, R64>("mvn");
             case Insn::MOVN_R32_IMM: return toString<R32, Imm>("movn");
             case Insn::MOVN_R64_IMM: return toString<R64, Imm>("movn");
             case Insn::MOVZ_R32_IMM: return toString<R32, Imm>("movz");

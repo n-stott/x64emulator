@@ -22,6 +22,8 @@ namespace arm64 {
         MOVK_R32_SIMM,
         MOVK_R64_IMM,
         MOVK_R64_SIMM,
+        MVN_R32_R32,
+        MVN_R64_R64,
         MOVN_R32_IMM,
         MOVN_R64_IMM,
         MOVZ_R32_IMM,

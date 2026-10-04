@@ -85,6 +85,8 @@ namespace arm64 {
         void execMovkR32SImm(const Instruction& ins);
         void execMovkR64Imm(const Instruction& ins);
         void execMovkR64SImm(const Instruction& ins);
+        void execMvnR32R32(const Instruction& ins);
+        void execMvnR64R64(const Instruction& ins);
         void execMovnR32Imm(const Instruction& ins);
         void execMovnR64Imm(const Instruction& ins);
         void execMovzR32Imm(const Instruction& ins);

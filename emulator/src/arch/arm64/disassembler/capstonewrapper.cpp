@@ -568,6 +568,24 @@ namespace arm64 {
         return make_failed(insn);
     }
 
+    static Instruction makeMvn(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 2) {
+            const auto& dst = arm64.operands[0];
+            const auto& src = arm64.operands[1];
+            auto r32dst = asRegister32(dst);
+            auto r64dst = asRegister64(dst);
+            auto r32src = asRegister32(src);
+            auto r64src = asRegister64(src);
+            if(r32dst && r32src) return Instruction::make<Insn::MVN_R32_R32>(insn.address, insn.size, r32dst.value(), r32src.value());
+            if(r64dst && r64src) return Instruction::make<Insn::MVN_R64_R64>(insn.address, insn.size, r64dst.value(), r64src.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
     static Instruction makeMovn(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.writeback) return make_failed(insn);
@@ -2565,6 +2583,7 @@ namespace arm64 {
             case ARM64_INS_DMB: return makeNop(insn);
             case ARM64_INS_MOV: return makeMov(insn);
             case ARM64_INS_MOVK: return makeMovk(insn);
+            case ARM64_INS_MVN: return makeMvn(insn);
             case ARM64_INS_MOVN: return makeMovn(insn);
             case ARM64_INS_MOVZ: return makeMovz(insn);
             case ARM64_INS_MRS: return makeMrs(insn);
