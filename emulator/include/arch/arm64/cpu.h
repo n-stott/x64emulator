@@ -169,8 +169,8 @@ namespace arm64 {
         void execMsubR32R32R32R32(const Instruction& ins);
         void execMsubR64R64R64R64(const Instruction& ins);
         void execUmaddlR64R32R32R64(const Instruction& ins);
-        void execNegR32R32(const Instruction& ins);
-        void execNegR64R64(const Instruction& ins);
+        void execNegR32SR32(const Instruction& ins);
+        void execNegR64SR64(const Instruction& ins);
         void execAndR32R32R32(const Instruction& ins);
         void execAndR32R32Imm(const Instruction& ins);
         void execAndR64R64R64(const Instruction& ins);

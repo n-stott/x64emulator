@@ -138,8 +138,8 @@ namespace arm64 {
             case Insn::SUBS_R32_R32_SIMM: return toString<R32, R32, ShiftedImm>("subs");
             case Insn::SUBS_R64_R64_R64: return toString<R64, R64, R64>("subs");
             case Insn::SUBS_R64_R64_SIMM: return toString<R64, R64, ShiftedImm>("subs");
-            case Insn::NEG_R32_R32: return toString<R32, R32>("neg");
-            case Insn::NEG_R64_R64: return toString<R64, R64>("neg");
+            case Insn::NEG_R32_SR32: return toString<R32, ShiftedR32>("neg");
+            case Insn::NEG_R64_SR64: return toString<R64, ShiftedR64>("neg");
             case Insn::MUL_R32_R32_R32: return toString<R32, R32, R32>("mul");
             case Insn::MUL_R64_R64_R64: return toString<R64, R64, R64>("mul");
             case Insn::UMULL_R64_R32_R32: return toString<R64, R32, R32>("umull");

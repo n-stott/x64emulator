@@ -117,8 +117,8 @@ namespace arm64 {
     DEFINE_STANDALONE(SUBS_R32_R32_SIMM, execSubsR32R32SImm)
     DEFINE_STANDALONE(SUBS_R64_R64_R64, execSubsR64R64R64)
     DEFINE_STANDALONE(SUBS_R64_R64_SIMM, execSubsR64R64SImm)
-    DEFINE_STANDALONE(NEG_R32_R32, execNegR32R32)
-    DEFINE_STANDALONE(NEG_R64_R64, execNegR64R64)
+    DEFINE_STANDALONE(NEG_R32_SR32, execNegR32SR32)
+    DEFINE_STANDALONE(NEG_R64_SR64, execNegR64SR64)
     DEFINE_STANDALONE(MUL_R32_R32_R32, execMulR32R32R32)
     DEFINE_STANDALONE(MUL_R64_R64_R64, execMulR64R64R64)
     DEFINE_STANDALONE(UMULL_R64_R32_R32, execUmullR64R32R32)
@@ -368,8 +368,8 @@ namespace arm64 {
         STANDALONE_NAME(SUBS_R32_R32_SIMM),
         STANDALONE_NAME(SUBS_R64_R64_R64),
         STANDALONE_NAME(SUBS_R64_R64_SIMM),
-        STANDALONE_NAME(NEG_R32_R32),
-        STANDALONE_NAME(NEG_R64_R64),
+        STANDALONE_NAME(NEG_R32_SR32),
+        STANDALONE_NAME(NEG_R64_SR64),
         STANDALONE_NAME(MUL_R32_R32_R32),
         STANDALONE_NAME(MUL_R64_R64_R64),
         STANDALONE_NAME(UMULL_R64_R32_R32),
@@ -1470,16 +1470,16 @@ namespace arm64 {
         set(dst, res);
     }
 
-    void Cpu::execNegR32R32(const Instruction& ins) {
+    void Cpu::execNegR32SR32(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
-        const auto& src = ins.op1<R32>();
+        const auto& src = ins.op1<ShiftedR32>();
         u32 res = (u32)-get(src);
         set(dst, res);
     }
 
-    void Cpu::execNegR64R64(const Instruction& ins) {
+    void Cpu::execNegR64SR64(const Instruction& ins) {
         const auto& dst = ins.op0<R64>();
-        const auto& src = ins.op1<R64>();
+        const auto& src = ins.op1<ShiftedR64>();
         u64 res = (u64)-get(src);
         set(dst, res);
     }

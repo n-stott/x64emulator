@@ -1458,11 +1458,11 @@ namespace arm64 {
             const auto& dst = arm64.operands[0];
             const auto& src = arm64.operands[1];
             auto r32dst = asRegister32(dst);
-            auto r32src = asRegister32(src);
             auto r64dst = asRegister64(dst);
-            auto r64src = asRegister64(src);
-            if(r32dst && r32src) return Instruction::make<Insn::NEG_R32_R32>(insn.address, insn.size, r32dst.value(), r32src.value());
-            if(r64dst && r64src) return Instruction::make<Insn::NEG_R64_R64>(insn.address, insn.size, r64dst.value(), r64src.value());
+            auto sr32src = asShiftedR32(src);
+            auto sr64src = asShiftedR64(src);
+            if(r32dst && sr32src) return Instruction::make<Insn::NEG_R32_SR32>(insn.address, insn.size, r32dst.value(), sr32src.value());
+            if(r64dst && sr64src) return Instruction::make<Insn::NEG_R64_SR64>(insn.address, insn.size, r64dst.value(), sr64src.value());
             return make_failed(insn);
         }
         return make_failed(insn);
