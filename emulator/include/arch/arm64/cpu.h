@@ -217,6 +217,8 @@ namespace arm64 {
         void execRevR64R64(const Instruction& ins);
         void execRbitR32R32(const Instruction& ins);
         void execRbitR64R64(const Instruction& ins);
+        void execBfiR32R32ImmImm(const Instruction& ins);
+        void execBfiR64R64ImmImm(const Instruction& ins);
         void execBfxilR32R32ImmImm(const Instruction& ins);
         void execBfxilR64R64ImmImm(const Instruction& ins);
         void execSbfizR32R32ImmImm(const Instruction& ins);
