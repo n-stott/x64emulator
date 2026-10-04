@@ -150,6 +150,7 @@ namespace arm64 {
             case Insn::MADD_R64_R64_R64_R64: return toString<R64, R64, R64, R64>("madd");
             case Insn::MSUB_R32_R32_R32_R32: return toString<R32, R32, R32, R32>("msub");
             case Insn::MSUB_R64_R64_R64_R64: return toString<R64, R64, R64, R64>("msub");
+            case Insn::SMADDL_R64_R32_R32_R64: return toString<R64, R32, R32, R64>("smaddl");
             case Insn::UMADDL_R64_R32_R32_R64: return toString<R64, R32, R32, R64>("umaddl");
             case Insn::AND_R32_R32_R32: return toString<R32, R32, R32>("and");
             case Insn::AND_R32_R32_IMM: return toString<R32, R32, Imm>("and");

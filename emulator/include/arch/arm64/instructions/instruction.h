@@ -107,6 +107,7 @@ namespace arm64 {
         MADD_R64_R64_R64_R64,
         MSUB_R32_R32_R32_R32,
         MSUB_R64_R64_R64_R64,
+        SMADDL_R64_R32_R32_R64,
         UMADDL_R64_R32_R32_R64,
         AND_R32_R32_R32,
         AND_R32_R32_IMM,

@@ -129,6 +129,7 @@ namespace arm64 {
     DEFINE_STANDALONE(MADD_R64_R64_R64_R64, execMaddR64R64R64R64)
     DEFINE_STANDALONE(MSUB_R32_R32_R32_R32, execMsubR32R32R32R32)
     DEFINE_STANDALONE(MSUB_R64_R64_R64_R64, execMsubR64R64R64R64)
+    DEFINE_STANDALONE(SMADDL_R64_R32_R32_R64, execSmaddlR64R32R32R64)
     DEFINE_STANDALONE(UMADDL_R64_R32_R32_R64, execUmaddlR64R32R32R64)
     DEFINE_STANDALONE(AND_R32_R32_R32, execAndR32R32R32)
     DEFINE_STANDALONE(AND_R32_R32_IMM, execAndR32R32Imm)
@@ -380,6 +381,7 @@ namespace arm64 {
         STANDALONE_NAME(MADD_R64_R64_R64_R64),
         STANDALONE_NAME(MSUB_R32_R32_R32_R32),
         STANDALONE_NAME(MSUB_R64_R64_R64_R64),
+        STANDALONE_NAME(SMADDL_R64_R32_R32_R64),
         STANDALONE_NAME(UMADDL_R64_R32_R32_R64),
         STANDALONE_NAME(AND_R32_R32_R32),
         STANDALONE_NAME(AND_R32_R32_IMM),
@@ -1458,6 +1460,15 @@ namespace arm64 {
         const auto& src2 = ins.op2<R64>();
         const auto& src3 = ins.op3<R64>();
         u64 res = get(src3) - get(src1) * get(src2);
+        set(dst, res);
+    }
+
+    void Cpu::execSmaddlR64R32R32R64(const Instruction& ins) {
+        const auto& dst = ins.op0<R64>();
+        const auto& src1 = ins.op1<R32>();
+        const auto& src2 = ins.op2<R32>();
+        const auto& src3 = ins.op3<R64>();
+        u64 res = (u64)(i64)(get(src1) * get(src2)) + get(src3);
         set(dst, res);
     }
 

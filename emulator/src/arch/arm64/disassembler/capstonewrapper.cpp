@@ -1431,6 +1431,25 @@ namespace arm64 {
         return make_failed(insn);
     }
 
+    static Instruction makeSmaddl(const cs_insn& insn) {
+        const cs_arm64& arm64 = insn.detail->arm64;
+        if(arm64.writeback) return make_failed(insn);
+        if(arm64.update_flags) return make_failed(insn);
+        if(arm64.op_count == 4) {
+            const auto& dst = arm64.operands[0];
+            const auto& src1 = arm64.operands[1];
+            const auto& src2 = arm64.operands[2];
+            const auto& src3 = arm64.operands[3];
+            auto r64dst = asRegister64(dst);
+            auto r32src1 = asRegister32(src1);
+            auto r32src2 = asRegister32(src2);
+            auto r64src3 = asRegister64(src3);
+            if(r64dst && r32src1 && r32src2 && r64src3) return Instruction::make<Insn::SMADDL_R64_R32_R32_R64>(insn.address, insn.size, r64dst.value(), r32src1.value(), r32src2.value(), r64src3.value());
+            return make_failed(insn);
+        }
+        return make_failed(insn);
+    }
+
     static Instruction makeUmaddl(const cs_insn& insn) {
         const cs_arm64& arm64 = insn.detail->arm64;
         if(arm64.writeback) return make_failed(insn);
@@ -2640,6 +2659,7 @@ namespace arm64 {
             case ARM64_INS_UDIV: return makeUdiv(insn);
             case ARM64_INS_MADD: return makeMadd(insn);
             case ARM64_INS_MSUB: return makeMsub(insn);
+            case ARM64_INS_SMADDL: return makeSmaddl(insn);
             case ARM64_INS_UMADDL: return makeUmaddl(insn);
             case ARM64_INS_NEG: return makeNeg(insn);
             case ARM64_INS_AND: return makeAnd(insn);
