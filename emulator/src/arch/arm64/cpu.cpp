@@ -768,8 +768,13 @@ namespace arm64 {
     void Cpu::execLdrbR32M8(const Instruction& ins) {
         const auto& dst = ins.op0<R32>();
         const auto& src = ins.op1<M8>();
-        u32 srcval = (u32)mmu_.read8(resolve(src));
+        auto ptr = resolve(src);
+        u32 srcval = (u32)mmu_.read8(ptr);
         set(dst, srcval);
+        if(ins.writeBack()) {
+            verify(src.encoding.index == R64::ZERO);
+            set(src.encoding.base, ptr.address());
+        }
     }
 
     void Cpu::execLdrhR32M16(const Instruction& ins) {
